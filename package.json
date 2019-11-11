@@ -1,0 +1,25 @@
+{
+  "name": "tunnel-quest-bot",
+  "version": "1.0.0",
+  "description": "an Everquest auction watcher for P99 Servers interfaced via Discord Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamesjamail/tunnelQuestBot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jamesjamail/tunnelQuestBot/issues"
+  },
+  "homepage": "https://github.com/jamesjamail/tunnelQuestBot#readme",
+  "dependencies": {
+    "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "tail": "^2.0.3",
+    "winston": "^3.2.1"
+  }
+}
