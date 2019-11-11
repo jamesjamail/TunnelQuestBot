@@ -5,5 +5,5 @@ auth.json
 #DS_Store
 DS_Store
 
-#nodeModules
-nodeModules
+#node_modules
+node_modules
