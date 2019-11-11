@@ -21,5 +21,8 @@
     "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
     "tail": "^2.0.3",
     "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "faker": "^4.1.0"
   }
 }

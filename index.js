@@ -1,22 +1,20 @@
 const Discord = require('discord.io');
 const logger = require('winston');
-const Tail = require('tail').Tail;
 const auth = require('./auth.json');
 const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n\n***COMMANDS***\n!add watch <item>, <min price>, <server>'
 
-// Configure logger settings
+// logger settings
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
     colorize: true
 });
 logger.level = 'debug';
 
-// Initialize Discord Bot
+// Initialize Discord Client
 var bot = new Discord.Client({
    token: auth.token,
    autorun: true
 });
-
 
 bot.on('ready', function (evt) {
     logger.info('Connected');
@@ -24,8 +22,7 @@ bot.on('ready', function (evt) {
     logger.info(bot.username + ' - (' + bot.id + ')');
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
-    // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
+    // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
         var args = message.toLowerCase().substring(1).split(/,|:/);
         var cmd = args[0];
