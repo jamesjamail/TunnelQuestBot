@@ -13,8 +13,8 @@ const findUserId = async function(user) {
     //userId to be returned
     var userId;
     //check if a user exists in user table already
-    let query = "SELECT id FROM users WHERE name = 'testuser';";
-    // let query = 'SELECT * FROM users';
+    let query = `SELECT id FROM users WHERE name = "${user}"`;
+    console.log(query);
     await client
         .query(query)
         .then((results) => {
@@ -42,7 +42,7 @@ const findUserId = async function(user) {
 }
 
 
-findUserId('testUser1');
+findUserId("testUser1");
 
 const findItemId = function(item) {
     //check if item exists in item table already...
