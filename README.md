@@ -1,6 +1,6 @@
 <h1 style="font-style:italic;">TunnelQuestBot</h1>
 <h3 style="font-weight:normal;"><span style="font-weight:bold;">TunnelQuestBot</span> is an EverQuest auction watcher for Project1999 Servers interfaced via Discord</h3>
-<p>
+<p style="font-style:italic;">
 ***SUMMARY***: tunnelQuestBot allows Discord users to add watches for in game items items on Project 1999 Everquest Servers.  When an item auction in game meets the specified minimum price, TunnelQuestBot notifies the user.
 </p> 
 Tired of staring at EC Tunnel spam to get that item you're lusting after?  Give yourself a break by setting up a Watch and let tunnelQuestBot do the work for you.
