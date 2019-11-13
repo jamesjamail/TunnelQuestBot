@@ -1,4 +1,5 @@
-# ***TunnelQuestBot***: an Everquest auction watcher for P99 Servers interfaced via Discord Bot
+# <h1>***TunnelQuestBot***</h1>
+# TunnelQuestBot is an Everquest auction watcher for P99 Servers interfaced via Discord
 
 # ***SUMMARY***: tunnelQuestBot allows Discord users to add watches for in game items items on Project 1999 Everquest Servers.  When an item auction in game meets the specified minimum price, TunnelQuestBot notifies the user.
  
