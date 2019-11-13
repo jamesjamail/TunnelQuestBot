@@ -147,7 +147,7 @@ const addWatch = function(user, item, price, server) {
 
 //testing
 
-getItemId('thick banded belt', (res) => getWatches(res, (res) => console.log(res)));
+// getItemId('thick banded belt', (res) => getWatches(res, (res) => console.log(res)));
 
 // getItemId('thick banded belt', (res) => console.log(res));
 // getWatches(5, (res) => console.log(res));

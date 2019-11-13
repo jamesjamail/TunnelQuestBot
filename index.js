@@ -1,7 +1,7 @@
 const Discord = require('discord.io');
 const logger = require('winston');
 const auth = require('./auth.json');
-const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n\n***COMMANDS***\n!add watch <item>, <min price>, <server>'
+const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <min price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days)\n!end watch: <item>   (ends a currently running watch)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)'
 const db = require('./db.js');
 
 // logger settings
