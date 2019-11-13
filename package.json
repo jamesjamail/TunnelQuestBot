@@ -4,7 +4,8 @@
   "description": "an Everquest auction watcher for P99 Servers interfaced via Discord Bot",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node logFaker.js && node logParser.js && node index.js"
   },
   "repository": {
     "type": "git",

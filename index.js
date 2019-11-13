@@ -23,6 +23,9 @@ bot.on('ready', function (evt) {
     logger.info(bot.username + ' - (' + bot.id + ')');
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
+    // console.log(channelID);
+    // console.log(userID);
+    
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
         var args = message.toLowerCase().substring(1).split(/,|:/);
@@ -42,6 +45,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !add watch <item>
             case 'add watch':
                 console.log('add watch command received.  args = ', args)
+                db.addWatch('testuser', args[0], Number(args[1]), args[2]);
                 break;
 
             // !end watch <item>
@@ -67,5 +71,24 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 });
             break;
          }
-     }
+    }     
 });
+
+function pingUser (seller, item, price, server) {
+    bot.sendMessage({
+    to: '213474329747259401',
+    message: `${seller} is currently selling ${item} for ${price} on Project 1999 ${server} server`
+    })
+};
+
+// const pingUser = function(bot) {
+//     bot.sendMessage({
+//     to: '213474329747259401',
+//     message: `TEST`
+//     })
+// };
+
+// pingUser(bot);
+
+
+module.exports = {pingUser}
