@@ -81,14 +81,4 @@ function pingUser (seller, item, price, server) {
     })
 };
 
-// const pingUser = function(bot) {
-//     bot.sendMessage({
-//     to: '213474329747259401',
-//     message: `TEST`
-//     })
-// };
-
-// pingUser(bot);
-
-
 module.exports = {pingUser}
