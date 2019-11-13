@@ -24,9 +24,19 @@ function parseLog(text) {
             var watchedItems = results
             for (let i = 0; i < watchedItems.length; i++) {
                 if (auction.includes(watchedItems[i].name)) {
-                    var price = auction.substring(auction.indexOf(watchedItems[i].name) + watchedItems[i].name.length);
+                    var price = auction.substring(auction.indexOf(watchedItems[i].name) + watchedItems[i].name.length, auction.length-1);
+                    console.log(price);
+                    var price = Number(price.trim());
+                    console.log(price);
                     console.log('MATCH FOUND, price = ', price);
-                    client.pingUser(words[0], watchedItems[i].name, price, 'blue');
+                    db.getItemId(watchedItems[i].name, (res) => db.getWatches(res, (res) => {
+                        minPrice = res[0].price;
+                        console.log(price, '|', minPrice);
+                        if (price <= minPrice) {
+                            console.log('pinging user...')
+                            client.pingUser(words[0], watchedItems[i].name, price, 'blue');
+                        }
+                    }));
                 }
             }
         });

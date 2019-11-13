@@ -152,4 +152,4 @@ getItemId('thick banded belt', (res) => getWatches(res, (res) => console.log(res
 // getItemId('thick banded belt', (res) => console.log(res));
 // getWatches(5, (res) => console.log(res));
 
-module.exports = {addWatch, watchedItems};
+module.exports = {addWatch, watchedItems, getItemId, getWatches};
