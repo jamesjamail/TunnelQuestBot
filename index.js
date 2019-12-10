@@ -22,9 +22,10 @@ bot.on('ready', function (evt) {
     logger.info('Logged in as: ');
     logger.info(bot.username + ' - (' + bot.id + ')');
 });
+
 bot.on('message', function (user, userID, channelID, message, evt) {
-    // console.log(channelID);
-    // console.log(userID);
+    console.log(userID);
+    console.log(message);
     
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
@@ -45,7 +46,8 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !add watch <item>
             case 'add watch':
                 console.log('add watch command received.  args = ', args)
-                db.addWatch('testuser', args[0], Number(args[1]), args[2]);
+                //TODO: don't cast to number, do on db file and add check for 'k'
+                db.addWatch(userID, args[0], Number(args[1]), args[2]);
                 break;
 
             // !end watch <item>
@@ -71,6 +73,13 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 });
             break;
          }
+    }
+    else if (userID != 643497793834582017) {
+        console.log('else block')
+        bot.sendMessage({
+            to: channelID,
+            message: 'I\'d love to chat, but I\'m just a dumb bot.  Try !help'
+        });
     }     
 });
 

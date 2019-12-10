@@ -1,13 +1,24 @@
 const { Client } = require('pg');
+const moment = require('moment');
+const token = require('./auth.json');
+
+console.log(moment().utc().format())
 
 const client = new Client({
   host: 'localhost',
   port: 5432,
-  user: 'jamesjamail',
-  database: 'tunnelquestdb'
+  user: 'postgres',
+  database: 'tunnelQuest',
+  password: token.password
 })
 
-client.connect(() => console.log('connected to postgres db'));
+client.connect((err) => {
+    if (err) {
+        console.error(err);
+    } else {
+        console.log('connected to postgres db');
+    }
+})
 
 const findUserId = function(user, callback) {
     //userId to be returned
@@ -89,11 +100,12 @@ const addItem = function(item, callback) {
 
 const watchedItems = function(callback) {
     //select all names from items tables
-    let query = "SELECT name FROM items";   
+    //SELECT name, userId, from items innerjoin users-items
+    let query = "SELECT items.name FROM items";   
     client
         .query(query)
         .then((results) => {
-          callback(null, results.rows);
+          callback(results.rows);
         })
         .catch((err) => console.log(err))
 }
@@ -109,8 +121,9 @@ const getItemId = function(item, callback) {
         .catch((err) => console.log(err))
 }
 
-const getWatches = function(itemId, callback) {
-    let query = "SELECT user_id, item_id, price, server FROM watches WHERE item_id = '" + itemId + "';";
+//TODO: this function should not return duplicate items, just the item once with lowest price
+const getWatches = function(callback) {
+    let query = "SELECT items.name AS item_name, user_id, users.name AS user_name, price, server FROM items INNER JOIN watches ON watches.item_id = items.id INNER JOIN users ON watches.user_id = users.id;";
     client
         .query(query)
         .then((res) => {
@@ -134,16 +147,17 @@ const addWatch = function(user, item, price, server) {
                     console.log(err)
                 } else {
                     let myItemId = res;
-                    let datetime = 'testdatetime' //todo: make dynamic
-                    let query = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, $5)'
-                    client.query(query, [myUserId, myItemId, price, server, datetime]);
+                    let query = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)'
+                    client.query(query, [myUserId, myItemId, price, server]);
                 }
             })
         }
     });
 }
 
-// watchedItems((err, res) => console.log(res))
+
+
+
 
 //testing
 

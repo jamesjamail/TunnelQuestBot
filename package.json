@@ -20,6 +20,7 @@
   "homepage": "https://github.com/jamesjamail/tunnelQuestBot#readme",
   "dependencies": {
     "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "moment": "^2.24.0",
     "pg": "^7.12.1",
     "tail": "^2.0.3",
     "winston": "^3.2.1"
