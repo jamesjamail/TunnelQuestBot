@@ -155,6 +155,50 @@ const addWatch = function(user, item, price, server) {
     });
 }
 
+const endWatch = function(user, item, server) {
+    findUserId(user, (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            let myUserId = res;
+            findItemId(item, (err, res) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    let myItemId = res;
+                    let query = 'DELETE FROM watches where user_id = $1 AND item_id = $2 AND server = $3'
+                    client.query(query, [myUserId, myItemId, server]);
+                }
+            })
+        }
+    });
+}
+
+const showWatches = function(user, callback) {
+    findUserId(user, (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            let myUserId = res;
+            let query = 'SELECT items.name, price, server, datetime FROM watches INNER JOIN items ON items.id = item_id WHERE user_id = $1'
+            client.query(query, [myUserId])
+                .then((res) => {
+                    let watchList = '';
+                    res.rows.forEach((item) => {
+                        console.log(item.name)
+                        let singleWatch = `${item.name}, ${item.price}, ${item.server}  \n`;
+                        watchList += singleWatch;
+                    
+                    })
+                    callback(watchList)
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+        }
+    });
+}
+
 
 
 
@@ -166,4 +210,4 @@ const addWatch = function(user, item, price, server) {
 // getItemId('thick banded belt', (res) => console.log(res));
 // getWatches(5, (res) => console.log(res));
 
-module.exports = {addWatch, watchedItems, getItemId, getWatches};
+module.exports = {addWatch, endWatch, showWatches, watchedItems, getItemId, getWatches};

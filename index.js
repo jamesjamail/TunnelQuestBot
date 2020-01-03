@@ -33,7 +33,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
         var cmd = args[0];
         args = args.splice(1);
         args.forEach((elem, index, array) => array[index] = elem.trim());
-        console.log(args);
+        console.log('cmd == ', cmd);
         switch(cmd) {
             // !help
             case 'help':
@@ -53,6 +53,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !end watch <item>
             case 'end watch':
                 console.log('end watch command received.  args = ', args)
+                db.endWatch(userID, args[0], args[1]);
                 break;
                 
             // !show watch <item>
@@ -63,6 +64,11 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !show watches
             case 'show watches':
                 console.log('add watch command received.  args = ', args)
+                db.showWatches(userID, (res) => {
+                    console.log('client side:', typeof res, res)
+                    msgUser(userID, 'Here are your watches: \n' + res);
+                });
+                
                 break;
 
             //default: command not recognized...
@@ -90,4 +96,11 @@ function pingUser (seller, item, price, server) {
     })
 };
 
-module.exports = {pingUser}
+function msgUser(userID, msg) {
+    bot.sendMessage({
+        to: userID,
+        message: msg
+    })
+}
+
+module.exports = {pingUser, msgUser}
