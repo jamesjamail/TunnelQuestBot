@@ -174,6 +174,32 @@ const endWatch = function(user, item, server) {
     });
 }
 
+const showWatch = function(user, item, callback) {
+    findUserId(user, (err, res) => {
+        if (err) {
+            console.log(err);
+        } else {
+            let myUserId = res;
+            findItemId(item, (err, res) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    let myItemId = res;
+                    let query = 'SELECT items.name, price, server, datetime FROM watches INNER JOIN items ON items.id = item_id WHERE user_id = $1 AND item_id = $2'
+                    client.query(query, [myUserId, myItemId])
+                        .then((res) => {
+                            console.log('showWatch', res)
+                            callback(`${res.rows[0].name}, ${res.rows[0].price}, ${res.rows[0].server}, ${res.rows[0].datetime}`)
+                        })
+                        .catch((err) => {
+                            console.log(err);
+                        })
+                }
+            })
+        }
+    });
+}
+
 const showWatches = function(user, callback) {
     findUserId(user, (err, res) => {
         if (err) {
@@ -185,8 +211,7 @@ const showWatches = function(user, callback) {
                 .then((res) => {
                     let watchList = '';
                     res.rows.forEach((item) => {
-                        console.log(item.name)
-                        let singleWatch = `${item.name}, ${item.price}, ${item.server}  \n`;
+                        let singleWatch = `${item.name}, ${item.price}, ${item.server}, ${item.datetime}  \n`;
                         watchList += singleWatch;
                     
                     })
@@ -199,15 +224,4 @@ const showWatches = function(user, callback) {
     });
 }
 
-
-
-
-
-//testing
-
-// getItemId('thick banded belt', (res) => getWatches(res, (res) => console.log(res)));
-
-// getItemId('thick banded belt', (res) => console.log(res));
-// getWatches(5, (res) => console.log(res));
-
-module.exports = {addWatch, endWatch, showWatches, watchedItems, getItemId, getWatches};
+module.exports = {addWatch, endWatch, showWatch, showWatches, watchedItems, getItemId, getWatches};

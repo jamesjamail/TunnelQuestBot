@@ -50,22 +50,30 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 db.addWatch(userID, args[0], Number(args[1]), args[2]);
                 break;
 
-            // !end watch <item>
+            // !end watch: <item>, <server>
             case 'end watch':
                 console.log('end watch command received.  args = ', args)
                 db.endWatch(userID, args[0], args[1]);
                 break;
                 
-            // !show watch <item>
+            // !show watch: <item>
             case 'show watch':
                 console.log('show watch command received.  args = ', args)
+                if (args[0] === undefined) {
+                    db.showWatches(userID, (res) => {
+                        msgUser(userID, 'Here are your watches: \n' + res);
+                    });
+                } else {
+                    db.showWatch(userID, args[0], (res) => {
+                        msgUser(userID, 'Here is your watch: \n' + res);
+                    });
+                }
                 break;
 
             // !show watches
             case 'show watches':
                 console.log('add watch command received.  args = ', args)
                 db.showWatches(userID, (res) => {
-                    console.log('client side:', typeof res, res)
                     msgUser(userID, 'Here are your watches: \n' + res);
                 });
                 
@@ -89,9 +97,9 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     }     
 });
 
-function pingUser (seller, item, price, server) {
+function pingUser (user, seller, item, price, server) {
     bot.sendMessage({
-    to: '213474329747259401',
+    to: user,
     message: `${seller} is currently selling ${item} for ${price} on Project 1999 ${server} server`
     })
 };

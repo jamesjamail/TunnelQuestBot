@@ -36,7 +36,7 @@ function filterWTS(wordsArray) {
                     trim[1] = auction.length;
                 }
                 auction.splice(trim[0], trim[1]-trim[0]);
-                // console.log('filtred auction = ', auction)
+                console.log('filtred auction = ', auction)
                 return;
             }
         })
@@ -50,7 +50,7 @@ function parseLog(text) {
     //split words into array
     var words = auction.split(' ');
     //test if is auction
-    if (words[1] === 'auction,') {
+    if (words[1] === 'auctions,') {
         //trim single quotes
         words[2] = words[2].slice(1);
         // words[words.length - 1] = words[words.length - 1].slice(words[words.length - 1].length-1);
@@ -70,7 +70,7 @@ function parseLog(text) {
                             if (logPrice && logPrice <= price) {
                                 console.log("bam! meets price criteria", logPrice, price)
                                 var seller = words[0];
-                                let msg = {userId: user_id, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server}
+                                let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server}
                                 outgoing.push(msg)
                             }
                         }
@@ -111,7 +111,7 @@ function sendMsgs() {
     while (outgoing.length > 0) {
         let msg = outgoing.pop()
         console.log(msg)
-        client.pingUser(msg.seller, msg.itemName, msg.sellingPrice, msg.server)
+        client.pingUser(msg.userName, msg.seller, msg.itemName, msg.sellingPrice, msg.server)
     }
 }
 
