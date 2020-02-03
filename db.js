@@ -96,20 +96,6 @@ const addItem = function(item, callback) {
         })
 };
 
-
-// watchedItems is depricated?
-// const watchedItems = function(callback) {
-//     //select all names from items tables
-//     //SELECT name, userId, from items innerjoin users-items
-//     let query = "SELECT items.name FROM items";   
-//     client
-//         .query(query)
-//         .then((results) => {
-//           callback(results.rows);
-//         })
-//         .catch((err) => console.log(err))
-// }
-
 const getItemId = function(item, callback) {
     //find item id
     let query = "SELECT id FROM items WHERE name = '" + item + "';";   
@@ -134,16 +120,13 @@ const getWatches = function(callback) {
 
 const addWatch = function(user, item, price, server) {    
     //check for 'k' and cast price to number
-    let numPrice = price.match(/[0-9]*/gm);
+    let numPrice = price.match(/[0-9.]*/gm);
     numPrice = Number(numPrice[0])
     if (price.includes('K')) {
         numPrice *= 1000;
     }
     console.log('numPrice = ', numPrice)
     
-    //insert new watch
-    //TODO: check if a watch exists before adding
-    //if userid and itemid already exist in table, need to update existing entry
     findUserId(user, (err, res) => {
         if (err) {
             console.log(err);
@@ -154,8 +137,19 @@ const addWatch = function(user, item, price, server) {
                     console.log(err)
                 } else {
                     let myItemId = res;
-                    let query = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)'
-                    client.query(query, [myUserId, myItemId, numPrice, server]);
+                    let query = 'SELECT * from watches WHERE user_id = $1 AND item_id = $2 AND server = $3';
+                    client.query(query, [myUserId, myItemId, server])
+                    .then((results) => {
+                        if (results.rows.length > 0){
+                            let query = 'UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4';
+                            client.query(query, [myUserId, myItemId, numPrice, server])
+                            .catch((err) => console.log(err))
+                        } else {
+                            let query = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)';
+                            client.query(query, [myUserId, myItemId, numPrice, server])
+                            .catch((err) => console.log(err))
+                        }
+                    })
                 }
             })
         }

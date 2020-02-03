@@ -47,6 +47,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             case 'ADD WATCH':
                 console.log('add watch command received.  args = ', args)
                 db.addWatch(userID, args[0], args[1], args[2]);
+                msgUser(userID, `Got it! Now watching auctions for ${args[0]} at ${args[1]}pp or less on P1999 ${args[2]} server.`)
                 break;
 
             // !end watch: <item>, <server>

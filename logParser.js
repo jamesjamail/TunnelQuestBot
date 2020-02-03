@@ -84,8 +84,6 @@ function parseLog(text, logServer) {
     sendMsgs();
 }
 
-
-//TODO: handle 3.6k listings
 function parsePrice(text, start) {
     let price = '';
     // let xMult = false; TODO: add flag in message that multiple are available
