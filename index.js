@@ -29,14 +29,14 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
-        var args = message.toLowerCase().substring(1).split(/,|:/);
+        var args = message.toUpperCase().substring(1).split(/,|:/);
         var cmd = args[0];
         args = args.splice(1);
         args.forEach((elem, index, array) => array[index] = elem.trim());
         console.log('cmd == ', cmd);
         switch(cmd) {
             // !help
-            case 'help':
+            case 'HELP':
                 bot.sendMessage({
                     to: channelID,
                     message: 'Thanks for using TunnelQuestBot! ' + helpMsg
@@ -44,20 +44,19 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 break;
 
             // !add watch <item>
-            case 'add watch':
+            case 'ADD WATCH':
                 console.log('add watch command received.  args = ', args)
-                //TODO: don't cast to number, do on db file and add check for 'k'
-                db.addWatch(userID, args[0], Number(args[1]), args[2]);
+                db.addWatch(userID, args[0], args[1], args[2]);
                 break;
 
             // !end watch: <item>, <server>
-            case 'end watch':
+            case 'END WATCH':
                 console.log('end watch command received.  args = ', args)
                 db.endWatch(userID, args[0], args[1]);
                 break;
                 
             // !show watch: <item>
-            case 'show watch':
+            case 'SHOW WATCH':
                 console.log('show watch command received.  args = ', args)
                 if (args[0] === undefined) {
                     db.showWatches(userID, (res) => {
@@ -71,7 +70,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 break;
 
             // !show watches
-            case 'show watches':
+            case 'SHOW WATCHES':
                 console.log('add watch command received.  args = ', args)
                 db.showWatches(userID, (res) => {
                     msgUser(userID, 'Here are your watches: \n' + res);
@@ -88,7 +87,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             break;
          }
     }
-    else if (userID != 643497793834582017) {
+    else if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
         console.log('else block')
         bot.sendMessage({
             to: channelID,
@@ -97,10 +96,22 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     }     
 });
 
-function pingUser (user, seller, item, price, server) {
+function pingUser (user, seller, item, price, server, fullAuction) {
     bot.sendMessage({
-    to: user,
-    message: `${seller} is currently selling ${item} for ${price} on Project 1999 ${server} server`
+        to: user,
+        message: `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`
+    })
+};
+
+function streamAuction (msg, server) {
+    let channelID;
+
+    if (server === "GREEN") {
+        channelID = 672512233435168784n;
+    }
+    bot.sendMessage({
+        to: channelID,
+        message: msg
     })
 };
 
@@ -111,4 +122,4 @@ function msgUser(userID, msg) {
     })
 }
 
-module.exports = {pingUser, msgUser}
+module.exports = {pingUser, msgUser, streamAuction}

@@ -2,8 +2,6 @@ const { Client } = require('pg');
 const moment = require('moment');
 const token = require('./auth.json');
 
-console.log(moment().utc().format())
-
 const client = new Client({
   host: 'localhost',
   port: 5432,
@@ -98,17 +96,19 @@ const addItem = function(item, callback) {
         })
 };
 
-const watchedItems = function(callback) {
-    //select all names from items tables
-    //SELECT name, userId, from items innerjoin users-items
-    let query = "SELECT items.name FROM items";   
-    client
-        .query(query)
-        .then((results) => {
-          callback(results.rows);
-        })
-        .catch((err) => console.log(err))
-}
+
+// watchedItems is depricated?
+// const watchedItems = function(callback) {
+//     //select all names from items tables
+//     //SELECT name, userId, from items innerjoin users-items
+//     let query = "SELECT items.name FROM items";   
+//     client
+//         .query(query)
+//         .then((results) => {
+//           callback(results.rows);
+//         })
+//         .catch((err) => console.log(err))
+// }
 
 const getItemId = function(item, callback) {
     //find item id
@@ -132,11 +132,18 @@ const getWatches = function(callback) {
         .catch((err) => console.log(err))
 }
 
-const addWatch = function(user, item, price, server) {
-    //TODO: check if a watch exists before adding
-    //if userid and itemid already exist in table, need to update existing entry
+const addWatch = function(user, item, price, server) {    
+    //check for 'k' and cast price to number
+    let numPrice = price.match(/[0-9]*/gm);
+    numPrice = Number(numPrice[0])
+    if (price.includes('K')) {
+        numPrice *= 1000;
+    }
+    console.log('numPrice = ', numPrice)
     
     //insert new watch
+    //TODO: check if a watch exists before adding
+    //if userid and itemid already exist in table, need to update existing entry
     findUserId(user, (err, res) => {
         if (err) {
             console.log(err);
@@ -148,7 +155,7 @@ const addWatch = function(user, item, price, server) {
                 } else {
                     let myItemId = res;
                     let query = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)'
-                    client.query(query, [myUserId, myItemId, price, server]);
+                    client.query(query, [myUserId, myItemId, numPrice, server]);
                 }
             })
         }
@@ -224,4 +231,15 @@ const showWatches = function(user, callback) {
     });
 }
 
-module.exports = {addWatch, endWatch, showWatch, showWatches, watchedItems, getItemId, getWatches};
+const upkeep = function() {
+    let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'"
+            client.query(query)
+                .then((res) => {
+                    console.log('Upkeep completed. Removed ', res.rowCount, ' old watches.')
+                })
+                .catch((err) => {
+                    console.log(err);
+                })
+}
+
+module.exports = {addWatch, endWatch, showWatch, showWatches, getItemId, getWatches, upkeep};
