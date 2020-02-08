@@ -1,7 +1,7 @@
 const Discord = require('discord.io');
 const logger = require('winston');
 const auth = require('./auth.json');
-const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <min price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)'
+const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)'
 const db = require('./db.js');
 
 // logger settings
@@ -24,7 +24,9 @@ bot.on('ready', function (evt) {
 });
 
 bot.on('message', function (user, userID, channelID, message, evt) {
-    console.log(user, ":", message);
+    if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
+        console.log(user, ":", message);
+    }
     
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
@@ -44,8 +46,14 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !add watch <item>
             case 'ADD WATCH':
                 console.log('add watch command received.  args = ', args)
-                if (args[2].toUpperCase() === 'BLUE') {
+                if (args[0] === undefined || args[1] === undefined || args[2] === undefined) {
+                    msgUser(userID, `Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
+                }
+                else if (args[2].toUpperCase() === 'BLUE') {
                     msgUser(userID, `Sorry, due to IP Restrictions TunnelQuest is currently only watching P1999 Green Server.`)
+                }  
+                else if (args[2].toUpperCase() !== 'GREEN') {
+                    msgUser(userID, `Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
                 } else {
                     db.addWatch(userID, args[0], args[1], args[2]);
                     msgUser(userID, `Got it! Now watching auctions for ${args[0]} at ${args[1]}pp or less on P1999 ${args[2]} server.`)
@@ -55,7 +63,11 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !end watch: <item>, <server>
             case 'END WATCH':
                 console.log('end watch command received.  args = ', args)
-                db.endWatch(userID, args[0], args[1]);
+                if (args[0] === undefined || args[1] === undefined) {
+                    msgUser(userID, 'Please specify both item and server to end a watch, or use "!end all watches" to end all watches.')
+                } else {
+                    db.endWatch(userID, args[0], args[1]);
+                }
                 break;
                 
             // !show watch: <item>

@@ -99,7 +99,6 @@ const addWatch = function(user, item, price, server) {
             let queryStr = 'UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4';
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
-                console.log(results.rowCount)
                 if (results.rowCount === 0) {
                     let queryStr = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)';
                     connection.query(queryStr, [userId, itemId, numPrice, server])
