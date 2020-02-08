@@ -30,7 +30,6 @@ setInterval(() => {
 
 //remove any WTB sections from seller message
 function filterWTS(wordsArray) {
-    console.log(wordsArray);
     if (!wordsArray.includes('WTB')) {
         //base case, no wtb in msg
         return wordsArray
@@ -71,7 +70,7 @@ function parseLog(text, logServer) {
                         let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
                         logPrice = parsePrice(filteredAuction, item_name.length);
                         if (logPrice && logPrice <= price) {
-                            console.log("bam! meets price criteria", logPrice, price)
+                            console.log("Meets price criteria", logPrice, price)
                             var seller = words[0];
                             let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
                             outgoing.push(msg)

@@ -30,7 +30,7 @@ const findOrAddUser = function(user) {
                 //IF USERNAME does not exist...
                 if (results.rows.length === 0) {
                     let queryStr = "INSERT INTO users (name) VALUES ($1) RETURNING id";
-                    connection.query(queryStr, [name], (err, res) => {
+                    connection.query(queryStr, [user], (err, results) => {
                         if (err) {
                             reject(err);
                         }  else {
@@ -62,12 +62,10 @@ const findOrAddItem = function(item) {
                         if (err) {
                             reject(err);
                         }  else {
-                            console.log("line 64 res", results.rows[0])
                             resolve(results.rows[0].id);
                         }
                     })
                 } else {
-                    console.log("line 69 res", results.rows[0].id)
                     resolve(results.rows[0].id);
                 }
             }
@@ -99,7 +97,6 @@ const addWatch = function(user, item, price, server) {
         .then((results) => {
             let itemId = results;
             let queryStr = 'UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4';
-            console.log("add watch query", queryStr)
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
                 console.log(results.rowCount)
