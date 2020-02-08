@@ -24,8 +24,7 @@ bot.on('ready', function (evt) {
 });
 
 bot.on('message', function (user, userID, channelID, message, evt) {
-    console.log(userID);
-    console.log(message);
+    console.log(user, ":", message);
     
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
@@ -33,7 +32,6 @@ bot.on('message', function (user, userID, channelID, message, evt) {
         var cmd = args[0];
         args = args.splice(1);
         args.forEach((elem, index, array) => array[index] = elem.trim());
-        console.log('cmd == ', cmd);
         switch(cmd) {
             // !help
             case 'HELP':
@@ -59,24 +57,45 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !show watch: <item>
             case 'SHOW WATCH':
                 console.log('show watch command received.  args = ', args)
-                if (args[0] === undefined) {
+                if (args[0] === "" || args[0] === undefined) {
                     db.showWatches(userID, (res) => {
-                        msgUser(userID, 'Here are your watches: \n' + res);
+                        console.log("CLIENT SIDE RES =  ", res)
+                        if (res.success) {
+                            msgUser(userID, 'Here are your watches: \n' + res.msg);
+                        }  else {
+                            msgUser(userID, `You don\'t have any watches.`);
+                        }
+
+                        
                     });
                 } else {
                     db.showWatch(userID, args[0], (res) => {
-                        msgUser(userID, 'Here is your watch: \n' + res);
+                        console.log("CLIENT SIDE RES =  ", res)
+                        if (res.success) {
+                            msgUser(userID, 'Here is your watch: \n' + res.msg);
+                        }  else {
+                            msgUser(userID, `You don\'t have any watches for ${args[0]}.`);
+                        }
                     });
                 }
                 break;
 
             // !show watches
             case 'SHOW WATCHES':
-                console.log('add watch command received.  args = ', args)
+                console.log('show watches command received.  args = ', args)
                 db.showWatches(userID, (res) => {
-                    msgUser(userID, 'Here are your watches: \n' + res);
+                    if (res.success) {
+                        msgUser(userID, 'Here are your watches: \n' + res.msg);
+                    }  else {
+                        msgUser(userID, `You don\'t have any watches.`);
+                    }
                 });
-                
+                break;
+
+            case 'END ALL WATCHES':
+                console.log('end all watches command received.  args = ', args)
+                db.endAllWatches(userID);
+                msgUser(userID, 'All watches succesfully ended.');
                 break;
 
             //default: command not recognized...
@@ -89,13 +108,19 @@ bot.on('message', function (user, userID, channelID, message, evt) {
          }
     }
     else if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
-        console.log('else block')
         bot.sendMessage({
             to: channelID,
             message: 'I\'d love to chat, but I\'m just a dumb bot.  Try !help'
         });
     }     
 });
+
+function msgUser(userID, msg) {
+    bot.sendMessage({
+        to: userID,
+        message: msg
+    })
+}
 
 function pingUser (user, seller, item, price, server, fullAuction) {
     bot.sendMessage({
@@ -115,12 +140,5 @@ function streamAuction (msg, server) {
         message: msg
     })
 };
-
-function msgUser(userID, msg) {
-    bot.sendMessage({
-        to: userID,
-        message: msg
-    })
-}
 
 module.exports = {pingUser, msgUser, streamAuction}

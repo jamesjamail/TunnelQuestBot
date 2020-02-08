@@ -1,6 +1,6 @@
 const Tail = require('tail').Tail;
 const db = require('./db.js');
-const client = require('./index.js');
+const client = require('./client.js');
 
 //stream log file(s)
 
