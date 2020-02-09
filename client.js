@@ -38,7 +38,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !help
             case 'HELP':
                 bot.sendMessage({
-                    to: userId,
+                    to: userID,
                     message: 'Thanks for using TunnelQuestBot! ' + helpMsg
                 });
                 break;
