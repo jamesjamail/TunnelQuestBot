@@ -85,11 +85,18 @@ const getWatches = function(callback) {
 
 const addWatch = function(user, item, price, server) {    
     //check for 'k' and cast price to number
-    let numPrice = price.match(/[0-9.]*/gm);
-    numPrice = Number(numPrice[0])
-    if (price.includes('K')) {
-        numPrice *= 1000;
+    console.log('price = ', price)
+    let numPrice;
+    if (price != -1) {
+        numPrice = price.match(/[0-9.]*/gm);
+        numPrice = Number(numPrice[0])
+        if (price.includes('K')) {
+            numPrice *= 1000;
+        }
+    } else {
+        numPrice = -1;
     }
+    
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
@@ -97,10 +104,12 @@ const addWatch = function(user, item, price, server) {
         .then((results) => {
             let itemId = results;
             let queryStr = 'UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4';
+            console.log(queryStr)
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
                 if (results.rowCount === 0) {
                     let queryStr = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)';
+                    console.log(queryStr)
                     connection.query(queryStr, [userId, itemId, numPrice, server])
                 }
             })

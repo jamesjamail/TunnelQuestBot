@@ -46,8 +46,13 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !add watch <item>
             case 'ADD WATCH':
                 console.log('add watch command received.  args = ', args)
-                if (args[0] === undefined || args[1] === undefined || args[2] === undefined) {
+                if (args[0] === undefined || args[1] === undefined) {
                     msgUser(userID, `Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
+                } else if (args[2] === undefined && args[1].toUpperCase().includes('GREEN') || args[2] === undefined && args[1].toUpperCase().includes('BLUE')) {
+                    msgUser(userID, `Got it! Now watching auctions for ${args[0]} at any price on P1999 ${args[1]} server.`)
+                    args[2] = args[1];
+                    args[1] = -1;
+                    db.addWatch(userID, args[0], args[1], args[2]);
                 }
                 else if (args[2].toUpperCase() === 'BLUE') {
                     msgUser(userID, `Sorry, due to IP Restrictions TunnelQuest is currently only watching P1999 Green Server.`)
@@ -137,10 +142,17 @@ function msgUser(userID, msg) {
 }
 
 function pingUser (user, seller, item, price, server, fullAuction) {
-    bot.sendMessage({
-        to: user,
-        message: `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`
-    })
+    if (price === null) {
+        bot.sendMessage({
+            to: user,
+            message: `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`
+        })
+    } else {
+        bot.sendMessage({
+            to: user,
+            message: `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`
+        })
+    }
 };
 
 function streamAuction (msg, server) {

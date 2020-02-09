@@ -68,8 +68,14 @@ function parseLog(text, logServer) {
                 if (server === logServer && auction.includes(item_name)) {
                         console.log('match found: ', item_name, user_id, user_name,  price, server);
                         let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
-                        logPrice = parsePrice(filteredAuction, item_name.length);
-                        if (logPrice && logPrice <= price) {
+                        let logPrice = parsePrice(filteredAuction, item_name.length);
+                        if (price === -1 && logPrice === null) {
+                            console.log("match found - no price requirement", logPrice, price)
+                            var seller = words[0];
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
+                            outgoing.push(msg)
+                        }
+                        else if (logPrice && logPrice <= price || price === -1) {
                             console.log("Meets price criteria", logPrice, price)
                             var seller = words[0];
                             let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
