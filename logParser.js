@@ -132,3 +132,5 @@ function sendMsgs() {
         client.pingUser(msg.userName, msg.seller, msg.itemName, msg.sellingPrice, msg.server, msg.fullAuction)
     }
 }
+
+module.exports = {parsePrice};
