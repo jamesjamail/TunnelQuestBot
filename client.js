@@ -1,7 +1,7 @@
 const Discord = require('discord.io');
 const logger = require('winston');
 const auth = require('./auth.json');
-const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)'
+const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days.  Price can be omitted if you wish to receive an alert at any price point)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)'
 const db = require('./db.js');
 
 // logger settings
@@ -30,10 +30,11 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
-        var args = message.toUpperCase().substring(1).split(/,|:/);
-        var cmd = args[0];
-        args = args.splice(1);
-        args.forEach((elem, index, array) => array[index] = elem.trim());
+        let colIndex = message.indexOf(':');
+        let cmd = message.substring(1, colIndex).toUpperCase();
+        let args = message.substring(colIndex+1).toUpperCase().split(',');
+
+        args.forEach((elem, index, array) => array[index] = elem.trim().replace(/[<>"\{\}\[\]]/g, ''));
         switch(cmd) {
             // !help
             case 'HELP':
@@ -120,7 +121,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             //default: command not recognized...
             default: 
                 bot.sendMessage({
-                    to: channelID,
+                    to: userID,
                     message: 'Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg
                 });
             break;
@@ -128,7 +129,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     }
     else if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
         bot.sendMessage({
-            to: channelID,
+            to: userID,
             message: 'I\'d love to chat, but I\'m just a dumb bot.  Try !help'
         });
     }     
