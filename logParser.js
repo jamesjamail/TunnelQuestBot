@@ -104,7 +104,7 @@ function parsePrice(text, start) {
         }   else if (text[i].match(/[xX]/) && text[i+1] !== undefined && text[i+1].match(/[0-9]/)) {
             price = '';
             let k = i+2
-            while (text[k].match(/[0-9]/)) {
+            while (text[k].match(/[0-9.]/)) {
                 k++;
             }
             i = k;
@@ -117,7 +117,7 @@ function parsePrice(text, start) {
                 return Number(price);
             }
             //otherwise if text is a number, add it to price string
-        } else if (text[i].match(/[0-9]/)) {
+        } else if (text[i].match(/[0-9.]/)) {
             price += text[i];
         }
     }
@@ -133,4 +133,4 @@ function sendMsgs() {
     }
 }
 
-module.exports = {parsePrice};
+module.exports = {parseLog, parsePrice};
