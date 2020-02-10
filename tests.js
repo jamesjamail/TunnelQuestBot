@@ -1,34 +1,59 @@
-const Tail = require('tail').Tail;
-const db = require('./db.js');
-const client = require('./client.js');
-
-//stream log file(s)
-
-tail = new Tail ("C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt")
-
-var outgoing = [];
-
-tail.on("line", function(data) {
-    parseLog(data, 'GREEN');
-    
-})
-tail.on("error", function(error) {
-    console.log('ERROR: ', error)
-})
+// const logParser = require('./logParser');
 
 
-let pullInterval = 1 * (1000 * 60)
 
-let itemList = [];
+testStr = "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure 7k ..Spell: Paralyzing Earth1k ..Spell: Blanket of Forgetfulness1.2k...Spell: Shiftless Deeds...5k ...Spell: Tepid Deeds40p"
 
-setInterval(() => {
-    db.upkeep();
-    db.getWatches((results) => {
-        itemList = results;
-    })
-}, pullInterval)
+//items.name AS item_name, user_id, users.name AS user_name, price, server
+let itemList = [{item_name: 'SHIFTLESS DEEDS', user_id: '1234', user_name: 'testuser', price: 2000, server: 'GREEN'}];
 
-//remove any WTB sections from seller message
+parseLog(testStr, 'GREEN');
+
+
+
+
+function parseLog(text, logServer) {
+    console.log(text);
+    //trim timestamp
+    var auction = text.toUpperCase().slice(text.indexOf(']') + 2, text.length);
+    //split words into array
+    var words = auction.split(' ');
+    // console.log(words);
+    //test if is auction
+    if (words[1] === 'AUCTIONS,') {
+        // client.streamAuction(text.replace('||', '|'), "GREEN");
+        //trim single quotes
+        words[2] = words[2].slice(1);
+        words = filterWTS(words);
+        auction = words.join(' ');
+        if (words.length > 2) {
+            itemList.forEach(({item_name, user_id, user_name, price, server}) => {
+                if (server === logServer && auction.includes(item_name)) {
+                        console.log('match found: ', item_name, user_id, user_name, price, server);
+                        let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
+                        console.log("filtered auction = ", filteredAuction)
+                        let logPrice = parsePrice(filteredAuction, item_name.length);
+                        if (price === -1 && logPrice === null) {
+                            console.log("match found - no price requirement", logPrice, price)
+                            var seller = words[0];
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
+                            outgoing.push(msg)
+                        }
+                        else if (logPrice && logPrice <= price || price === -1) {
+                            console.log("Meets price criteria", logPrice, price)
+                            var seller = words[0];
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
+                            // outgoing.push(msg)
+                            console.log(msg);
+                        }
+                    }
+                }
+            ) 
+        }
+    }
+    // sendMsgs();
+}
+
 function filterWTS(wordsArray) {
     if (!wordsArray.includes('WTB')) {
         //base case, no wtb in msg
@@ -51,50 +76,14 @@ function filterWTS(wordsArray) {
     }
 }
 
-function parseLog(text, logServer) {
-    //trim timestamp
-    var auction = text.toUpperCase().slice(text.indexOf(']') + 2, text.length);
-    //split words into array
-    var words = auction.split(' ');
-    //test if is auction
-    if (words[1] === 'AUCTIONS,') {
-        client.streamAuction(text.replace('||', '|'), "GREEN");
-        //trim single quotes
-        words[2] = words[2].slice(1);
-        words = filterWTS(words);
-        auction = words.join(' ');
-        if (words.length > 2) {
-            itemList.forEach(({item_name, user_id, user_name, price, server}) => {
-                if (server === logServer && auction.includes(item_name)) {
-                        console.log('match found: ', item_name, user_id, user_name,  price, server);
-                        let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
-                        let logPrice = parsePrice(filteredAuction, item_name.length);
-                        if (price === -1 && logPrice === null) {
-                            console.log("match found - no price requirement", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
-                            outgoing.push(msg)
-                        }
-                        else if (logPrice && logPrice <= price || price === -1) {
-                            console.log("Meets price criteria", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
-                            outgoing.push(msg)
-                        }
-                    }
-                }
-            ) 
-        }
-    }
-    sendMsgs();
-}
-
 function parsePrice(text, start) {
+    // console.log("price text = ", text, "start = ", start, text.substring(start))
     let price = '';
     // let xMult = false; TODO: add flag in message that multiple are available
     for (let i = start; i < text.length; i++) {
         //if text is a k preceded by number
         if (text[i] === ('K') && price.length > 0){
+            console.log("parsePrice price = ", Number(price) * 1000)
             return Number(price) * 1000;
         
             //if text is a x preceded by a number(s)
@@ -112,8 +101,10 @@ function parsePrice(text, start) {
             //if text is a letter, the next item is being listed- return price
             else if (text[i].match(/[A-Z]/)) {
             if (price.length === 0) {
+                console.log("parsePrice price = ", price)
                 return null;
             } else {
+                console.log("parsePrice price = ", price)
                 return Number(price);
             }
             //otherwise if text is a number, add it to price string
@@ -121,16 +112,6 @@ function parsePrice(text, start) {
             price += text[i];
         }
     }
+    console.log("parsePrice price = ", price)
     return Number(price);
 }
-
-
-function sendMsgs() {
-    while (outgoing.length > 0) {
-        let msg = outgoing.pop()
-        console.log(msg)
-        client.pingUser(msg.userName, msg.seller, msg.itemName, msg.sellingPrice, msg.server, msg.fullAuction)
-    }
-}
-
-module.exports = {parseLog, parsePrice};

@@ -31,10 +31,16 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     // listen for messages that will start with `!`
     if (message.substring(0, 1) == '!') {
         let colIndex = message.indexOf(':');
-        let cmd = message.substring(1, colIndex).toUpperCase();
-        let args = message.substring(colIndex+1).toUpperCase().split(',');
+        let cmd;
+        let args;
+        if (colIndex === -1) {
+            cmd = message.substring(1).toUpperCase().trim();
+        } else {
+            cmd = message.substring(1, colIndex).toUpperCase();
+            args = message.substring(colIndex+1).toUpperCase().split(',');
+            args.forEach((elem, index, array) => array[index] = elem.trim().replace(/[<>"\{\}\[\]]/g, ''));
+        }
 
-        args.forEach((elem, index, array) => array[index] = elem.trim().replace(/[<>"\{\}\[\]]/g, ''));
         switch(cmd) {
             // !help
             case 'HELP':
