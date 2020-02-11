@@ -189,6 +189,11 @@ const showWatches = function(user, callback) {
     })
 }
 
+const extendAllWatches = function (user) {
+    let  queryStr = 'UPDATE watches SET datetime = current_timestamp FROM users WHERE watches.user_id = users.id AND users.name = $1 ';
+    connection.query(queryStr, [user])
+}
+
 const upkeep = function() {
     let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'"
             connection.query(query)
@@ -200,4 +205,4 @@ const upkeep = function() {
                 })
 }
 
-module.exports = {addWatch, endWatch, endAllWatches, showWatch, showWatches, getWatches, upkeep};
+module.exports = {addWatch, endWatch, endAllWatches, extendAllWatches, showWatch, showWatches, getWatches, upkeep};
