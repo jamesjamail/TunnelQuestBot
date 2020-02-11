@@ -86,7 +86,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !show watch: <item>
             case 'SHOW WATCH':
                 console.log('show watch command received.  args = ', args)
-                if (args[0] === "" || args[0] === undefined) {
+                if (args === undefined || args[0] === "") {
                     db.showWatches(userID, (res) => {
                         if (res.success) {
                             msgUser(userID, 'Here are your watches: \n' + res.msg);
