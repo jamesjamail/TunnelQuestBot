@@ -124,6 +124,12 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 msgUser(userID, 'All watches succesfully ended.');
                 break;
 
+            case 'EXTEND ALL WATCHES':
+                console.log('extend all watches command received.  args = ', args)
+                db.extendAllWatches(userID);
+                msgUser(userID, 'All watches succesfully extended for another 7 days.');
+                break;
+
             //default: command not recognized...
             default: 
                 bot.sendMessage({
