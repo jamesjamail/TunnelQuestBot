@@ -25,7 +25,7 @@ bot.on('ready', function (evt) {
 
 bot.on('message', function (user, userID, channelID, message, evt) {
     console.log(user, userID, channelID, message)
-    if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
+    if (userID !== '643497793834582017' && channelID !== '673793154729771028') {
         console.log(user, ":", message);
     }
     
@@ -140,7 +140,8 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             break;
          }
     }
-    else if (user !== 'TunnelQuestBot' && channelID !== 673793154729771028) {
+    else if (user !== 'TunnelQuestBot' && channelID !== '673793154729771028' && channelID !== '675891646235279386' && channelID !== '673793154729771028' && channelID !== '673791839492505621') {
+        console.log(typeof channelID)
         bot.sendMessage({
             to: userID,
             message: 'I\'d love to chat, but I\'m just a dumb bot.  Try !help'
@@ -173,7 +174,7 @@ function streamAuction (msg, server) {
     let channelID;
 
     if (server === "GREEN") {
-        channelID = 672512233435168784n;
+        channelID = "672512233435168784";
     }
     bot.sendMessage({
         to: channelID,
