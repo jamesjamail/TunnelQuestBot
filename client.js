@@ -139,7 +139,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             break;
          }
     }
-    else if (!userID === 643497793834582017n || channelID === 673793154729771028n) {
+    else if (userID !== 643497793834582017n || channelID !== 673793154729771028n) {
         bot.sendMessage({
             to: userID,
             message: 'I\'d love to chat, but I\'m just a dumb bot.  Try !help'
