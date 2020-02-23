@@ -1,7 +1,7 @@
 const Discord = require('discord.io');
 const logger = require('winston');
 const auth = require('./auth.json');
-const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - wathces expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
+const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - watches expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
 const db = require('./db.js');
 
 // logger settings
@@ -62,7 +62,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                     args[1] = -1;
                     db.addWatch(userID, args[0], args[1], args[2]);
                 }
-                else if (args[2].toUpperCase() === 'BLUE') {
+                else if (args[2] !== undefined && args[2].toUpperCase() === 'BLUE') {
                     msgUser(userID, `Sorry, due to IP Restrictions TunnelQuest is currently only watching P1999 Green Server.`)
                 }  
                 else if (args[2].toUpperCase() !== 'GREEN') {
@@ -76,7 +76,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
             // !end watch: <item>, <server>
             case 'END WATCH':
                 console.log('end watch command received.  args = ', args)
-                if (args[0] === undefined || args[1] === undefined) {
+                if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     msgUser(userID, 'Please specify both item and server to end a watch, or use "!end all watches" to end all watches.')
                 } else {
                     db.endWatch(userID, args[0], args[1]);
