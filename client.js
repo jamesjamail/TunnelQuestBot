@@ -62,10 +62,10 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                     args[1] = -1;
                     db.addWatch(userID, args[0], args[1], args[2]);
                 }
-                else if (args[2] !== undefined && args[2].toUpperCase() === 'BLUE') {
+                else if (args[2] !== undefined && args[2] !== undefined && args[2].toUpperCase() === 'BLUE') {
                     msgUser(userID, `Sorry, due to IP Restrictions TunnelQuest is currently only watching P1999 Green Server.`)
                 }  
-                else if (args[2].toUpperCase() !== 'GREEN') {
+                else if (args[2] !== undefined && args[2].toUpperCase() !== 'GREEN') {
                     msgUser(userID, `Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
                 } else {
                     db.addWatch(userID, args[0], args[1], args[2]);
