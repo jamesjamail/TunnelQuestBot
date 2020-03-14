@@ -48,30 +48,36 @@ const findOrAddUser = function(user) {
 
 
 const findOrAddItem = function(item) {
+    console.log('findoradditem called', item)
     return new Promise((resolve, reject) => {
         //SELECT user ID based on ITEMNAME
-        let queryStr = "SELECT id FROM items WHERE name = '" + item + "'"; 
-        connection.query(queryStr, (err, results) => {
-            if (err) {
-                reject(err);
+        // let item = rawItem.replace(/\'/g, "''")
+        let queryStr = "SELECT id FROM items WHERE name = $1";
+        console.log('findoradditem queryStr', queryStr)
+        connection.query(queryStr, [item])
+        .then((results) => {
+            if (results.rows.length === 0) {
+                console.log('findoradditem, item does not exist, item = ', item)
+                let queryStr = "INSERT INTO items (name) VALUES ($1) RETURNING id";
+                connection.query(queryStr, [item], (err, results) => {
+                    
+                    if (err) {
+                        reject(err);
+                    }  else {
+                        resolve(results.rows[0].id);
+                    }
+                })
             } else {
-                //IF USERNAME does not exists...
-                if (results.rows.length === 0) {
-                    let queryStr = "INSERT INTO items (name) VALUES ($1) RETURNING id";
-                    connection.query(queryStr, [item], (err, results) => {
-                        if (err) {
-                            reject(err);
-                        }  else {
-                            resolve(results.rows[0].id);
-                        }
-                    })
-                } else {
-                    resolve(results.rows[0].id);
-                }
+                resolve(results.rows[0].id);
             }
         })
+        .catch((err) => {
+            console.log(err)
+        })
+    
     })
 }
+
 
 //TODO: this function should not return duplicate items, just the item once with lowest price
 const getWatches = function(callback) {
@@ -83,9 +89,11 @@ const getWatches = function(callback) {
     .catch((err) => console.log(err))
 }
 
-const addWatch = function(user, item, price, server) {    
+const addWatch = function(user, item, price, server) {
+    // let item = unsanitizedItem.replace(/\'/g, "''")
+
     //check for 'k' and cast price to number
-    console.log('price = ', price)
+    // console.log('ADD WATCH DB', unsanitizedItem, item)
     let numPrice;
     if (price != -1) {
         numPrice = price.match(/[0-9.]*/gm);
@@ -103,12 +111,12 @@ const addWatch = function(user, item, price, server) {
         findOrAddItem(item)
         .then((results) => {
             let itemId = results;
-            let queryStr = 'UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4';
+            let queryStr = `UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4`;
             console.log(queryStr)
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
                 if (results.rowCount === 0) {
-                    let queryStr = 'INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)';
+                    let queryStr = `INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)`;
                     console.log(queryStr)
                     connection.query(queryStr, [userId, itemId, numPrice, server])
                 }
@@ -121,6 +129,8 @@ const addWatch = function(user, item, price, server) {
 };
 
 const endWatch = function(user, item, server) {
+    // let item = unsanitizedItem.replace(/\'/g, "''");
+
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
@@ -143,6 +153,9 @@ const endAllWatches = function(user) {
 }
 
 const showWatch = function(user, item, callback) {
+    console.log('db.showWatch item = ', item)
+    // let item = unsanitizedItem.replace(/\'/g, "''");
+
     findOrAddUser(user)
     .then((results) => {
         let userId = results;

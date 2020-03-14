@@ -58,7 +58,7 @@ function parseLog(text, logServer) {
     var words = auction.split(' ');
     //test if is auction
     if (words[1] === 'AUCTIONS,') {
-        client.streamAuction(text.replace('||', '|'), "GREEN");
+        client.streamAuction(text.replace(/[|]+/g, '|'), "GREEN");
         //trim single quotes
         words[2] = words[2].slice(1);
         words = filterWTS(words);
