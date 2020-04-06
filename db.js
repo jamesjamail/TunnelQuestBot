@@ -48,16 +48,16 @@ const findOrAddUser = function(user) {
 
 
 const findOrAddItem = function(item) {
-    console.log('findoradditem called', item)
+    // console.log('findoradditem called', item)
     return new Promise((resolve, reject) => {
         //SELECT user ID based on ITEMNAME
         // let item = rawItem.replace(/\'/g, "''")
         let queryStr = "SELECT id FROM items WHERE name = $1";
-        console.log('findoradditem queryStr', queryStr)
+        // console.log('findoradditem queryStr', queryStr)
         connection.query(queryStr, [item])
         .then((results) => {
             if (results.rows.length === 0) {
-                console.log('findoradditem, item does not exist, item = ', item)
+                // console.log('findoradditem, item does not exist, item = ', item)
                 let queryStr = "INSERT INTO items (name) VALUES ($1) RETURNING id";
                 connection.query(queryStr, [item], (err, results) => {
                     
@@ -112,12 +112,12 @@ const addWatch = function(user, item, price, server) {
         .then((results) => {
             let itemId = results;
             let queryStr = `UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4`;
-            console.log(queryStr)
+            // console.log(queryStr)
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
                 if (results.rowCount === 0) {
                     let queryStr = `INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)`;
-                    console.log(queryStr)
+                    // console.log(queryStr)
                     connection.query(queryStr, [userId, itemId, numPrice, server])
                 }
             })
@@ -153,7 +153,7 @@ const endAllWatches = function(user) {
 }
 
 const showWatch = function(user, item, callback) {
-    console.log('db.showWatch item = ', item)
+    // console.log('db.showWatch item = ', item)
     // let item = unsanitizedItem.replace(/\'/g, "''");
 
     findOrAddUser(user)
@@ -211,7 +211,7 @@ const upkeep = function() {
     let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'"
             connection.query(query)
                 .then((res) => {
-                    console.log('Upkeep completed. Removed ', res.rowCount, ' old watches.')
+                    // console.log('Upkeep completed. Removed ', res.rowCount, ' old watches.')
                 })
                 .catch((err) => {
                     console.log(err);

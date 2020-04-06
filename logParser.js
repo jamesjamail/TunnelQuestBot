@@ -10,8 +10,8 @@ var outgoing = [];
 
 tail.on("line", function(data) {
     parseLog(data, 'GREEN');
-    
 })
+
 tail.on("error", function(error) {
     console.log('ERROR: ', error)
 })
@@ -66,17 +66,17 @@ function parseLog(text, logServer) {
         if (words.length > 2) {
             itemList.forEach(({item_name, user_id, user_name, price, server}) => {
                 if (server === logServer && auction.includes(item_name)) {
-                        console.log('match found: ', item_name, user_id, user_name,  price, server);
+                        // console.log('match found: ', item_name, user_id, user_name,  price, server);
                         let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
                         let logPrice = parsePrice(filteredAuction, item_name.length);
                         if (price === -1 && logPrice === null) {
-                            console.log("match found - no price requirement", logPrice, price)
+                            // console.log("match found - no price requirement", logPrice, price)
                             var seller = words[0];
                             let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
                             outgoing.push(msg)
                         }
                         else if (logPrice && logPrice <= price || price === -1) {
-                            console.log("Meets price criteria", logPrice, price)
+                            // console.log("Meets price criteria", logPrice, price)
                             var seller = words[0];
                             let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
                             outgoing.push(msg)
@@ -128,7 +128,7 @@ function parsePrice(text, start) {
 function sendMsgs() {
     while (outgoing.length > 0) {
         let msg = outgoing.pop()
-        console.log(msg)
+        // console.log(msg)
         client.pingUser(msg.userName, msg.seller, msg.itemName, msg.sellingPrice, msg.server, msg.fullAuction)
     }
 }
