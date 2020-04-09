@@ -121,10 +121,16 @@ const addWatch = function(user, item, price, server) {
                     connection.query(queryStr, [userId, itemId, numPrice, server])
                 }
             })
+            .catch((err) => {
+                console.log(err);
+            })
         })
         .catch((err) => {
             console.log(err);
         })
+    })
+    .catch((err) => {
+        console.log(err);
     })
 };
 
@@ -140,6 +146,12 @@ const endWatch = function(user, item, server) {
             let queryStr = 'DELETE FROM watches where user_id = $1 AND item_id = $2 AND server = $3';
             connection.query(queryStr, [userId, itemId, server]);
         })
+        .catch((err) => {
+            console.log(err);
+        })
+    })
+    .catch((err) => {
+        console.log(err);
     })
 }
 
@@ -149,7 +161,10 @@ const endAllWatches = function(user) {
         let userId = results;
         let queryStr = 'DELETE FROM watches where user_id = $1';
         connection.query(queryStr, [userId]);
-        })
+    })
+    .catch((err) => {
+        console.log(err);
+    })
 }
 
 const showWatch = function(user, item, callback) {
@@ -171,6 +186,12 @@ const showWatch = function(user, item, callback) {
                     callback({success: true, msg:`${res.rows[0].name}, ${res.rows[0].price}, ${res.rows[0].server}, ${res.rows[0].datetime}`})
                 }
             })
+            .catch((err) => {
+                console.log(err);
+            })
+        })
+        .catch((err) => {
+            console.log(err);
         })
     })
     .catch((err) => {
@@ -199,6 +220,9 @@ const showWatches = function(user, callback) {
             .catch((err) => {
                 console.log(err);
             })
+    })
+    .catch((err) => {
+        console.log(err);
     })
 }
 
