@@ -50,7 +50,7 @@ bot.on('message', function (message) {
 //             // !add watch <item>
             case 'ADD WATCH':
                 // console.log('add watch command received.  args = ', args)
-                if (args[0] === undefined || args[1] === undefined) {
+                if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     message.author.send(`Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
                 } else if (args[2] === undefined && args[1].toUpperCase().includes('GREEN') || args[2] === undefined && args[1].toUpperCase().includes('BLUE')) {
                     message.author.send(`Got it! Now watching auctions for ${args[0]} at any price on P1999 ${args[1]} server.`)
