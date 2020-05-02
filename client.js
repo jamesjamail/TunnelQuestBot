@@ -22,13 +22,15 @@ bot.on('ready', () => {
 
 bot.on('message', function (message) {
 
-    // ignore bots and self
-    if (message.author.bot){
+    // ignore bots and self and chat rooms
+    // console.log(message);
+    if (message.author.bot || message.channel.id === '675891646235279386' || message.channel.id === '673793154729771028' || message.channel.id === '672512233435168784'){
         return;
     }
     
     // listen for messages that will start with `!`
     if (message.content.substring(0, 1) == '!') {
+        console.log(message.content);
         let colIndex = message.content.indexOf(':');
         let cmd;
         let args;
@@ -148,9 +150,10 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     }
     
     if (bot.users.cache.get(userID.toString()) === undefined) {
+        console.log('sending msg to user ', userID)
         bot.guilds.cache.get("643500242846744611").members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
     } else {
-        bot.users.cache.get(userID.toString()).send(msg);
+        bot.users.cache.get(userID.toString()).send(msg).catch((err)=> console.log('ping user else block', userID, err));
     }
 };
 
