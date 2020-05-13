@@ -1,8 +1,7 @@
 // const logParser = require('./logParser');
+const {fetchAndFormatAuctionData} = require("./wikiHandler");
 
-
-
-testStr = "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure 7k ..Spell: Paralyzing Earth1k ..Spell: Blanket of Forgetfulness1.2k...Spell: Shiftless Deeds...5k ...Spell: Tepid Deeds40p"
+testStr = "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure 7k ..Spell: Paralyzing Earth1k ..Spell: Blanket of Forgetfulness1.2k...Spell: Shiftless Deeds...5k ...Spell: Tepid Deeds40p'";
 
 //items.name AS item_name, user_id, users.name AS user_name, price, server
 let itemList = [{item_name: 'SHIFTLESS DEEDS', user_id: '1234', user_name: 'testuser', price: 2000, server: 'GREEN'}];
@@ -21,7 +20,7 @@ function parseLog(text, logServer) {
     // console.log(words);
     //test if is auction
     if (words[1] === 'AUCTIONS,') {
-        // client.streamAuction(text.replace('||', '|'), "GREEN");
+        fakeStreamAuction(text.replace(/[|]+/g, '|'), logServer); // for testing purposes, don't use client
         //trim single quotes
         words[2] = words[2].slice(1);
         words = filterWTS(words);
@@ -114,4 +113,13 @@ function parsePrice(text, start) {
     }
     console.log("parsePrice price = ", price)
     return Number(price);
+}
+
+function fakeStreamAuction(msg, server) {
+    fetchAndFormatAuctionData(msg, server).then(formattedAuctionMessage => {
+        // in the real code this would do:
+        // bot.channels.cache.get(channelID).send(msg)
+        // but instead just log:
+        console.log(formattedAuctionMessage);
+    });
 }
