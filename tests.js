@@ -1,7 +1,9 @@
 // const logParser = require('./logParser');
 const {fetchAndFormatAuctionData} = require("./wikiHandler");
+const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
+const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 
-testStr = "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure 7k ..Spell: Paralyzing Earth1k ..Spell: Blanket of Forgetfulness1.2k...Spell: Shiftless Deeds...5k ...Spell: Tepid Deeds40p'";
+testStr = "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure 7k ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5k ...Spell: Tepid Deeds40p'";
 
 //items.name AS item_name, user_id, users.name AS user_name, price, server
 let itemList = [{item_name: 'SHIFTLESS DEEDS', user_id: '1234', user_name: 'testuser', price: 2000, server: 'GREEN'}];
@@ -13,35 +15,29 @@ parseLog(testStr, 'GREEN');
 
 function parseLog(text, logServer) {
     console.log(text);
-    //trim timestamp
-    var auction = text.toUpperCase().slice(text.indexOf(']') + 2, text.length);
-    //split words into array
-    var words = auction.split(' ');
-    // console.log(words);
     //test if is auction
-    if (words[1] === 'AUCTIONS,') {
-        fakeStreamAuction(text.replace(/[|]+/g, '|'), logServer); // for testing purposes, don't use client
-        //trim single quotes
-        words[2] = words[2].slice(1);
-        words = filterWTS(words);
-        auction = words.join(' ');
-        if (words.length > 2) {
+    const auction_text = text.match(AUC_REGEX);
+    if (auction_text) {
+        const auction_user = auction_text[1];
+        const auction_contents = auction_text[2];
+        fakeStreamAuction(auction_user, auction_contents, logServer); // for testing purposes, don't use client
+        const auctionWTS = filterWTS(auction_contents);
+        if (auctionWTS) {
             itemList.forEach(({item_name, user_id, user_name, price, server}) => {
-                if (server === logServer && auction.includes(item_name)) {
+                if (server === logServer && auctionWTS.includes(item_name)) {
                         console.log('match found: ', item_name, user_id, user_name, price, server);
-                        let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
-                        console.log("filtered auction = ", filteredAuction)
+                        let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
+                        console.log("filtered auction = ", filteredAuction);
                         let logPrice = parsePrice(filteredAuction, item_name.length);
                         if (price === -1 && logPrice === null) {
-                            console.log("match found - no price requirement", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
-                            outgoing.push(msg)
+                            console.log("match found - no price requirement", logPrice, price);
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
+                            // outgoing.push(msg)
+                            console.log(msg)
                         }
                         else if (logPrice && logPrice <= price || price === -1) {
-                            console.log("Meets price criteria", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
+                            console.log("Meets price criteria", logPrice, price);
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
                             // outgoing.push(msg)
                             console.log(msg);
                         }
@@ -53,26 +49,13 @@ function parseLog(text, logServer) {
     // sendMsgs();
 }
 
-function filterWTS(wordsArray) {
-    if (!wordsArray.includes('WTB')) {
-        //base case, no wtb in msg
-        return wordsArray
-    } else {
-        var auction = wordsArray;
-        let trim = [];
-        auction.forEach((word, index) => {
-            if (word === 'WTB') {
-                trim[0] = index;
-                trim[1] = auction.indexOf('WTS', index);
-                if (trim[1] === -1) {
-                    trim[1] = auction.length;
-                }
-                auction.splice(trim[0], trim[1]-trim[0]);
-                return;
-            }
-        })
-        return filterWTS(auction);
+function filterWTS(auction_contents) {
+    const filteredWTS = [...auction_contents.matchAll(WTS_REGEX)];
+    let auctionWTS = "";
+    for (let section in filteredWTS) {
+        auctionWTS += filteredWTS[section][1].trim() + " ";
     }
+    return auctionWTS.toUpperCase().trim();
 }
 
 function parsePrice(text, start) {
@@ -115,8 +98,9 @@ function parsePrice(text, start) {
     return Number(price);
 }
 
-function fakeStreamAuction(msg, server) {
-    fetchAndFormatAuctionData(msg, server).then(formattedAuctionMessage => {
+function fakeStreamAuction(auction_user, auction_contents, server) {
+    auction_contents = auction_contents.replace(/[|]+/g, '|');
+    fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
         // in the real code this would do:
         // bot.channels.cache.get(channelID).send(msg)
         // but instead just log:

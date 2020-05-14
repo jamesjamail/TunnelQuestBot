@@ -3,7 +3,8 @@ const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
 
 const BASE_WIKI_URL = 'http://wiki.project1999.com';
-const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(wtb|wts) ?(.*)'$/i;
+const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
+const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
 const ITEMS = require('./data/items.json');
 const SPELLS = require('./data/spells.json');
 const ALIASES = require('./data/aliases.json');
@@ -13,15 +14,18 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(ALIASES),
 ]);
 
-async function fetchAndFormatAuctionData(auction_text, server) {
-    const found = auction_text.match(AUC_REGEX);
-    let auction_user = found[1];
-    let auction_mode = found[2].toUpperCase();
-    let auction_contents = found[3];
-    // TODO: also figure out price -- use a placeholder for now
-    let price = 20;
+async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
+    const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
+    const auction_wtb = [...auction_contents.matchAll(WTB_REGEX)];
+    let auction_modes = [];
+    if (auction_wtb) { auction_modes.push("WTB") }
+    if (auction_wts) { auction_modes.push("WTS") }
+    const auction_mode = auction_modes.join(" / ");
 
-    let item_data = await findWikiData(auction_contents, server);
+    // TODO: also figure out price -- use a placeholder for now
+    const price = 20;
+
+    const item_data = await findWikiData(auction_contents, server);
 
     let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: ${auction_contents}`;
     for (let item in item_data) {
@@ -57,7 +61,7 @@ async function getWikiPricing(item_url, server) {
 
 async function findWikiData(auction_contents, server) {
     let ac = new aho_corasick(ALL_ITEM_KEYS);
-    let results = ac.search(auction_contents);
+    const results = ac.search(auction_contents);
 
     let wiki_data = {};
     for (let i in results) {

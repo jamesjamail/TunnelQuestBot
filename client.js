@@ -158,7 +158,7 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     }
 };
 
-function streamAuction (msg, server) {
+function streamAuction (auction_user, auction_contents, server) {
     let channelID;
 
     if (server === "GREEN") {
@@ -166,7 +166,8 @@ function streamAuction (msg, server) {
     }
     // console.log(msg, server, channelID);
 
-    fetchAndFormatAuctionData(msg, server).then(formattedAuctionMessage => {
+    auction_contents = auction_contents.replace(/[|]+/g, '|');
+    fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
         // in the real code this would do:
         bot.channels.cache.get(channelID).send(formattedAuctionMessage)
         // and log?

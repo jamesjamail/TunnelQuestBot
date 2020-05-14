@@ -2,6 +2,9 @@ const Tail = require('tail').Tail;
 const db = require('./db.js');
 const client = require('./client.js');
 
+const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
+const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
+
 //stream log file(s)
 
 tail = new Tail ("C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt")
@@ -29,57 +32,38 @@ setInterval(() => {
 }, pullInterval)
 
 //remove any WTB sections from seller message
-function filterWTS(wordsArray) {
-    if (!wordsArray.includes('WTB')) {
-        //base case, no wtb in msg
-        return wordsArray
-    } else {
-        var auction = wordsArray;
-        let trim = [];
-        auction.forEach((word, index) => {
-            if (word === 'WTB') {
-                trim[0] = index;
-                trim[1] = auction.indexOf('WTS', index);
-                if (trim[1] === -1) {
-                    trim[1] = auction.length;
-                }
-                auction.splice(trim[0], trim[1]-trim[0]);
-                return;
-            }
-        })
-        return filterWTS(auction);
+function filterWTS(auction_contents) {
+    const filteredWTS = [...auction_contents.matchAll(WTS_REGEX)];
+    let auctionWTS = "";
+    for (let section in filteredWTS) {
+        auctionWTS += filteredWTS[section][1].trim() + " ";
     }
+    return auctionWTS.toUpperCase().trim();
 }
 
 function parseLog(text, logServer) {
-    //trim timestamp
-    var auction = text.toUpperCase().slice(text.indexOf(']') + 2, text.length);
-    //split words into array
-    var words = auction.split(' ');
     //test if is auction
-    if (words[1] === 'AUCTIONS,') {
+    const auction_text = text.match(AUC_REGEX);
+    if (auction_text) {
         client.streamAuction(text.replace(/[|]+/g, '|'), logServer);
-        //trim single quotes
-        words[2] = words[2].slice(1);
-        words = filterWTS(words);
-        auction = words.join(' ');
-        if (words.length > 2) {
+        const auction_user = auction_text[1];
+        const auction_contents = auction_text[2];
+        const auctionWTS = filterWTS(auction_contents);
+        if (auctionWTS) {
             itemList.forEach(({item_name, user_id, user_name, price, server}) => {
-                if (server === logServer && auction.includes(item_name)) {
+                if (server === logServer && auctionWTS.includes(item_name)) {
                         // console.log('match found: ', item_name, user_id, user_name,  price, server);
-                        let filteredAuction = auction.slice(auction.indexOf(item_name), auction.length);
+                        let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
                         let logPrice = parsePrice(filteredAuction, item_name.length);
                         if (price === -1 && logPrice === null) {
                             // console.log("match found - no price requirement", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
-                            outgoing.push(msg)
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
+                            outgoing.push(msg);
                         }
                         else if (logPrice && logPrice <= price || price === -1) {
                             // console.log("Meets price criteria", logPrice, price)
-                            var seller = words[0];
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: seller, server: server, fullAuction: text}
-                            outgoing.push(msg)
+                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
+                            outgoing.push(msg);
                         }
                     }
                 }
