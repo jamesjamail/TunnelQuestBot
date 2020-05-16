@@ -9,15 +9,8 @@ export that list along with relative wiki URLs to two JSON files.
 Usage
 -----
 
-Requires (at least, only tested on) `Python 3.7.x` and a few libraries from pypi.
-
-0. Make sure `pip` and `virtualenv` are installed.
-0. Make a python virtual environment: `virtualenv indexer`
-0. Activate the virtual environment:
-   0. (Windows) `.\indexer\Scripts\activate`
-   0. (Linux/OSX) `indexer/bin/activate`
-0. Install the requirements: `pip install -r requirements.txt`
-0. Run the script: `python generateIndexes.py`
+Just run the script `generateIndexes.js` with the same version of Node that is
+installed for the main app.
 
 Notes
 -----
@@ -29,10 +22,3 @@ be lost whenever they are regenerated.
 Regenerating these files should not be required often, as new items are not
 added to the wiki with any frequency these days. However, if it seems like
 any common things are missing and were recently added, then go ahead and do it.
-
-TODO
-----
-
-This should probably be easy to do in JS as well, I just didn't know how to do
-it immediately, but I have a better idea now and this should be rewritten in JS
-to match the rest of the codebase.
