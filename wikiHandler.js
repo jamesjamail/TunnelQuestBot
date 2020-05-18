@@ -52,10 +52,13 @@ async function getWikiPricing(item_url, server) {
         .then(response => response.text())
         .then(text => {
                 const $ = cheerio.load(text);
-                const auc_data = $("#auc_" + server).find(".eoTable3").find("td");
-                const avg30d = auc_data[0].children[0].data.trim();
-                const avg90d = auc_data[1].children[0].data.trim();
-                return {30: avg30d, 90: avg90d}
+                const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
+                if (auc_data !== undefined) {
+                    const avg30d = auc_data[0].data.trim();
+                    const avg90d = auc_data[1].data.trim();
+                    return {30: avg30d, 90: avg90d};
+                }
+                return {};
             });
 }
 
