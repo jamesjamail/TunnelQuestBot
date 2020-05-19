@@ -1,3 +1,4 @@
+const {parsePrice} = require('./utils');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
@@ -17,31 +18,26 @@ const ALL_ITEM_KEYS = new Set([
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
     const auction_wtb = [...auction_contents.matchAll(WTB_REGEX)];
-    let auction_modes = [];
-    if (auction_wtb) { auction_modes.push("WTB") }
-    if (auction_wts) { auction_modes.push("WTS") }
+    const auction_modes = [];
+    if (auction_wtb.length > 0) { auction_modes.push("WTB") }
+    if (auction_wts.length > 0) { auction_modes.push("WTS") }
     const auction_mode = auction_modes.join(" / ");
 
-    // TODO: also figure out price -- use a placeholder for now
-    const price = 20;
-
-    const item_data = await findWikiData(auction_contents, server);
-
     let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: ${auction_contents}`;
+    const item_data = await findWikiData(auction_contents, server);
     for (let item in item_data) {
-        formatted_auction += '\n' + formatPriceMessage(item, price, item_data[item]);
+        formatted_auction += '\n' + formatPriceMessage(item, item_data[item]);
     }
     return formatted_auction;
 }
 
-function formatPriceMessage(item, price, data) {
-    let price_points = [];
-    for (let interval in data) {
-        price_points.push(`[*${interval}d*] ${data[interval]}`);
+function formatPriceMessage(item, data) {
+    const price_points = [];
+    for (let interval in data[1]) {
+        price_points.push(`[*${interval}d*] ${data[1][interval]}`);
     }
-    // TODO: price data isn't implemented correctly yet, so don't show it
-    // return `${item} **${price}**pp ${price_points.join(" / ")}`;
-    return `${item} ${price_points.join(" / ")}`;
+    const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
+    return `${item} ${price}${price_points.join(" / ")}`;
 }
 
 async function getWikiPricing(item_url, server) {
@@ -79,13 +75,14 @@ async function findWikiData(auction_contents, server) {
         else if (ALIASES.hasOwnProperty(item_name)) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
-        let pricing = getWikiPricing(link, server);
+        let historical_pricing = getWikiPricing(link, server);
+        let sale_price = parsePrice(auction_contents, item[0]+1);
         if (link) {
-            wiki_data[link] = pricing; }
+            wiki_data[link] = [sale_price, historical_pricing]; }
     }
     let resolved_wiki_data = {};
     for (let name in wiki_data) {
-        resolved_wiki_data[name] = await wiki_data[name];
+        resolved_wiki_data[name] = [wiki_data[name][0], await wiki_data[name][1]];
     }
     return resolved_wiki_data;
 }
