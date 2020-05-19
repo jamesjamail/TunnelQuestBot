@@ -1,28 +1,31 @@
 const {parsePrice} = require('./utils');
 
+// Poll DB for new watches on a set interval:
+//                   m   s    ms
+const pullInterval = 1 * 60 * 1000;
+
 const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 
-let outgoing = [];
-let pullInterval = 1 * (1000 * 60);
-let itemList = [];
-
 //stream log file(s)
 if (require.main === module) {
-    const Tail = require('tail').Tail;
-    tail = new Tail ("C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt");
-    tail.on("line", function(data) {
-        parseLog(data, 'GREEN');
-    })
+    const client = require('./client.js');
+    const db = require('./db.js');
+    const settings = require('./settings.json');
+    const tail = require('tail');
+    const itemList = new Set();
+    const log_tail = new tail.Tail (settings.logFilePath);
+    log_tail.on("line", function(data) {
+        parseLog(data, 'GREEN', client);
+    });
 
-    tail.on("error", function(error) {
+    log_tail.on("error", function(error) {
         console.log('ERROR: ', error)
-    })
+    });
     setInterval(() => {
-        const db = require('./db.js');
         db.upkeep();
         db.getWatches((results) => {
-            itemList = results;
+            itemList.add(results);
         })
     }, pullInterval)
 }
@@ -37,11 +40,11 @@ function filterWTS(auction_contents) {
     return auctionWTS.toUpperCase().trim();
 }
 
-function parseLog(text, logServer) {
+function parseLog(text, itemList, logServer, client) {
+    const outgoing = [];
     //test if is auction
     const auction_text = text.match(AUC_REGEX);
     if (auction_text) {
-        const client = require('./client.js');
         client.streamAuction(text.replace(/[|]+/g, '|'), logServer);
         const auction_user = auction_text[1];
         const auction_contents = auction_text[2];
@@ -68,16 +71,19 @@ function parseLog(text, logServer) {
             ) 
         }
     }
-    sendDiscordMessages();
+    sendDiscordMessages(client, outgoing);
 }
 
-function sendDiscordMessages() {
-    const client = require('./client.js');
-    while (outgoing.length > 0) {
-        let msg = outgoing.pop()
-        // console.log(msg)
-        client.pingUser(msg.userName, msg.seller, msg.itemName, msg.sellingPrice, msg.server, msg.fullAuction)
-    }
+function sendDiscordMessages(client, outgoing) {
+    outgoing.forEach(msg => {
+        client.pingUser(
+            msg.userName,
+            msg.seller,
+            msg.itemName,
+            msg.sellingPrice,
+            msg.server,
+            msg.fullAuction)
+    });
 }
 
 module.exports = {parseLog, filterWTS};

@@ -10,7 +10,7 @@ function parsePrice(text, start) {
         } else {
             price = priceText[0];
         }
-        console.log(`Parsed price: "${price}" from "${parseText}"`);
+        // console.log(`Parsed price: "${price}" from "${parseText}"`);
         return Number(price);
     }
 }
