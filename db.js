@@ -1,6 +1,5 @@
 const { Client } = require('pg');
-const moment = require('moment');
-const token = require('./auth.json');
+const token = require('./settings.json');
 
 const connection = new Client({
   host: 'localhost',
@@ -8,7 +7,7 @@ const connection = new Client({
   user: 'postgres',
   database: 'tunnelQuest',
   password: token.password
-})
+});
 
 connection.connect((err) => {
     if (err) {
@@ -16,8 +15,7 @@ connection.connect((err) => {
     } else {
         console.log('connected to postgres db');
     }
-})
-
+});
 
 const findOrAddUser = function(user) {
     return new Promise((resolve, reject) => {
@@ -43,9 +41,7 @@ const findOrAddUser = function(user) {
             }
         })
     })
-}
-
-
+};
 
 const findOrAddItem = function(item) {
     // console.log('findoradditem called', item)
@@ -76,18 +72,22 @@ const findOrAddItem = function(item) {
         })
     
     })
-}
+};
 
 
 //TODO: this function should not return duplicate items, just the item once with lowest price
 const getWatches = function(callback) {
-    let query = "SELECT items.name AS item_name, user_id, users.name AS user_name, price, server FROM items INNER JOIN watches ON watches.item_id = items.id INNER JOIN users ON watches.user_id = users.id;";
+    let query = "" +
+        "SELECT items.name AS item_name, user_id, users.name AS user_name, price, server " +
+        "FROM items " +
+        "INNER JOIN watches ON watches.item_id = items.id " +
+        "INNER JOIN users ON watches.user_id = users.id;";
     connection.query(query)
     .then((res) => {
         callback(res.rows)
     })
     .catch((err) => console.log(err))
-}
+};
 
 const addWatch = function(user, item, price, server) {
     // let item = unsanitizedItem.replace(/\'/g, "''")
@@ -97,7 +97,7 @@ const addWatch = function(user, item, price, server) {
     let numPrice;
     if (price != -1) {
         numPrice = price.match(/[0-9.]*/gm);
-        numPrice = Number(numPrice[0])
+        numPrice = Number(numPrice[0]);
         if (price.includes('K')) {
             numPrice *= 1000;
         }
@@ -111,14 +111,19 @@ const addWatch = function(user, item, price, server) {
         findOrAddItem(item)
         .then((results) => {
             let itemId = results;
-            let queryStr = `UPDATE watches SET user_id = $1, item_id = $2, price = $3, server = $4 WHERE user_id = $1 AND item_id = $2 AND server = $4`;
+            let queryStr = "" +
+                "UPDATE watches " +
+                "SET user_id = $1, item_id = $2, price = $3, server = $4 " +
+                "WHERE user_id = $1 AND item_id = $2 AND server = $4";
             // console.log(queryStr)
             connection.query(queryStr, [userId, itemId, numPrice, server])
             .then((results) => {
                 if (results.rowCount === 0) {
-                    let queryStr = `INSERT INTO watches (user_id, item_id, price, server, datetime) VALUES ($1, $2, $3, $4, current_timestamp)`;
+                    let queryStr = "" +
+                        "INSERT INTO watches (user_id, item_id, price, server, datetime) " +
+                        "VALUES ($1, $2, $3, $4, current_timestamp)";
                     // console.log(queryStr)
-                    connection.query(queryStr, [userId, itemId, numPrice, server])
+                    connection.query(queryStr, [userId, itemId, numPrice, server]);
                 }
             })
             .catch((err) => {
@@ -143,7 +148,7 @@ const endWatch = function(user, item, server) {
         findOrAddItem(item)
         .then((results) => {
             let itemId = results;
-            let queryStr = 'DELETE FROM watches where user_id = $1 AND item_id = $2 AND server = $3';
+            let queryStr = 'DELETE FROM watches WHERE user_id = $1 AND item_id = $2 AND server = $3';
             connection.query(queryStr, [userId, itemId, server]);
         })
         .catch((err) => {
@@ -153,19 +158,19 @@ const endWatch = function(user, item, server) {
     .catch((err) => {
         console.log(err);
     })
-}
+};
 
 const endAllWatches = function(user) {
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
-        let queryStr = 'DELETE FROM watches where user_id = $1';
+        let queryStr = 'DELETE FROM watches WHERE user_id = $1';
         connection.query(queryStr, [userId]);
     })
     .catch((err) => {
         console.log(err);
     })
-}
+};
 
 const showWatch = function(user, item, callback) {
     // console.log('db.showWatch item = ', item)
@@ -177,7 +182,11 @@ const showWatch = function(user, item, callback) {
         findOrAddItem(item)
         .then((results) => {
             let itemId = results;
-            let queryStr = 'SELECT items.name, price, server, datetime FROM watches INNER JOIN items ON items.id = item_id WHERE user_id = $1 AND item_id = $2';
+            let queryStr = '' +
+                'SELECT items.name, price, server, datetime ' +
+                'FROM watches ' +
+                'INNER JOIN items ON items.id = item_id ' +
+                'WHERE user_id = $1 AND item_id = $2';
             connection.query(queryStr, [userId, itemId])
             .then((res) => {
                 if (res.rowCount === 0) {
@@ -197,24 +206,28 @@ const showWatch = function(user, item, callback) {
     .catch((err) => {
         console.log(err);
     })
-}    
+};
 
 const showWatches = function(user, callback) {
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
-        let queryStr = 'SELECT items.name, price, server, datetime FROM watches INNER JOIN items ON items.id = item_id WHERE user_id = $1';
+        let queryStr = '' +
+            'SELECT items.name, price, server, datetime ' +
+            'FROM watches ' +
+            'INNER JOIN items ON items.id = item_id ' +
+            'WHERE user_id = $1';
         connection.query(queryStr, [userId])
             .then((res) => {
                 if (res.rowCount === 0) {
                     callback({success: false})
                 }  else {
-                let watchList = '';
-                res.rows.forEach((item) => {
-                    let singleWatch = `${item.name}, ${item.price}, ${item.server}, ${item.datetime}  \n`;
-                    watchList += singleWatch;                
-                })
-                callback({success: true, msg: watchList})
+                    let watchList = '';
+                    res.rows.forEach((item) => {
+                        let singleWatch = `${item.name}, ${item.price}, ${item.server}, ${item.datetime}  \n`;
+                        watchList += singleWatch;
+                    });
+                    callback({success: true, msg: watchList})
                 }
             })
             .catch((err) => {
@@ -224,15 +237,19 @@ const showWatches = function(user, callback) {
     .catch((err) => {
         console.log(err);
     })
-}
+};
 
 const extendAllWatches = function (user) {
-    let  queryStr = 'UPDATE watches SET datetime = current_timestamp FROM users WHERE watches.user_id = users.id AND users.name = $1 ';
-    connection.query(queryStr, [user])
-}
+    let  queryStr = '' +
+        'UPDATE watches ' +
+        'SET datetime = current_timestamp ' +
+        'FROM users ' +
+        'WHERE watches.user_id = users.id AND users.name = $1 ';
+    connection.query(queryStr, [user]);
+};
 
 const upkeep = function() {
-    let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'"
+    let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'";
             connection.query(query)
                 .then((res) => {
                     // console.log('Upkeep completed. Removed ', res.rowCount, ' old watches.')
@@ -240,6 +257,6 @@ const upkeep = function() {
                 .catch((err) => {
                     console.log(err);
                 })
-}
+};
 
 module.exports = {addWatch, endWatch, endAllWatches, extendAllWatches, showWatch, showWatches, getWatches, upkeep};
