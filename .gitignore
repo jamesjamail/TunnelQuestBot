@@ -4,6 +4,7 @@ tokens.js
 auth.json
 # New auth data and other settings
 settings.json
+settings.test.json
 
 # DS_Store
 DS_Store

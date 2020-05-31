@@ -1,6 +1,8 @@
 const Discord = require('discord.js');
 const logger = require('winston');
-const auth = require('./settings.json');
+//settings.test for test server 
+const auth = require('./settings.test.json');
+// const auth = require('./settings.json');
 const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - watches expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
 const db = require('./db.js');
 const {fetchAndFormatAuctionData} = require("./wikiHandler");
@@ -162,14 +164,24 @@ function streamAuction (auction_user, auction_contents, server) {
     let channelID;
 
     if (server === "GREEN") {
-        channelID = "672512233435168784";
+        // channelID = "672512233435168784";
+        //for test server user...
+        channelID = "716521067388338207";
     }
-    // console.log(msg, server, channelID);
+    // console.log("bot.channels.get", bot.channels.fetch("716521067388338207"));
 
     auction_contents = auction_contents.replace(/[|]+/g, '|');
     fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
-        // in the real code this would do:
-        bot.channels.cache.get(channelID).send(formattedAuctionMessage)
+
+        bot.channels.fetch("716521067388338207")
+            .then((channel) => {
+                // console.log('channel = ', channel)
+                channel.send(formattedAuctionMessage)
+            })
+            .catch(console.error)
+
+            // in the real code this would do:
+        // bot.channels.cache.get(channelID).send(formattedAuctionMessage)
         // and log?
         // console.log(formattedAuctionMessage);
     });

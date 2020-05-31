@@ -37,7 +37,8 @@ function formatPriceMessage(item, data) {
         price_points.push(`[*${interval}d*] ${data[1][interval]}`);
     }
     const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
-    return `${item} ${price}${price_points.join(" / ")}`;
+    return `<${item}> ${price}${price_points.join(" / ")}`;
+
 }
 
 async function getWikiPricing(item_url, server) {
@@ -49,12 +50,14 @@ async function getWikiPricing(item_url, server) {
         .then(text => {
                 const $ = cheerio.load(text);
                 const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
-                if (auc_data !== undefined) {
-                    const avg30d = auc_data[0].data.trim();
-                    const avg90d = auc_data[1].data.trim();
-                    return {30: avg30d, 90: avg90d};
+                let price_data = {};
+                if (auc_data !== undefined && auc_data[0] !== undefined) {
+                    price_data[30] = auc_data[0].data.trim();
                 }
-                return {};
+                if (auc_data !== undefined && auc_data[1] !== undefined) {
+                    price_data[90] = auc_data[1].data.trim();
+                }
+                return price_data;
             });
 }
 

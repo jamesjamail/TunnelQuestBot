@@ -2,7 +2,7 @@ const {parsePrice} = require('./utils');
 
 // Poll DB for new watches on a set interval:
 //                   m   s    ms
-const pullInterval = 1 * 60 * 1000;
+const pullInterval = .1 * 60 * 1000;
 
 const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
@@ -16,7 +16,7 @@ if (require.main === module) {
     const itemList = new Set();
     const log_tail = new tail.Tail (settings.logFilePath);
     log_tail.on("line", function(data) {
-        parseLog(data, 'GREEN', client);
+        parseLog(data, itemList, 'GREEN', client);
     });
 
     log_tail.on("error", function(error) {
@@ -25,7 +25,7 @@ if (require.main === module) {
     setInterval(() => {
         db.upkeep();
         db.getWatches((results) => {
-            itemList.add(results);
+            results.forEach((result) => itemList.add(result))
         })
     }, pullInterval)
 }
@@ -45,13 +45,24 @@ function parseLog(text, itemList, logServer, client) {
     //test if is auction
     const auction_text = text.match(AUC_REGEX);
     if (auction_text) {
-        client.streamAuction(text.replace(/[|]+/g, '|'), logServer);
         const auction_user = auction_text[1];
         const auction_contents = auction_text[2];
+        client.streamAuction(auction_user, auction_contents.replace(/[|]+/g, '|'), logServer);
+        // console.log('auction text = ', auction_text);
+        // console.log('auction user = ', auction_user);
+        // console.log('auction contents = ', auction_contents)
+        // console.log('matchall test', auction_contents.matchAll(WTS_REGEX))
         const auctionWTS = filterWTS(auction_contents);
         if (auctionWTS) {
+            // console.log("itemList", itemList);
+            // console.log("auctionWTS", auctionWTS);
             itemList.forEach(({item_name, user_id, user_name, price, server}) => {
+            // itemList.forEach(function(element) {
+                // console.log('element', element, 'Object.keys/vals =', Object.keys(element), Object.values(element))
+            // itemList.forEach(console.log) //works
+                // console.log('logServer = ', logServer, 'server = ', server,);
                 if (server === logServer && auctionWTS.includes(item_name)) {
+                    console.log('item name = ', item_name, 'price = ', price, 'server =', server, 'logServer = ', logServer);
                         // console.log('match found: ', item_name, user_id, user_name,  price, server);
                         let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
                         // console.log("filtered auction = ", filteredAuction);
