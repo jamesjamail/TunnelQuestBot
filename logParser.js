@@ -13,7 +13,8 @@ if (require.main === module) {
     const db = require('./db.js');
     const settings = require('./settings.json');
     const tail = require('tail');
-    const itemList = new Set();
+    // const itemList = new Set();
+    let itemList = [];
     const log_tail = new tail.Tail (settings.logFilePath);
     log_tail.on("line", function(data) {
         parseLog(data, itemList, 'GREEN', client);
@@ -25,7 +26,13 @@ if (require.main === module) {
     setInterval(() => {
         db.upkeep();
         db.getWatches((results) => {
-            results.forEach((result) => itemList.add(result))
+            //I think it might be best to just have itemList = results here for a couple of reasons:
+            //a) I like the idea of a set to eleminate searching duplicate data, but I'm pretty sure objects with the same properties do not deeply equate since they have separate memory references (confirmed - just got a 100 pings for 1 watch)
+            //b) it's impossible to have duplicates anyway, as each result object has a username
+            //c) watches expire after 7 days and users can update them at any time - if we just continue adding to itemList, users may get alerts for out of date info.
+
+            //results.forEach((result) => itemList.add(result)) //I refactored your code a bit here to see if it would work (results is an array so need to iterate over it to add to a set), but issue a above just makes a continuing growing list
+            itemList = results;
         })
     }, pullInterval)
 }
@@ -57,29 +64,25 @@ function parseLog(text, itemList, logServer, client) {
             // console.log("itemList", itemList);
             // console.log("auctionWTS", auctionWTS);
             itemList.forEach(({item_name, user_id, user_name, price, server}) => {
-            // itemList.forEach(function(element) {
-                // console.log('element', element, 'Object.keys/vals =', Object.keys(element), Object.values(element))
-            // itemList.forEach(console.log) //works
-                // console.log('logServer = ', logServer, 'server = ', server,);
+                // console.log('logServer = ', logServer, 'server = ', server, logServer === server);
                 if (server === logServer && auctionWTS.includes(item_name)) {
-                    console.log('item name = ', item_name, 'price = ', price, 'server =', server, 'logServer = ', logServer);
-                        // console.log('match found: ', item_name, user_id, user_name,  price, server);
-                        let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
-                        // console.log("filtered auction = ", filteredAuction);
-                        let logPrice = parsePrice(filteredAuction, item_name.length);
-                        if (price === -1 && logPrice === null) {
-                            // console.log("match found - no price requirement", logPrice, price)
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
-                            outgoing.push(msg);
-                        }
-                        else if (logPrice && logPrice <= price || price === -1) {
-                            // console.log("Meets price criteria", logPrice, price)
-                            let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
-                            outgoing.push(msg);
-                        }
+                    // console.log('item name = ', item_name, 'price = ', price, 'server =', server, 'logServer = ', logServer);
+                    console.log('match found: ', item_name, user_id, user_name,  price, server);
+                    let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
+                    // console.log("filtered auction = ", filteredAuction);
+                    let logPrice = parsePrice(filteredAuction, item_name.length);
+                    if (price === -1 && logPrice === null) {
+                        let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
+                        console.log("match found - no price requirement", logPrice, price, msg)
+                        outgoing.push(msg);
+                    }
+                    else if (logPrice && logPrice <= price || price === -1) {
+                        let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
+                        console.log("Meets price criteria", logPrice, price, msg)
+                        outgoing.push(msg);
                     }
                 }
-            ) 
+            }) 
         }
     }
     sendDiscordMessages(client, outgoing);
