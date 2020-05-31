@@ -1,4 +1,4 @@
-const {parsePrice} = require('./utils');
+const { parsePrice } = require('./utils');
 
 // Poll DB for new watches on a set interval:
 //                   m   s    ms
@@ -69,9 +69,9 @@ function parseLog(text, itemList, logServer, client) {
                     // console.log('item name = ', item_name, 'price = ', price, 'server =', server, 'logServer = ', logServer);
                     console.log('match found: ', item_name, user_id, user_name,  price, server);
                     let filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
-                    // console.log("filtered auction = ", filteredAuction);
+                    console.log("filtered auction = ", filteredAuction);
                     let logPrice = parsePrice(filteredAuction, item_name.length);
-                    if (price === -1 && logPrice === null) {
+                    if (price === -1) {
                         let msg = {userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server: server, fullAuction: text};
                         console.log("match found - no price requirement", logPrice, price, msg)
                         outgoing.push(msg);
