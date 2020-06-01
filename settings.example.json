@@ -1,4 +1,23 @@
 {
-  "token":  "DISCORD_API_TOKEN",
-  "logFilePath": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt"
+  "logFilePath": {
+    "BLUE": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Blue.txt",
+    "GREEN": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt"
+  },
+  "discord": {
+    "token": "DISCORD_API_TOKEN",
+    "command_channel": "CHANNEL_ID",
+    "BLUE": {
+      "stream_channel": "CHANNEL_ID"
+    },
+    "GREEN": {
+      "stream_channel": "CHANNEL_ID"
+    }
+  },
+  "sql": {
+    "user": "DB_USER",
+    "password": "DB_PASSWORD",
+    "database": "tunnelQuest",
+    "host": "localhost",
+    "port": 5432
+  }
 }

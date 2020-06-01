@@ -21,9 +21,11 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     const auction_modes = [];
     if (auction_wtb.length > 0) { auction_modes.push("WTB") }
     if (auction_wts.length > 0) { auction_modes.push("WTS") }
-    const auction_mode = auction_modes.join(" / ");
+    const auction_mode = auction_modes.join(" / ") || "???";
 
-    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: ${auction_contents}`;
+    // strip out backticks
+    auction_contents = auction_contents.replace(/`/g, '');
+    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: \`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
     for (let item in item_data) {
         formatted_auction += '\n' + formatPriceMessage(item, item_data[item]);
@@ -33,9 +35,9 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
 function formatPriceMessage(item, data) {
     const price_points = [];
-    for (let interval in data[1]) {
+    data[1].forEach(interval => {
         price_points.push(`[*${interval}d*] ${data[1][interval]}`);
-    }
+    })
     const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
     return `<${item}> ${price}${price_points.join(" / ")}`;
 

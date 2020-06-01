@@ -1,12 +1,12 @@
 const { Client } = require('pg');
-const token = require('./settings.json');
+const settings = require('./settings.json');
 
 const connection = new Client({
-  host: 'localhost',
-  port: 5432,
-  user: 'postgres',
-  database: 'tunnelQuest',
-  password: token.password
+  host: settings.sql.host,
+  port: settings.sql.port,
+  user: settings.sql.user,
+  database: settings.sql.database,
+  password: settings.sql.password
 });
 
 connection.connect((err) => {

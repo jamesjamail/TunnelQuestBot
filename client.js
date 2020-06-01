@@ -1,8 +1,6 @@
 const Discord = require('discord.js');
 const logger = require('winston');
-//settings.test for test server 
-const auth = require('./settings.test.json');
-// const auth = require('./settings.json');
+const settings = require('./settings.json');
 const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - watches expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
 const db = require('./db.js');
 const {fetchAndFormatAuctionData} = require("./wikiHandler");
@@ -16,7 +14,10 @@ logger.level = 'debug';
 
 // Initialize Discord Client
 var bot = new Discord.Client();
-
+const TOKEN = settings.discord.token;
+const COMMAND_CHANNEL = settings.discord.command_channel;
+const BLUE_STREAM_CHANNEL = settings.discord.BLUE.stream_channel;
+const GREEN_STREAM_CHANNEL = settings.discord.GREEN.stream_channel;
 
 
 bot.on('ready', () => {
@@ -25,9 +26,9 @@ bot.on('ready', () => {
 
 bot.on('message', function (message) {
 
-    // ignore bots and self and chat rooms
+    // ignore bots and non-command rooms
     // console.log(message);
-    if (message.author.bot || message.channel.id === '675891646235279386' || message.channel.id === '673793154729771028' || message.channel.id === '672512233435168784'){
+    if (message.author.bot || message.channel.id !== COMMAND_CHANNEL){
         return;
     }
     
@@ -158,36 +159,24 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     } else {
         bot.users.cache.get(userID.toString()).send(msg).catch((err)=> console.log('ping user else block', userID, err));
     }
-};
+}
 
 function streamAuction (auction_user, auction_contents, server) {
-    let channelID;
+    const channelID = settings.discord.valueOf(server).command_channel;
+    // console.log(msg, server, channelID);
 
-    if (server === "GREEN") {
-        // channelID = "672512233435168784";
-        //for test server user...
-        channelID = "716521067388338207";
-    }
-    // console.log("bot.channels.get", bot.channels.fetch("716521067388338207"));
-
-    auction_contents = auction_contents.replace(/[|]+/g, '|');
     fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
 
-        bot.channels.fetch("716521067388338207")
+        bot.channels.fetch(channelID.toString())
             .then((channel) => {
                 // console.log('channel = ', channel)
                 channel.send(formattedAuctionMessage)
             })
             .catch(console.error)
-
-            // in the real code this would do:
-        // bot.channels.cache.get(channelID).send(formattedAuctionMessage)
-        // and log?
-        // console.log(formattedAuctionMessage);
     });
-};
+}
 
-bot.login(auth.token);
+bot.login(TOKEN);
 
 
 module.exports = {pingUser, streamAuction}

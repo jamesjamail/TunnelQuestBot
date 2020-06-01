@@ -2,9 +2,8 @@
 tokens.js
 # Old auth data (renamed to settings.json)
 auth.json
-# New auth data and other settings
-settings.json
-settings.test.json
+# New auth data and other settings (plus any variation of settings.test.json etc)
+settings.*json
 
 # DS_Store
 DS_Store
