@@ -1,7 +1,7 @@
 {
   "logFilePath": {
-    "BLUE": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Blue.txt",
-    "GREEN": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_Auclog_P1999Green.txt"
+    "BLUE": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_CHARNAME_project1999.txt",
+    "GREEN": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_CHARNAME_P1999Green.txt"
   },
   "discord": {
     "token": "DISCORD_API_TOKEN",

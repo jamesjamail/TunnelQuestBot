@@ -16,9 +16,6 @@ logger.level = 'debug';
 var bot = new Discord.Client();
 const TOKEN = settings.discord.token;
 const COMMAND_CHANNEL = settings.discord.command_channel;
-const BLUE_STREAM_CHANNEL = settings.discord.BLUE.stream_channel;
-const GREEN_STREAM_CHANNEL = settings.discord.GREEN.stream_channel;
-
 
 bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
@@ -162,12 +159,11 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
 }
 
 function streamAuction (auction_user, auction_contents, server) {
-    const channelID = settings.discord.valueOf(server).command_channel;
-    // console.log(msg, server, channelID);
+    const channelID = settings.discord[server];
 
     fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
 
-        bot.channels.fetch(channelID.toString())
+        bot.channels.fetch(channelID.stream_channel.toString())
             .then((channel) => {
                 // console.log('channel = ', channel)
                 channel.send(formattedAuctionMessage)

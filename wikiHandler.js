@@ -35,13 +35,13 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
 function formatPriceMessage(item, data) {
     const price_points = [];
-    data[1].forEach(interval => {
-        price_points.push(`[*${interval}d*] ${data[1][interval]}`);
-    })
-    const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
-    return `<${item}> ${price}${price_points.join(" / ")}`;
-
+        for (const interval in data[1]) {
+            price_points.push(`[*${interval}d*] ${data[1][interval]}`);
+        }        
+        const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
+        return `<${item}> ${price}${price_points.join(" / ")}`;
 }
+
 
 async function getWikiPricing(item_url, server) {
     // Translate server name to "capitalized" form, eg: GREEN -> Green
@@ -60,7 +60,8 @@ async function getWikiPricing(item_url, server) {
                     price_data[90] = auc_data[1].data.trim();
                 }
                 return price_data;
-            });
+            })
+        .catch(console.error)
 }
 
 async function findWikiData(auction_contents, server) {
