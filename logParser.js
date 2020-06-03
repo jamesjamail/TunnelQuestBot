@@ -14,7 +14,7 @@ if (require.main === module) {
     const settings = require('./settings.json');
     const tail = require('tail');
     let itemList = [];
-    settings.servers.forEach(server => {
+    for (const server in settings.servers) {
         const log_tail = new tail.Tail(settings.servers[server].log_file_path);
         log_tail.on("line", function(data) {
             parseLog(data, itemList, server, client);
@@ -22,7 +22,8 @@ if (require.main === module) {
         log_tail.on("error", function(error) {
             console.log('ERROR: ', error)
         });
-    })
+    }
+
 
     setInterval(() => {
         db.upkeep();
