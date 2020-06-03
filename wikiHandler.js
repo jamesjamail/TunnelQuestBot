@@ -21,9 +21,11 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     const auction_modes = [];
     if (auction_wtb.length > 0) { auction_modes.push("WTB") }
     if (auction_wts.length > 0) { auction_modes.push("WTS") }
-    const auction_mode = auction_modes.join(" / ");
+    const auction_mode = auction_modes.join(" / ") || "???";
 
-    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: ${auction_contents}`;
+    // strip out backticks
+    auction_contents = auction_contents.replace(/`/g, '');
+    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: \`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
     for (let item in item_data) {
         formatted_auction += '\n' + formatPriceMessage(item, item_data[item]);
@@ -33,11 +35,11 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
 function formatPriceMessage(item, data) {
     const price_points = [];
-    for (let interval in data[1]) {
-        price_points.push(`[*${interval}d*] ${data[1][interval]}`);
-    }
-    const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
-    return `${item} ${price}${price_points.join(" / ")}`;
+        for (const interval in data[1]) {
+            price_points.push(`[*${interval}d*] ${data[1][interval]}`);
+        }        
+        const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
+        return `<${item}> ${price}${price_points.join(" / ")}`;
 }
 
 async function getWikiPricing(item_url, server) {
@@ -47,15 +49,17 @@ async function getWikiPricing(item_url, server) {
     return fetch(item_url)
         .then(response => response.text())
         .then(text => {
-                const $ = cheerio.load(text);
-                const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
-                if (auc_data !== undefined) {
-                    const avg30d = auc_data[0].data.trim();
-                    const avg90d = auc_data[1].data.trim();
-                    return {30: avg30d, 90: avg90d};
-                }
-                return {};
-            });
+            const $ = cheerio.load(text);
+            const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
+            let price_data = {};
+            if (auc_data !== undefined && auc_data[0] !== undefined) {
+                price_data[30] = auc_data[0].data.trim();
+            }
+            if (auc_data !== undefined && auc_data[1] !== undefined) {
+                price_data[90] = auc_data[1].data.trim();
+            }
+            return price_data;
+        }).catch(console.error)
 }
 
 async function findWikiData(auction_contents, server) {
