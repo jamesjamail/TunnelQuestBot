@@ -22,15 +22,14 @@ bot.on('ready', () => {
 });
 
 bot.on('message', function (message) {
-
-    // ignore bots and non-command rooms
     // console.log(message);
-    if (message.author.bot || message.channel.id !== COMMAND_CHANNEL){
+    // ignore bots or messages from any text channel that isn't the Command Channel
+    if (message.author.bot || (message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL)){
         return;
     }
     
     // listen for messages that will start with `!`
-    if (message.content.substring(0, 1) == '!') {
+    if (message.content.startsWith('!')) {
         console.log(message.content);
         let colIndex = message.content.indexOf(':');
         let cmd;
@@ -48,9 +47,8 @@ bot.on('message', function (message) {
             case 'HELP':
                 message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg)
                 break;
-        
 
-//             // !add watch <item>
+            // !add watch <item>
             case 'ADD WATCH':
                 // console.log('add watch command received.  args = ', args)
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
@@ -159,11 +157,11 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
 }
 
 function streamAuction (auction_user, auction_contents, server) {
-    const channelID = settings.discord[server];
+    const channelID = settings.servers[server].stream_channel;
+    // console.log(msg, server, channelID);
 
     fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
-
-        bot.channels.fetch(channelID.stream_channel.toString())
+        bot.channels.fetch(channelID.toString())
             .then((channel) => {
                 // console.log('channel = ', channel)
                 channel.send(formattedAuctionMessage)

@@ -42,7 +42,6 @@ function formatPriceMessage(item, data) {
         return `<${item}> ${price}${price_points.join(" / ")}`;
 }
 
-
 async function getWikiPricing(item_url, server) {
     // Translate server name to "capitalized" form, eg: GREEN -> Green
     server = server[0] + server.slice(1).toLowerCase();
@@ -50,18 +49,17 @@ async function getWikiPricing(item_url, server) {
     return fetch(item_url)
         .then(response => response.text())
         .then(text => {
-                const $ = cheerio.load(text);
-                const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
-                let price_data = {};
-                if (auc_data !== undefined && auc_data[0] !== undefined) {
-                    price_data[30] = auc_data[0].data.trim();
-                }
-                if (auc_data !== undefined && auc_data[1] !== undefined) {
-                    price_data[90] = auc_data[1].data.trim();
-                }
-                return price_data;
-            })
-        .catch(console.error)
+            const $ = cheerio.load(text);
+            const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
+            let price_data = {};
+            if (auc_data !== undefined && auc_data[0] !== undefined) {
+                price_data[30] = auc_data[0].data.trim();
+            }
+            if (auc_data !== undefined && auc_data[1] !== undefined) {
+                price_data[90] = auc_data[1].data.trim();
+            }
+            return price_data;
+        }).catch(console.error)
 }
 
 async function findWikiData(auction_contents, server) {
