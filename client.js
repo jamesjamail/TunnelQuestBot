@@ -59,7 +59,7 @@ bot.on('message', function (message) {
                     args[1] = -1;
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
                 } 
-                else if (args[2] !== undefined && args[2].toUpperCase() !== 'GREEN') {
+                else if (args[2] !== undefined && args[2].toUpperCase() !== 'GREEN' && args[2].toUpperCase() !== 'BLUE') {
                     message.author.send(`Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
                 } else {
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
