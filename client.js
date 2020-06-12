@@ -58,10 +58,7 @@ bot.on('message', function (message) {
                     args[2] = args[1];
                     args[1] = -1;
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
-                }
-                else if (args[2] !== undefined && args[2] !== undefined && args[2].toUpperCase() === 'BLUE') {
-                    message.author.send(`Sorry, due to IP Restrictions TunnelQuest is currently only watching P1999 Green Server.`)
-                }  
+                } 
                 else if (args[2] !== undefined && args[2].toUpperCase() !== 'GREEN') {
                     message.author.send(`Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
                 } else {
