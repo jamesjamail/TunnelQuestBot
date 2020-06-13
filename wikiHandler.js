@@ -25,21 +25,51 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
-    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: \`${auction_contents}\``;
+    let formatted_auction = `[**${auction_user}**] **${auction_mode}**:\n\`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
-    for (let item in item_data) {
-        formatted_auction += '\n' + formatPriceMessage(item, item_data[item]);
-    }
-    return formatted_auction;
+    const formatted_items = formatPriceMessage(item_data);
+    return formatted_auction + formatted_items;
 }
 
-function formatPriceMessage(item, data) {
-    const price_points = [];
-        for (const interval in data[1]) {
-            price_points.push(`[*${interval}d*] ${data[1][interval]}`);
-        }        
-        const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
-        return `<${item}> ${price}${price_points.join(" / ")}`;
+function formatPriceMessage(item_data) {
+    if (Object.keys(item_data).length === 0) { return ""; }
+    const formatted_items = new Map();
+    // Start by getting the length of the longest item
+    const longest_item = Object.keys(item_data).reduce(
+        function (a, b) { return a.length > b.length ? a : b; });
+    // Pad all of the item links
+    for (let item in item_data) {
+        formatted_items[item] = `<${item}>`.padEnd(longest_item.length + 3);
+    }
+    // Next get the longest price string
+    const longest_price = Object.values(item_data).reduce(
+        function (a, b) {
+            const a_str = a[0] === undefined ? "" : String(a[0]);
+            const b_str = b[0] === undefined ? "" : String(b[0]);
+            return a_str.length > b_str.length ? [a_str] : [b_str];
+        })[0] + "";
+    // Pad out a string for the price
+    for (let item in item_data) {
+        let price = item_data[item][0] || "";
+        if (price !== "") { price = `**${price}pp**`; }
+        formatted_items[item] += price.padEnd(longest_price.length + 7);
+    }
+    // Finally append the historical pricing data, no padding strictly necessary
+    // (though it might be nice to pad the 30/90 as columns also, in the future)
+    for (let item in item_data) {
+        const history = item_data[item][1];
+        const price_points = [];
+        for (const interval in history) {
+            price_points.push(`[*${interval}d*] ${history[interval]}`);
+        }
+        formatted_items[item] += price_points.join(" / ");
+    }
+    // Prepare all the formatted item strings for the auction text
+    let combined_strings = "";
+    for (let item in formatted_items) {
+        combined_strings += '\n' + formatted_items[item];
+    }
+    return combined_strings
 }
 
 async function getWikiPricing(item_url, server) {
