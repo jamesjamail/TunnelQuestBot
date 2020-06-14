@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 const logger = require('winston');
-const settings = require('./settings.test.json');
+const settings = require('./settings.json');
 const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - watches expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
 const db = require('./db.js');
 const {fetchAndFormatAuctionData} = require("./wikiHandler");
@@ -124,31 +124,7 @@ bot.on('message', function (message) {
                         db.extendAllWatches(message.author.id);
                         message.author.send('All watches succesfully extended for another 7 days.');
                         break;
-                    case 'EMBED':
-                        const exampleEmbed = new Discord.MessageEmbed()
-                            .setColor('#0099ff')
-                            .setTitle('Rabitz auctions, WTS a long list of crap, buy it if you want, ignore if you would rather not')
-                            // .setURL('https://discord.js.org/')
-                            // .setAuthor('Some name', 'https://i.imgur.com/wSTFkRM.png', 'https://discord.js.org')
-                            // .setDescription('Some description here')
-                            // .setThumbnail('https://i.imgur.com/wSTFkRM.png')
-                            .addFields(
-                                { name: 'Short Sword of the Morning', value: "[200pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-                                { name: 'Bone Chips', value: "[5pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-                                { name: 'Cloak of Flames', value: "[50k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-                                { name: 'Barbed Dragonscale Pauldrons', value: "[2k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-                                { name: 'Some really long fucking item name', value: "[1.2k OBO](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-                                { name: 'Port to BBM', value: "[50pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
 
-
-                            
-                            )
-                            // .addField('Inline field title', 'Some value here', true)
-                            // .setImage('https://i.imgur.com/wSTFkRM.png')
-                            // .setTimestamp()
-                            // .setFooter('Some footer text here', 'https://i.imgur.com/wSTFkRM.png');
-                        message.author.send(exampleEmbed)
-                        break;
                     // default: command not recognized...
                     default: 
                         message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);

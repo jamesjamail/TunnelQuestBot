@@ -26,17 +26,13 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
-    let formatted_auction = `[**${auction_user}**] **${auction_mode}**:\n\`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
-    const formatted_items = formatPriceMessage(item_data);
-    // console.log(formatted_auction, item_data)
-    let fields = [];
+    const formatted_items = formatItemData(item_data);
+    const fields = [];
     Object.keys(formatted_items).forEach((item_name) => {
         const price = formatted_items[item_name].auction_price;
         const pricing_data = formatted_items[item_name].historical_pricing;
-        // console.log(pricing_data)
-        const url_with_hover = formatted_items[item_name].url.concat(" '" , pricing_data, "'");
-        console.log(url_with_hover)
+        const url_with_hover = `${formatted_items[item_name].url} '${pricing_data}'`;
         const field = {
             name: `${price}`,
             value: `[${item_name}](${url_with_hover})`,
@@ -44,39 +40,34 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
         }
         fields.push(field);
     })
-    const embedded_auction = new Discord.MessageEmbed()
+    return new Discord.MessageEmbed()
         .setColor('#0099ff')
-        .setDescription(formatted_auction)
+        .setTitle(`${auction_user} (${auction_mode})`)
+        .setDescription(`\`${auction_contents}\``)
         .addFields(fields);
-        
-    return embedded_auction;
 }
 
-
-
-
-function formatPriceMessage(item_data) {
-    // Append the historical pricing data, no padding strictly necessary
-    // (though it might be nice to pad the 30/90 as columns also, in the future)
-    let res = {};
+function formatItemData(item_data) {
+    const formatted_items = {};
     for (let item in item_data) {
         const history = item_data[item][1];
         const price_points = [];
         for (const interval in history) {
-            price_points.push(`[*${interval}d*] ${history[interval]}`);
+            price_points.push(`${interval} day average: ${history[interval]}`);
         }
-        const formatted_price_points = price_points.join(" / ");
-        const item_name = item.slice(28, item.length);
-        // console.log(item);
-        res[item_name] = {};
-        res[item_name].auction_price = item_data[item][0] || 'No Price Listed'
-        res[item_name].historical_pricing = formatted_price_points;
-        res[item_name].url = item;
+        const formatted_price_points = price_points.join("\n");
+        // Get only the item name from the URL
+        let item_name = item.split("/").pop();
+        // HTML Decode the item name, and replace underscores with spaces
+        item_name = unescape(item_name).replace(/_/g, " ");
+        formatted_items[item_name] = {
+            auction_price: item_data[item][0] || 'No Price Listed',
+            historical_pricing: formatted_price_points,
+            url: item
+        };
     }
 
-    // console.log(res);
-    return res;
-    
+    return formatted_items;
 }
 
 async function getWikiPricing(item_url, server) {
