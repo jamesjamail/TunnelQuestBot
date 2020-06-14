@@ -17,8 +17,4 @@ package-lock.json
 
 # spare folders for switching test and production env files
 actual_settings
-<<<<<<< HEAD
 test_settings
-=======
-test_settings
->>>>>>> master
