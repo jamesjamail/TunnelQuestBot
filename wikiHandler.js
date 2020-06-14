@@ -107,7 +107,7 @@ async function findWikiData(auction_contents, server) {
         else if (ALIASES.hasOwnProperty(item_name)) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
-        let historical_pricing = getWikiPricing(link, server);
+        let historical_pricing = exports.getWikiPricing(link, server);
         let sale_price = parsePrice(auction_contents, item[0]+1);
         if (link) {
             wiki_data[link] = [sale_price, historical_pricing]; }
@@ -119,4 +119,5 @@ async function findWikiData(auction_contents, server) {
     return resolved_wiki_data;
 }
 
-module.exports = {fetchAndFormatAuctionData};
+exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
+exports.getWikiPricing = getWikiPricing;
