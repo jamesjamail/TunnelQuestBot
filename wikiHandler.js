@@ -28,11 +28,27 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     let formatted_auction = `[**${auction_user}**] **${auction_mode}**:\n\`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
     const formatted_items = formatPriceMessage(item_data);
+    console.log(item_data)
+    // const exampleEmbed = new Discord.MessageEmbed()
+    //     .setColor('#0099ff')
+    //     .setTitle(formatted_auction)
+    //     .addFields(
+    //         { name: 'Short Sword of the Morning', value: "[200pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
+    //         { name: 'Bone Chips', value: "[5pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
+    //         { name: 'Cloak of Flames', value: "[50k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
+    //         { name: 'Barbed Dragonscale Pauldrons', value: "[2k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
+    //         { name: 'Some really long fucking item name', value: "[1.2k OBO](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
+    //         { name: 'Port to BBM', value: "[50pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },                            
+    //     )
+
+
+
     return formatted_auction + formatted_items;
 }
 
 function formatPriceMessage(item_data) {
     const formatted_items = new Map();
+    // console.log(item_data)
     // Start by getting the length of the longest item
     const longest_item = Object.keys(item_data).reduce(
         function (a, b) { return a.length > b.length ? a : b; });

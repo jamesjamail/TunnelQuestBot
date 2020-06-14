@@ -11,7 +11,7 @@ const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 if (require.main === module) {
     const client = require('./client.js');
     const db = require('./db.js');
-    const settings = require('./settings.json');
+    const settings = require('./settings.test.json');
     const tail = require('tail');
     let itemList = [];
     for (const server in settings.servers) {

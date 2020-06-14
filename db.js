@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-const settings = require('./settings.json');
+const settings = require('./settings.test.json');
 
 const connection = new Client({
   host: settings.sql.host,
