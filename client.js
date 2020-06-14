@@ -67,68 +67,69 @@ bot.on('message', function (message) {
                 }
                 break;
 
-                // !end watch: <item>, <server>
-                case 'END WATCH':
-                    // console.log('end watch command received.  args = ', args)
-                    if (args === undefined || args[0] === undefined || args[1] === undefined) {
-                        message.author.send('Please specify both item and server to end a watch, or use "!end all watches" to end all watches.')
-                    } else {
-                        db.endWatch(message.author.id, args[0], args[1]);
+            // !end watch: <item>, <server>
+            case 'END WATCH':
+                // console.log('end watch command received.  args = ', args)
+                if (args === undefined || args[0] === undefined || args[1] === undefined) {
+                    message.author.send('Please specify both item and server to end a watch, or use "!end all watches" to end all watches.')
+                } else {
+                    db.endWatch(message.author.id, args[0], args[1]);
+                    message.author.send(`Got it! No longer watching auctions for ${args[0]} on P1999 ${args[1]} server.`);
+                }
+                break;
+
+            // !show watch: <item>
+            case 'SHOW WATCH':
+                // console.log('show watch command received.  args = ', args)
+                if (args === undefined || args[0] === "") {
+                    db.showWatches(message.author.id, (res) => {
+                        if (res.success) {
+                            message.author.send('Here are your watches: \n' + res.msg);
+                        }  else {
+                            message.author.send(`You don\'t have any watches.`);
+                        }
+                    });
+                } else {
+                    db.showWatch(message.author.id, args[0], (res) => {
+                        if (res.success) {
+                            message.author.send('Here is your watch: \n' + res.msg);
+                        }  else {
+                            message.author.send(`You don\'t have any watches for ${args[0]}.`);
+                        }
+                    });
+                }
+                break;
+
+            // !show watches
+            case 'SHOW WATCHES':
+                // console.log('show watches command received.  args = ', args)
+                db.showWatches(message.author.id, (res) => {
+                    if (res.success) {
+                        message.author.send('Here are your watches: \n' + res.msg);
+                    }  else {
+                        message.author.send(`You don\'t have any watches.`);
                     }
-                    break;
-                    
-                 // !show watch: <item>
-                case 'SHOW WATCH':
-                    // console.log('show watch command received.  args = ', args)
-                    if (args === undefined || args[0] === "") {
-                        db.showWatches(message.author.id, (res) => {
-                            if (res.success) {
-                                message.author.send('Here are your watches: \n' + res.msg);
-                            }  else {
-                                message.author.send(`You don\'t have any watches.`);
-                            }  
-                        });
-                    } else {
-                        db.showWatch(message.author.id, args[0], (res) => {
-                            if (res.success) {
-                                message.author.send('Here is your watch: \n' + res.msg);
-                            }  else {
-                                message.author.send(`You don\'t have any watches for ${args[0]}.`);
-                            }
-                        });
-                    }
-                    break;
+                });
+                break;
 
-                    // !show watches
-                    case 'SHOW WATCHES':
-                        // console.log('show watches command received.  args = ', args)
-                        db.showWatches(message.author.id, (res) => {
-                            if (res.success) {
-                                message.author.send('Here are your watches: \n' + res.msg);
-                            }  else {
-                                message.author.send(`You don\'t have any watches.`);
-                            }
-                        });
-                        break;
+            // !end all watches
+            case 'END ALL WATCHES':
+                // console.log('end all watches command received.  args = ', args)
+                db.endAllWatches(message.author.id);
+                message.author.send('All watches succesfully ended.');
+                break;
 
-                    // !end all watches
-                    case 'END ALL WATCHES':
-                        // console.log('end all watches command received.  args = ', args)
-                        db.endAllWatches(message.author.id);
-                        message.author.send('All watches succesfully ended.');
-                        break;
+            // !extend all watches
+            case 'EXTEND ALL WATCHES':
+                // console.log('extend all watches command received.  args = ', args)
+                db.extendAllWatches(message.author.id);
+                message.author.send('All watches succesfully extended for another 7 days.');
+                break;
 
-                    // !extend all watches
-                    case 'EXTEND ALL WATCHES':
-                        // console.log('extend all watches command received.  args = ', args)
-                        db.extendAllWatches(message.author.id);
-                        message.author.send('All watches succesfully extended for another 7 days.');
-                        break;
-
-                    // default: command not recognized...
-                    default: 
-                        message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
-                        break;
+            // default: command not recognized...
+            default:
+                message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
+                break;
         }
     }
     else {
