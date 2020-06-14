@@ -26,7 +26,8 @@
     "ahocorasick": "^1.0.2",
     "node-fetch": "^2.6.0",
     "cheerio": "^1.0.0-rc.3",
-    "jest": "^26.0.1"
+    "jest": "^26.0.1",
+    "canvas": "^2.6.1"
   },
   "devDependencies": {
     "faker": "^4.1.0"

@@ -2,6 +2,7 @@ const {parsePrice} = require('./utils');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
+const {createCanvas} = require('canvas')
 
 const BASE_WIKI_URL = 'http://wiki.project1999.com';
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
@@ -14,6 +15,9 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
+// Set up a fake context to measure text size with Discord's font
+const CANVAS = createCanvas(200, 200);
+const CONTEXT = CANVAS.getContext("2d"); CONTEXT.font = "10pt whitney";
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -36,23 +40,32 @@ function formatPriceMessage(item_data) {
     const formatted_items = new Map();
     // Start by getting the length of the longest item
     const longest_item = Object.keys(item_data).reduce(
-        function (a, b) { return a.length > b.length ? a : b; });
+        function (a, b) {
+            let a_size = CONTEXT.measureText(a.replace("<", "").replace(">", "") + " ").width;
+            let b_size = CONTEXT.measureText(b.replace("<", "").replace(">", "") + " ").width;
+            return a_size > b_size ? a : b; });
+    const longest_item_size = CONTEXT.measureText(longest_item).width;
     // Pad all of the item links
     for (let item in item_data) {
-        formatted_items[item] = `<${item}>`.padEnd(longest_item.length + 3);
+        const pixel_diff = longest_item_size - CONTEXT.measureText(item).width + 6;
+        formatted_items[item] = `<${item}>` + "".padEnd(pixel_diff, "\u200A");
     }
     // Next get the longest price string
-    const longest_price = Object.values(item_data).reduce(
+    let longest_price = Object.values(item_data).reduce(
         function (a, b) {
-            const a_str = a[0] === undefined ? "" : String(a[0]);
-            const b_str = b[0] === undefined ? "" : String(b[0]);
-            return a_str.length > b_str.length ? [a_str] : [b_str];
-        })[0] + "";
+            const a_str = (a[0] || "") + "";
+            const b_str = (b[0] || "") + "";
+            return CONTEXT.measureText(a_str).width > CONTEXT.measureText(b_str).width ? [a_str] : [b_str];
+        })[0];
+    if (longest_price !== "") { longest_price = `${longest_price}pp`; }
+    const longest_price_size = CONTEXT.measureText(longest_price).width + 3;
     // Pad out a string for the price
     for (let item in item_data) {
-        let price = item_data[item][0] || "";
-        if (price !== "") { price = `**${price}pp**`; }
-        formatted_items[item] += price.padEnd(longest_price.length + 7);
+        let price = (item_data[item][0] || "") + "";
+        if (price !== "") { price = `${price}pp`; }
+        const pixel_diff = longest_price_size - CONTEXT.measureText(price).width + 6;
+        if (price !== "") { price = `**${price}**`; }
+        formatted_items[item] += price + "".padEnd(pixel_diff, "\u200A");
     }
     // Finally append the historical pricing data, no padding strictly necessary
     // (though it might be nice to pad the 30/90 as columns also, in the future)

@@ -7,7 +7,7 @@ const wikiHandlerTest = [
         "expectedMessage": new RegExp(
             "^\\[\\*\\*Crakle\\*\\*\\] \\*\\*WTS\\*\\*:\n" +
             "`WTS - Chestplate of the Constant . 2k.`\n" +
-            "<http:\/\/wiki.project1999.com\/Chestplate_of_the_Constant> \\*\\*2000pp\\*\\* .*$"
+            "<http:\/\/wiki.project1999.com\/Chestplate_of_the_Constant>      \\*\\*2000pp\\*\\*         .*$"
         )
     },
     {
@@ -16,11 +16,11 @@ const wikiHandlerTest = [
         "expectedMessage": new RegExp(
             "^\\[\\*\\*Stashboxx\\*\\*\\] \\*\\*WTB / WTS\\*\\*:\n" +
             "`wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p`\n" +
-            "<http://wiki.project1999.com/Allure>                              .*\n" +
-            "<http://wiki.project1999.com/Paralyzing_Earth>         \\*\\*1000pp\\*\\* .*\n" +
-            "<http://wiki.project1999.com/Blanket_of_Forgetfulness> \\*\\*1200pp\\*\\* .*\n" +
-            "<http://wiki.project1999.com/Shiftless_Deeds>          \\*\\*5100pp\\*\\* .*\n" +
-            "<http://wiki.project1999.com/Tepid_Deeds>              \\*\\*40pp\\*\\*   .*$"
+            "<http://wiki.project1999.com/Allure>                                                                                                                                                                       \\[.*\n" +
+            "<http://wiki.project1999.com/Paralyzing_Earth>                                                      \\*\\*1000pp\\*\\*         \\[.*\n" +
+            "<http://wiki.project1999.com/Blanket_of_Forgetfulness>      \\*\\*1200pp\\*\\*         \\[.*\n" +
+            "<http://wiki.project1999.com/Shiftless_Deeds>                                                           \\*\\*5100pp\\*\\*         \\[.*\n" +
+            "<http://wiki.project1999.com/Tepid_Deeds>                                                                           \\*\\*40pp\\*\\*                       \\[.*$"
         )
     },
     {
