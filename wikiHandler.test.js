@@ -14,7 +14,7 @@ const wikiHandlerTests = {
         auctionContents: "WTS - Chestplate of the Constant . 2k.",
         expectedFields: {
             "title": "Crakle (WTS)",
-            "description": "`WTS - Chestplate of the Constant . 2k.`",
+            "description": "```WTS - Chestplate of the Constant . 2k.```",
             "fields": [
                 {
                     "inline": true,
@@ -28,7 +28,7 @@ const wikiHandlerTests = {
         auctionContents: "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
         expectedFields: {
             "title": "Stashboxx (WTB / WTS)",
-            "description": "`wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p`",
+            "description": "```wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p```",
             "fields": [
                 {
                     "inline": true,
@@ -63,7 +63,7 @@ const wikiHandlerTests = {
         auctionContents: "I am new to auc and what is this",
         expectedFields: {
             "title": "Someone (???)",
-            "description": "`I am new to auc and what is this`",
+            "description": "```I am new to auc and what is this```",
             "fields": []
         }
     },
@@ -72,7 +72,7 @@ const wikiHandlerTests = {
         auctionContents: "WTS - Chestplate of the cONstant . 2k.",
         expectedFields: {
             "title": "Crakle (WTS)",
-            "description": "`WTS - Chestplate of the cONstant . 2k.`",
+            "description": "```WTS - Chestplate of the cONstant . 2k.```",
             "fields": [
                 {
                     "inline": true,
@@ -87,7 +87,7 @@ const wikiHandlerTests = {
         auctionContents: "WTS Golden Amber Earring 500p, Jasper Gold Earring 300p",
         expectedFields: {
             "title": "Berbank (WTS)",
-            "description": "`WTS Golden Amber Earring 500p, Jasper Gold Earring 300p`",
+            "description": "```WTS Golden Amber Earring 500p, Jasper Gold Earring 300p```",
             "fields": [
                 {
                     "inline": true,

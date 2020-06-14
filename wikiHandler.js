@@ -15,6 +15,7 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
+const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -41,9 +42,9 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
         fields.push(field);
     })
     return new Discord.MessageEmbed()
-        .setColor('#0099ff')
+        .setColor(SERVER_COLOR[server])
         .setTitle(`${auction_user} (${auction_mode})`)
-        .setDescription(`\`${auction_contents}\``)
+        .setDescription(`\`\`\`${auction_contents}\`\`\``)
         .addFields(fields);
 }
 

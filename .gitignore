@@ -14,3 +14,7 @@ package-lock.json
 
 # Idea IDEs
 .idea
+
+# spare folders for switching test and production env files
+actual_settings
+test_settings
