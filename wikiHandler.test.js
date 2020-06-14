@@ -77,7 +77,28 @@ const wikiHandlerTests = {
                 {
                     "inline": true,
                     "name": "2000",
-                    "value": "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')"}
+                    "value": "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
+                }
+            ],
+        }
+    },
+    "doesn't match partial items" : {
+        auctionUser: "Berbank",
+        auctionContents: "WTS Golden Amber Earring 500p, Jasper Gold Earring 300p",
+        expectedFields: {
+            "title": "Berbank (WTS)",
+            "description": "`WTS Golden Amber Earring 500p, Jasper Gold Earring 300p`",
+            "fields": [
+                {
+                    "inline": true,
+                    "name": "500",
+                    "value": "[Golden Amber Earring](http://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
+                },
+                {
+                    "inline": true,
+                    "name": "300",
+                    "value": "[Jasper Gold Earring](http://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
+                }
             ],
         }
     },
