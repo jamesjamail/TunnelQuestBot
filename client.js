@@ -1,7 +1,35 @@
 const Discord = require('discord.js');
 const logger = require('winston');
 const settings = require('./settings.json');
-const helpMsg = '\n\n***TunnelQuestBot Help***\n***NOTE:***\n-All commands begin with an exclamation mark (\"!\").\n-Arguments listed in carats (\"<\" \">\") should be replaced by your input data.\n-Item names are not case sensitive.\n-You may enter prices in pp or kpp (ex: 1100pp or 1.1k).\n-Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n\n***COMMANDS***\n!help   (displays available commands)\n!add watch: <item>, <at or below this price>, <server>   (starts a watch based on enetered parameters - watches expire after 7 days.  Price is optional)\n!end watch: <item>   (ends a currently running watch)\n!end all watches   (ends all currently running watches)\n!extend all watches   (extends your current watches another 7 days)\n!show watch: <item>   (lists details for a watch for entered item - if no item is provided, lists details for all watches)\n!show watches   (lists details for all watches)\n\n ***TIPS***\n-You use !add watch to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer'
+const helpMsg = '\n\n' +
+    '**TunnelQuestBot Help**\n' +
+    '***NOTE:***\n' +
+    ' • All commands begin with an exclamation mark (\"!\").\n' +
+    ' • Arguments listed in `code blocks` should be replaced with your input data.\n' +
+    ' • Commas *are* actually required.\n' +
+    ' • Item names are not case sensitive.\n' +
+    ' • You may enter prices in pp or k (ex: 1100pp or 1.1k).\n' +
+    ' • Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n' +
+    '\n' +
+    '***COMMANDS:***\n' +
+    '!help' +
+    '> Displays available commands.\n' +
+    '!add watch: `item`, `maximum price`, `server`' +
+    '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
+    '!end watch: `item`, `server`' +
+    '> Ends a currently running watch.\n' +
+    '!end all watches' +
+    '> Ends all currently running watches.\n' +
+    '!extend all watches' +
+    '> Extends your current watches another 7 days.\n' +
+    '!show watch: `item`, `server`' +
+    '> Lists details for a watch for entered item - if no arguments are provided, behaves as *!show watches*.\n' +
+    '!show watches' +
+    '> Lists details for all watches.\n' +
+    '\n' +
+    '***TIPS:***\n' +
+    ' • You can use `!add watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
+    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail/TunnelQuestBot/issues'
 const db = require('./db.js');
 const {fetchAndFormatAuctionData} = require("./wikiHandler");
 
