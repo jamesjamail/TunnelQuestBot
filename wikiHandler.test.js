@@ -18,7 +18,7 @@ const wikiHandlerTests = {
             "fields": [
                 {
                     "inline": true,
-                    "name": "2000",
+                    "name": "2k",
                     "value": "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')"}
             ],
         }
@@ -37,22 +37,22 @@ const wikiHandlerTests = {
                 },
                 {
                     "inline": true,
-                    "name": "1000",
+                    "name": "1k",
                     "value": "[Paralyzing Earth](http://wiki.project1999.com/Paralyzing_Earth '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 },
                 {
                     "inline": true,
-                    "name": "1200",
+                    "name": "1.2k",
                     "value": "[Blanket of Forgetfulness](http://wiki.project1999.com/Blanket_of_Forgetfulness '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 },
                 {
                     "inline": true,
-                    "name": "5100",
+                    "name": "5.1k",
                     "value": "[Shiftless Deeds](http://wiki.project1999.com/Shiftless_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 },
                 {
                     "inline": true,
-                    "name": "40",
+                    "name": "40pp",
                     "value": "[Tepid Deeds](http://wiki.project1999.com/Tepid_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 }
             ]
@@ -76,7 +76,7 @@ const wikiHandlerTests = {
             "fields": [
                 {
                     "inline": true,
-                    "name": "2000",
+                    "name": "2k",
                     "value": "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 }
             ],
@@ -91,12 +91,12 @@ const wikiHandlerTests = {
             "fields": [
                 {
                     "inline": true,
-                    "name": "500",
+                    "name": "500pp",
                     "value": "[Golden Amber Earring](http://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 },
                 {
                     "inline": true,
-                    "name": "300",
+                    "name": "300pp",
                     "value": "[Jasper Gold Earring](http://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')"
                 }
             ],
