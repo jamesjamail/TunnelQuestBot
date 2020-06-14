@@ -72,17 +72,18 @@ function formatItemData(item_data) {
 }
 
 function formatPrice(price) {
-    let formatted_price = '';
+    //if price is undefined, return 'no price lsited'
+    if (price === undefined) {
+        return 'No Price Listed';
+    }
     //if price is 1k or above, divide by 1000 and addend with 'k'
     if (price >= 1000) {
-        formatted_price = (price / 1000).toString().concat('k');
-    } else if (price < 1000) {
-        //if price is less thatn 1000, simply addend with 'pp'
-        formatted_price = price.toString().concat('pp');
-    } else {
-        formatted_price = 'No Price Listed';
+        return (price / 1000).toString().concat('k');
     }
-    return formatted_price;
+    //if price is less thatn 1000, simply addend with 'pp'
+    if (price < 1000) {
+        return price.toString().concat('pp');
+    }
 }
 
 async function getWikiPricing(item_url, server) {
