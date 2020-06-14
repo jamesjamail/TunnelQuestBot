@@ -23,7 +23,7 @@ async function get_items_in_category(category) {
 
         let found_items = $('div #mw-pages li a');
         found_items.map((i, item) => {
-            item_map[item.attribs.title] = item.attribs.href;
+            item_map[item.attribs.title.toUpperCase()] = item.attribs.href;
         });
         await new Promise(resolve => setTimeout(resolve, 1000));
     }
