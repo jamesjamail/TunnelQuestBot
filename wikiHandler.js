@@ -92,7 +92,7 @@ async function getWikiPricing(item_url, server) {
 
 async function findWikiData(auction_contents, server) {
     let ac = new aho_corasick(ALL_ITEM_KEYS);
-    const results = ac.search(auction_contents);
+    const results = ac.search(auction_contents.toUpperCase());
 
     let wiki_data = {};
     for (let i in results) {
