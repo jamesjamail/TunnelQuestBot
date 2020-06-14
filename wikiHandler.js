@@ -62,13 +62,28 @@ function formatItemData(item_data) {
         // HTML Decode the item name, and replace underscores with spaces
         item_name = unescape(item_name).replace(/_/g, " ");
         formatted_items[item_name] = {
-            auction_price: item_data[item][0] || 'No Price Listed',
+            auction_price: formatPrice(item_data[item][0]),
             historical_pricing: formatted_price_points,
             url: item
         };
     }
 
     return formatted_items;
+}
+
+function formatPrice(price) {
+    //if price is undefined, return 'no price lsited'
+    if (price === undefined) {
+        return 'No Price Listed';
+    }
+    //if price is 1k or above, divide by 1000 and addend with 'k'
+    if (price >= 1000) {
+        return (price / 1000).toString().concat('k');
+    }
+    //if price is less thatn 1000, simply addend with 'pp'
+    if (price < 1000) {
+        return price.toString().concat('pp');
+    }
 }
 
 async function getWikiPricing(item_url, server) {
