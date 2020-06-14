@@ -1,3 +1,4 @@
+const Discord = require('discord.js');
 const {parsePrice} = require('./utils');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
@@ -28,63 +29,54 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     let formatted_auction = `[**${auction_user}**] **${auction_mode}**:\n\`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
     const formatted_items = formatPriceMessage(item_data);
-    console.log(item_data)
-    // const exampleEmbed = new Discord.MessageEmbed()
-    //     .setColor('#0099ff')
-    //     .setTitle(formatted_auction)
-    //     .addFields(
-    //         { name: 'Short Sword of the Morning', value: "[200pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-    //         { name: 'Bone Chips', value: "[5pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-    //         { name: 'Cloak of Flames', value: "[50k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-    //         { name: 'Barbed Dragonscale Pauldrons', value: "[2k](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-    //         { name: 'Some really long fucking item name', value: "[1.2k OBO](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },
-    //         { name: 'Port to BBM', value: "[50pp](http://www.thisitemsurl.com/ 'pricing data here')", inline: true },                            
-    //     )
-
-
-
-    return formatted_auction + formatted_items;
+    // console.log(formatted_auction, item_data)
+    let fields = [];
+    Object.keys(formatted_items).forEach((item_name) => {
+        const price = formatted_items[item_name].auction_price;
+        const pricing_data = formatted_items[item_name].historical_pricing;
+        // console.log(pricing_data)
+        const url_with_hover = formatted_items[item_name].url.concat(" '" , pricing_data, "'");
+        console.log(url_with_hover)
+        const field = {
+            name: `${price}`,
+            value: `[${item_name}](${url_with_hover})`,
+            inline: true
+        }
+        fields.push(field);
+    })
+    const embedded_auction = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setDescription(formatted_auction)
+        .addFields(fields);
+        
+    return embedded_auction;
 }
 
+
+
+
 function formatPriceMessage(item_data) {
-    const formatted_items = new Map();
-    // console.log(item_data)
-    // Start by getting the length of the longest item
-    const longest_item = Object.keys(item_data).reduce(
-        function (a, b) { return a.length > b.length ? a : b; });
-    // Pad all of the item links
-    for (let item in item_data) {
-        formatted_items[item] = `<${item}>`.padEnd(longest_item.length + 3);
-    }
-    // Next get the longest price string
-    const longest_price = Object.values(item_data).reduce(
-        function (a, b) {
-            const a_str = a[0] === undefined ? "" : String(a[0]);
-            const b_str = b[0] === undefined ? "" : String(b[0]);
-            return a_str.length > b_str.length ? [a_str] : [b_str];
-        })[0] + "";
-    // Pad out a string for the price
-    for (let item in item_data) {
-        let price = item_data[item][0] || "";
-        if (price !== "") { price = `**${price}pp**`; }
-        formatted_items[item] += price.padEnd(longest_price.length + 7);
-    }
-    // Finally append the historical pricing data, no padding strictly necessary
+    // Append the historical pricing data, no padding strictly necessary
     // (though it might be nice to pad the 30/90 as columns also, in the future)
+    let res = {};
     for (let item in item_data) {
         const history = item_data[item][1];
         const price_points = [];
         for (const interval in history) {
             price_points.push(`[*${interval}d*] ${history[interval]}`);
         }
-        formatted_items[item] += price_points.join(" / ");
+        const formatted_price_points = price_points.join(" / ");
+        const item_name = item.slice(28, item.length);
+        // console.log(item);
+        res[item_name] = {};
+        res[item_name].auction_price = item_data[item][0] || 'No Price Listed'
+        res[item_name].historical_pricing = formatted_price_points;
+        res[item_name].url = item;
     }
-    // Prepare all the formatted item strings for the auction text
-    let combined_strings = "";
-    for (let item in formatted_items) {
-        combined_strings += '\n' + formatted_items[item];
-    }
-    return combined_strings
+
+    // console.log(res);
+    return res;
+    
 }
 
 async function getWikiPricing(item_url, server) {
