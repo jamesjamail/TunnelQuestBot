@@ -1,3 +1,4 @@
+const Discord = require('discord.js');
 const {parsePrice} = require('./utils');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
@@ -25,21 +26,48 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
-    let formatted_auction = `[**${auction_user}**] is auctioning:\n**${auction_mode}**: \`${auction_contents}\``;
     const item_data = await findWikiData(auction_contents, server);
-    for (let item in item_data) {
-        formatted_auction += '\n' + formatPriceMessage(item, item_data[item]);
-    }
-    return formatted_auction;
+    const formatted_items = formatItemData(item_data);
+    const fields = [];
+    Object.keys(formatted_items).forEach((item_name) => {
+        const price = formatted_items[item_name].auction_price;
+        const pricing_data = formatted_items[item_name].historical_pricing;
+        const url_with_hover = `${formatted_items[item_name].url} '${pricing_data}'`;
+        const field = {
+            name: `${price}`,
+            value: `[${item_name}](${url_with_hover})`,
+            inline: true
+        }
+        fields.push(field);
+    })
+    return new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle(`${auction_user} (${auction_mode})`)
+        .setDescription(`\`${auction_contents}\``)
+        .addFields(fields);
 }
 
-function formatPriceMessage(item, data) {
-    const price_points = [];
-        for (const interval in data[1]) {
-            price_points.push(`[*${interval}d*] ${data[1][interval]}`);
-        }        
-        const price = data[0] !== undefined ? `**${data[0]}pp** ` : '';
-        return `<${item}> ${price}${price_points.join(" / ")}`;
+function formatItemData(item_data) {
+    const formatted_items = {};
+    for (let item in item_data) {
+        const history = item_data[item][1];
+        const price_points = [];
+        for (const interval in history) {
+            price_points.push(`${interval} day average: ${history[interval]}`);
+        }
+        const formatted_price_points = price_points.join("\n");
+        // Get only the item name from the URL
+        let item_name = item.split("/").pop();
+        // HTML Decode the item name, and replace underscores with spaces
+        item_name = unescape(item_name).replace(/_/g, " ");
+        formatted_items[item_name] = {
+            auction_price: item_data[item][0] || 'No Price Listed',
+            historical_pricing: formatted_price_points,
+            url: item
+        };
+    }
+
+    return formatted_items;
 }
 
 async function getWikiPricing(item_url, server) {
@@ -79,7 +107,7 @@ async function findWikiData(auction_contents, server) {
         else if (ALIASES.hasOwnProperty(item_name)) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
-        let historical_pricing = getWikiPricing(link, server);
+        let historical_pricing = exports.getWikiPricing(link, server);
         let sale_price = parsePrice(auction_contents, item[0]+1);
         if (link) {
             wiki_data[link] = [sale_price, historical_pricing]; }
@@ -91,4 +119,5 @@ async function findWikiData(auction_contents, server) {
     return resolved_wiki_data;
 }
 
-module.exports = {fetchAndFormatAuctionData};
+exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
+exports.getWikiPricing = getWikiPricing;
