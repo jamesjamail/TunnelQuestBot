@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const {parsePrice} = require('./utils');
+const utils = require('./utils.js');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
@@ -94,9 +94,18 @@ async function findWikiData(auction_contents, server) {
     let ac = new aho_corasick(ALL_ITEM_KEYS);
     const results = ac.search(auction_contents.toUpperCase());
 
+    let match_ranges = [];
+    for (let i in results) {
+        const item = results[i];
+        match_ranges.push({start: item[0] - item[1][0].length + 1, end: item[0] + 1});
+    }
+    match_ranges = utils.composeRanges(match_ranges);
+
     let wiki_data = {};
     for (let i in results) {
         const item = results[i];
+        const item_range = {start: item[0] - item[1][0].length + 1, end: item[0] + 1};
+        if (!utils._in(item_range, match_ranges)) continue;
         const item_name = item[1][0];
 
         let link;
@@ -108,7 +117,7 @@ async function findWikiData(auction_contents, server) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
         let historical_pricing = exports.getWikiPricing(link, server);
-        let sale_price = parsePrice(auction_contents, item[0]+1);
+        let sale_price = utils.parsePrice(auction_contents, item[0]+1);
         if (link) {
             wiki_data[link] = [sale_price, historical_pricing]; }
     }
