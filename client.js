@@ -166,7 +166,7 @@ bot.on('message', function (message) {
             message.delete();
         }
     }
-    else {
+    else if (message.channel.id === COMMAND_CHANNEL || message.channel.type === 'dm') {
         message.author.send('I\'d love to chat, but I\'m just a dumb bot.  Try !help');
     }   
 })
