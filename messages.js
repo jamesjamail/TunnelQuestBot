@@ -15,7 +15,7 @@ const helpMsg = '\n\n' +
     '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
     '!end watch: `item`, `server`\n' +
     '> Ends a currently running watch.\n' +
-    '!end all watches' +
+    '!end all watches\n' +
     '> Ends all currently running watches.\n' +
     '!extend all watches\n' +
     '> Extends your current watches another 7 days.\n' +
