@@ -3,7 +3,7 @@ const logger = require('winston');
 const settings = require('./settings.json');
 const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
-const {fetchAndFormatAuctionData} = require("./wikiHandler");
+const { fetchAndFormatAuctionData } = require("./wikiHandler");
 
 // logger settings
 logger.remove(logger.transports.Console);
@@ -20,6 +20,18 @@ const COMMAND_CHANNEL = settings.discord.command_channel;
 bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
 });
+
+//invite in case I can't find server after leaving https://discord.gg/Q8nzh5
+
+//server greeting for users who join
+bot.on('guildMemberAdd', (member) => {
+    let guild = member.guild; // Reading property `guild` of guildmember object.
+    let memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
+    if (guild.systemChannel){ // Checking if it's not null
+        guild.systemChannel.send(`Welcome to the server, ${memberTag}!`);
+    }
+    bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg);
+})
 
 bot.on('message', function (message) {
     // console.log(message);
