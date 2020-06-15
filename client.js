@@ -13,19 +13,19 @@ const helpMsg = '\n\n' +
     '\n' +
     '***COMMANDS:***\n' +
     '!help' +
-    '> Displays available commands.\n' +
+    '   →   Displays available commands.\n' +
     '!add watch: `item`, `maximum price`, `server`' +
-    '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
+    '   →   Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
     '!end watch: `item`, `server`' +
-    '> Ends a currently running watch.\n' +
+    '   →   Ends a currently running watch.\n' +
     '!end all watches' +
-    '> Ends all currently running watches.\n' +
+    '   →   Ends all currently running watches.\n' +
     '!extend all watches' +
-    '> Extends your current watches another 7 days.\n' +
+    '   →   Extends your current watches another 7 days.\n' +
     '!show watch: `item`, `server`' +
-    '> Lists details for a watch for entered item - if no arguments are provided, behaves as *!show watches*.\n' +
+    '   →   Lists details for a watch for entered item - if no arguments are provided, behaves as *!show watches*.\n' +
     '!show watches' +
-    '> Lists details for all watches.\n' +
+    '   →   Lists details for all watches.\n' +
     '\n' +
     '***TIPS:***\n' +
     ' • You can use `!add watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
