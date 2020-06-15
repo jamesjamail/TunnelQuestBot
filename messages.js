@@ -15,7 +15,7 @@ const helpMsg = '\n\n' +
     '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
     '!end watch: `item`, `server`\n' +
     '> Ends a currently running watch.\n' +
-    '!end all watches' +
+    '!end all watches\n' +
     '> Ends all currently running watches.\n' +
     '!extend all watches\n' +
     '> Extends your current watches another 7 days.\n' +
@@ -30,7 +30,7 @@ const helpMsg = '\n\n' +
 
 
 const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
-    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in the \`public_command_space channel\`:\n\n' +
+    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in the \`#public_command_space channel\`:\n\n' +
     '\`!add watch: rusty bastard sword, green\`\n\n' +
     'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
     '\`!add watch: rusty bastard sword, 5pp, green\`\n\n' + 
