@@ -1,37 +1,9 @@
 const Discord = require('discord.js');
 const logger = require('winston');
 const settings = require('./settings.json');
-const helpMsg = '\n\n' +
-    '**TunnelQuestBot Help**\n' +
-    '***NOTE:***\n' +
-    ' • All commands begin with an exclamation mark (\"!\").\n' +
-    ' • Arguments listed in `code blocks` should be replaced with your input data.\n' +
-    ' • Commas *are* actually required.\n' +
-    ' • Item names are not case sensitive.\n' +
-    ' • You may enter prices in pp or k (ex: 1100pp or 1.1k).\n' +
-    ' • Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n' +
-    '\n' +
-    '***COMMANDS:***\n' +
-    '!help' +
-    '> Displays available commands.\n' +
-    '!add watch: `item`, `maximum price`, `server`' +
-    '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
-    '!end watch: `item`, `server`' +
-    '> Ends a currently running watch.\n' +
-    '!end all watches' +
-    '> Ends all currently running watches.\n' +
-    '!extend all watches' +
-    '> Extends your current watches another 7 days.\n' +
-    '!show watch: `item`, `server`' +
-    '> Lists details for a watch for entered item - if no arguments are provided, behaves as *!show watches*.\n' +
-    '!show watches' +
-    '> Lists details for all watches.\n' +
-    '\n' +
-    '***TIPS:***\n' +
-    ' • You can use `!add watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
-    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail/TunnelQuestBot/issues'
+const { helpMsg, welcomeMsg } = require('./messages');
 const db = require('./db.js');
-const {fetchAndFormatAuctionData} = require("./wikiHandler");
+const { fetchAndFormatAuctionData } = require("./wikiHandler");
 
 // logger settings
 logger.remove(logger.transports.Console);
@@ -48,6 +20,18 @@ const COMMAND_CHANNEL = settings.discord.command_channel;
 bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
 });
+
+//invite in case I can't find server after leaving https://discord.gg/Q8nzh5
+
+//server greeting for users who join
+bot.on('guildMemberAdd', (member) => {
+    let guild = member.guild; // Reading property `guild` of guildmember object.
+    let memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
+    if (guild.systemChannel){ // Checking if it's not null
+        guild.systemChannel.send(`Welcome to the server, ${memberTag}!`);
+    }
+    bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg);
+})
 
 bot.on('message', function (message) {
     // console.log(message);
