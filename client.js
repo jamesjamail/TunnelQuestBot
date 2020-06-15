@@ -51,8 +51,9 @@ bot.on('ready', () => {
 
 bot.on('message', function (message) {
     // console.log(message);
-    // ignore bots or messages from any text channel that isn't the Command Channel
-    if (message.author.bot || (message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL)){
+
+    // ignore bots
+    if (message.author.bot){
         return;
     }
     
@@ -158,6 +159,11 @@ bot.on('message', function (message) {
             default:
                 message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
                 break;
+        }
+        // message the general channel that commands are not recognized in this channel if command detected:
+        if (!message.author.bot && message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL){
+            bot.channels.cache.get(COMMAND_CHANNEL).send(`Hi <@${message.author.id}>, I received your command but deleted it from the \`general\` channel to keep things tidy.  In the future, please use this channel instead or send me a direct message.  Thanks!`)
+            message.delete();
         }
     }
     else {
