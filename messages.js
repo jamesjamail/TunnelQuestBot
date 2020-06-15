@@ -30,7 +30,7 @@ const helpMsg = '\n\n' +
 
 
 const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
-    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in the \`public_command_space channel\`:\n\n' +
+    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in the \`#public_command_space channel\`:\n\n' +
     '\`!add watch: rusty bastard sword, green\`\n\n' +
     'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
     '\`!add watch: rusty bastard sword, 5pp, green\`\n\n' + 
