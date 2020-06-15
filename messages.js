@@ -37,7 +37,7 @@ const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please al
     'Whenever I find a match, I\'ll send you a direct message with all the pertinent info.\n\n' +
     'Watches last 7 days before they expire.\n\n\n' +
     'You can also check out our Tunnel Stream channels.\n\n' +
-    'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data.\n\n\n' +
+    'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data courtesy of the P1999 wiki.\n\n\n' +
     'For more information, try the !help command.\n\n\n' +
     '**Welcome to the server!**'
 
