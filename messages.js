@@ -9,24 +9,24 @@ const helpMsg = '\n\n' +
     ' • Parser will not detect aliases (ex: watching "Thick Banded Belt" will not detect "TBB"), however this is a future goal.\n' +
     '\n' +
     '***COMMANDS:***\n' +
-    '!help' +
+    '!help\n' +
     '> Displays available commands.\n' +
-    '!add watch: `item`, `maximum price`, `server`' +
+    '!add watch: `item`, `maximum price`, `server`\n' +
     '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n' +
-    '!end watch: `item`, `server`' +
+    '!end watch: `item`, `server`\n' +
     '> Ends a currently running watch.\n' +
     '!end all watches' +
     '> Ends all currently running watches.\n' +
-    '!extend all watches' +
+    '!extend all watches\n' +
     '> Extends your current watches another 7 days.\n' +
-    '!show watch: `item`, `server`' +
+    '!show watch: `item`, `server`\n' +
     '> Lists details for a watch for entered item - if no arguments are provided, behaves as *!show watches*.\n' +
-    '!show watches' +
+    '!show watches\n' +
     '> Lists details for all watches.\n' +
     '\n' +
     '***TIPS:***\n' +
     ' • You can use `!add watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
-    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail/TunnelQuestBot/issues'
+    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail'
 
 
 const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
