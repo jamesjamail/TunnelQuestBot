@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 const logger = require('winston');
 const settings = require('./settings.json');
-const { helpMsg, welcomeMsg } = require('./messages');
+const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
 const { fetchAndFormatAuctionData } = require("./wikiHandler");
 
@@ -35,8 +35,9 @@ bot.on('guildMemberAdd', (member) => {
 
 bot.on('message', function (message) {
     // console.log(message);
-    // ignore bots or messages from any text channel that isn't the Command Channel
-    if (message.author.bot || (message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL)){
+
+    // ignore bots
+    if (message.author.bot){
         return;
     }
     
@@ -143,8 +144,13 @@ bot.on('message', function (message) {
                 message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
                 break;
         }
+        // message the general channel that commands are not recognized in this channel if command detected:
+        if (!message.author.bot && message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL){
+            bot.channels.cache.get(COMMAND_CHANNEL).send(`Hi <@${message.author.id}>, I received your command but deleted it from the \`general\` channel to keep things tidy.  In the future, please use this channel instead or send me a direct message.  Thanks!`)
+            message.delete();
+        }
     }
-    else {
+    else if (message.channel.id === COMMAND_CHANNEL || message.channel.type === 'dm') {
         message.author.send('I\'d love to chat, but I\'m just a dumb bot.  Try !help');
     }   
 })
