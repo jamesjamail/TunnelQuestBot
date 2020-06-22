@@ -13,8 +13,9 @@ logger.add(new logger.transports.Console, {
 logger.level = 'debug';
 
 // Initialize Discord Client
-var bot = new Discord.Client();
+const bot = new Discord.Client();
 const TOKEN = settings.discord.token;
+const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
 
 bot.on('ready', () => {
@@ -159,14 +160,14 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     let msg = '';
 
     if (price === null) {
-        msg = `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`
+        msg = `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price.\n***${fullAuction}***\nTo stop these messages, type \"!end watch: ${item}, ${server}\".`
     } else {
-        msg  = `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server. \n***${fullAuction}***\n To stop these messages, type \"!end watch: ${item}, ${server}\".`    
+        msg  = `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server.\n***${fullAuction}***\nTo stop these messages, type \"!end watch: ${item}, ${server}\".`
     }
     
     if (bot.users.cache.get(userID.toString()) === undefined) {
         console.log('sending msg to user ', userID)
-        bot.guilds.cache.get("643500242846744611").members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
+        bot.guilds.cache.get(GUILD).members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
     } else {
         bot.users.cache.get(userID.toString()).send(msg).catch((err)=> console.log('ping user else block', userID, err));
     }

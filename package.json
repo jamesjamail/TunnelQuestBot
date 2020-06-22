@@ -3,6 +3,12 @@
   "version": "1.1.0",
   "description": "An Everquest auction watcher for P99 Servers interfaced via Discord Bot",
   "main": "logParser.js",
+  "jest": {
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "settings.json": "<rootDir>/__mocks__/settings.json"
+    }
+  },
   "scripts": {
     "test": "jest",
     "start": "node logParser.js"
