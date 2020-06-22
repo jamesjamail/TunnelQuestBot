@@ -160,16 +160,44 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     let msg = '';
 
     if (price === null) {
-        msg = `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price.\n***${fullAuction}***\nTo stop these messages, type \"!end watch: ${item}, ${server}\".`
+        msg = `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price.\n`
     } else {
-        msg  = `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server.\n***${fullAuction}***\nTo stop these messages, type \"!end watch: ${item}, ${server}\".`
+        msg  = `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server.\n`
     }
+    msg += `***${fullAuction}***\nTo snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕.`
     
     if (bot.users.cache.get(userID.toString()) === undefined) {
         console.log('sending msg to user ', userID)
         bot.guilds.cache.get(GUILD).members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
     } else {
-        bot.users.cache.get(userID.toString()).send(msg).catch((err)=> console.log('ping user else block', userID, err));
+        bot.users.cache.get(userID.toString()).send(msg)
+        .then(message => {
+            message.react('💤')              // for "snooze watch"
+            .then(() => message.react('❌')) // for "delete watch"
+            .then(() => message.react('🔕')) // for "silence seller"
+            .then(() => {
+                const react_filter = (reaction, user) => {
+                    return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕';
+                }
+                const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 });
+                collector.on('collect', (reaction, user) => {
+                    switch (reaction.emoji.name) {
+                        case '💤':
+                            // Snooze this watch for an hour? more?
+                            break;
+                        case '❌':
+                            // Delete this watch
+                            db.endWatch(user.id, item, server);
+                            user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                            break;
+                        case '🔕':
+                            // Ignore this seller's auctions for this watch
+                            break;
+                    }
+                })
+            })
+        })
+        .catch((err)=> console.log('ping user else block', userID, err));
     }
 }
 

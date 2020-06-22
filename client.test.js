@@ -14,7 +14,7 @@ const clientTests = {
         expectedMessage:
             "Crakle is currently selling Chestplate of the Constant for 2000pp on Project 1999 GREEN server.\n" +
             "***WTS - Chestplate of the Constant . 2k.***\n" +
-            "To stop these messages, type \"!end watch: Chestplate of the Constant, GREEN\"."
+            "To snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕."
     },
 }
 

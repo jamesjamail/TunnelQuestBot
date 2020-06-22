@@ -4,7 +4,9 @@ discord.Client.prototype.users = {
     cache: {
         get: jest.fn().mockReturnValue({
             send: jest.fn().mockReturnValue({
-                catch: jest.fn()
+                then: jest.fn().mockReturnValue({
+                    catch: jest.fn()
+                })
             })
         })
     }
