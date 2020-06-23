@@ -17,10 +17,10 @@ connection.connect((err) => {
     }
 });
 
-const findOrAddUser = function(user) {
+function findOrAddUser(user) {
     return new Promise((resolve, reject) => {
         //SELECT user ID based on USERNAME
-        let queryStr = "SELECT id FROM users WHERE name = '" + user + "'"; 
+        let queryStr = "SELECT id FROM users WHERE name = '" + user + "'";
         connection.query(queryStr, (err, results) => {
             if (err) {
                 reject(err);
@@ -41,9 +41,9 @@ const findOrAddUser = function(user) {
             }
         })
     })
-};
+}
 
-const findOrAddItem = function(item) {
+function findOrAddItem(item) {
     // console.log('findoradditem called', item)
     return new Promise((resolve, reject) => {
         //SELECT user ID based on ITEMNAME
@@ -72,12 +72,11 @@ const findOrAddItem = function(item) {
         })
     
     })
-};
-
+}
 
 //TODO: this function should not return duplicate items, just the item once with lowest price
-const getWatches = function(callback) {
-    let query = "" +
+function getWatches(callback) {
+    const query =
         "SELECT items.name AS item_name, user_id, users.name AS user_name, price, server " +
         "FROM items " +
         "INNER JOIN watches ON watches.item_id = items.id " +
@@ -87,9 +86,9 @@ const getWatches = function(callback) {
         callback(res.rows)
     })
     .catch((err) => console.log(err))
-};
+}
 
-const addWatch = function(user, item, price, server) {
+function addWatch(user, item, price, server) {
     // let item = unsanitizedItem.replace(/\'/g, "''")
 
     //check for 'k' and cast price to number
@@ -137,9 +136,9 @@ const addWatch = function(user, item, price, server) {
     .catch((err) => {
         console.log(err);
     })
-};
+}
 
-const endWatch = function(user, item, server) {
+function endWatch(user, item, server) {
     // let item = unsanitizedItem.replace(/\'/g, "''");
 
     findOrAddUser(user)
@@ -158,9 +157,9 @@ const endWatch = function(user, item, server) {
     .catch((err) => {
         console.log(err);
     })
-};
+}
 
-const endAllWatches = function(user) {
+function endAllWatches(user) {
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
@@ -170,9 +169,9 @@ const endAllWatches = function(user) {
     .catch((err) => {
         console.log(err);
     })
-};
+}
 
-const showWatch = function(user, item, callback) {
+function showWatch(user, item, callback) {
     // console.log('db.showWatch item = ', item)
     // let item = unsanitizedItem.replace(/\'/g, "''");
 
@@ -206,9 +205,9 @@ const showWatch = function(user, item, callback) {
     .catch((err) => {
         console.log(err);
     })
-};
+}
 
-const showWatches = function(user, callback) {
+function showWatches(user, callback) {
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
@@ -237,18 +236,18 @@ const showWatches = function(user, callback) {
     .catch((err) => {
         console.log(err);
     })
-};
+}
 
-const extendAllWatches = function (user) {
+function extendAllWatches(user) {
     let  queryStr = '' +
         'UPDATE watches ' +
         'SET datetime = current_timestamp ' +
         'FROM users ' +
         'WHERE watches.user_id = users.id AND users.name = $1 ';
     connection.query(queryStr, [user]);
-};
+}
 
-const upkeep = function() {
+function upkeep() {
     let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'";
             connection.query(query)
                 .then((res) => {
@@ -257,6 +256,6 @@ const upkeep = function() {
                 .catch((err) => {
                     console.log(err);
                 })
-};
+}
 
 module.exports = {addWatch, endWatch, endAllWatches, extendAllWatches, showWatch, showWatches, getWatches, upkeep};
