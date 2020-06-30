@@ -4,6 +4,7 @@ const settings = require('./settings.json');
 const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
 const { fetchAndFormatAuctionData } = require("./wikiHandler");
+const { SERVER_COLOR } = require('./wikiHandler')
 
 // logger settings
 logger.remove(logger.transports.Console);
@@ -17,6 +18,7 @@ const bot = new Discord.Client();
 const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
+const GENERAL_CHANNEL = settings.discord.general_channel;
 
 bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
@@ -28,9 +30,7 @@ bot.on('ready', () => {
 bot.on('guildMemberAdd', (member) => {
     let guild = member.guild; // Reading property `guild` of guildmember object.
     let memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-    if (guild.systemChannel){ // Checking if it's not null
-        guild.systemChannel.send(`Welcome to the server, ${memberTag}!`);
-    }
+    bot.channels.cache.get(GENERAL_CHANNEL).send(`Welcome to the server, ${memberTag}!`)
     bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg);
 })
 
@@ -68,7 +68,7 @@ bot.on('message', function (message) {
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     message.author.send(`Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
                 } else if (args[2] === undefined && args[1].toUpperCase().includes('GREEN') || args[2] === undefined && args[1].toUpperCase().includes('BLUE')) {
-                    message.author.send(`Got it! Now watching auctions for ${args[0]} at any price on P1999 ${args[1]} server.`)
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 ${args[1]} server.`)
                     args[2] = args[1];
                     args[1] = -1;
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
@@ -77,7 +77,7 @@ bot.on('message', function (message) {
                     message.author.send(`Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
                 } else {
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
-                    message.author.send(`Got it! Now watching auctions for ${args[0]} at ${args[1]}pp or less on P1999 ${args[2]} server.`)
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[1]}pp\` or less on Project 1999 \`${args[2]} server\`.`)
                 }
                 break;
 
@@ -85,10 +85,10 @@ bot.on('message', function (message) {
             case 'END WATCH':
                 // console.log('end watch command received.  args = ', args)
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
-                    message.author.send('Please specify both item and server to end a watch, or use "!end all watches" to end all watches.')
+                    message.author.send('Please specify both \`item\` and \`server\` to end a watch, or use "!end all watches" to end all watches.')
                 } else {
                     db.endWatch(message.author.id, args[0], args[1]);
-                    message.author.send(`Got it! No longer watching auctions for ${args[0]} on P1999 ${args[1]} server.`);
+                    message.author.send(`Got it! No longer watching auctions for \`${args[0]}\` on Project 1999 \`${args[1]} server\`.`);
                 }
                 break;
 
@@ -98,9 +98,25 @@ bot.on('message', function (message) {
                 if (args === undefined || args[0] === "") {
                     db.showWatches(message.author.id, (res) => {
                         if (res.success) {
-                            message.author.send('Here are your watches: \n' + res.msg);
+                            let watches = [];
+                            res.rows.forEach(watch => {
+                                const price = watch.price == -1 ? 'No Price Criteria' : watch.price
+                                const localDateTime = new Date(watch.datetime).toLocaleString()
+                                watches.push({
+                                    name: localDateTime,
+                                    value: `${watch.name} | ${price} | ${watch.server} | `,
+                                    inline: false
+                                })
+                            })
+                            message.author.send(
+                                new Discord.MessageEmbed()
+                                .setColor('#d500f9')
+                                .setTitle(`Here are your watches:`)
+                                .addFields(watches)
+                                .setTimestamp()
+                        );
                         }  else {
-                            message.author.send(`You don\'t have any watches.`);
+                            message.author.send(`You don\'t have any watches.  Add some with \`\`!add watch\`\``);
                         }
                     });
                 } else {
@@ -119,9 +135,25 @@ bot.on('message', function (message) {
                 // console.log('show watches command received.  args = ', args)
                 db.showWatches(message.author.id, (res) => {
                     if (res.success) {
-                        message.author.send('Here are your watches: \n' + res.msg);
+                        let watches = [];
+                        res.rows.forEach(watch => {
+                            const price = watch.price == -1 ? 'No Price Criteria' : watch.price
+                            const localDateTime = new Date(watch.datetime).toLocaleString()
+                            watches.push({
+                                name: localDateTime,
+                                value: `${watch.name} | ${price} | ${watch.server} | `,
+                                inline: false
+                            })
+                        })
+                        message.author.send(
+                            new Discord.MessageEmbed()
+                            .setColor('#d500f9')
+                            .setTitle(`Here are your watches:`)
+                            .addFields(watches)
+                            .setTimestamp()
+                        );
                     }  else {
-                        message.author.send(`You don\'t have any watches.`);
+                        message.author.send("You don\'t have any watches.  Add some with `!add watch:`");
                     }
                 });
                 break;
@@ -157,22 +189,23 @@ bot.on('message', function (message) {
 })
 
 function pingUser (userID, seller, item, price, server, fullAuction) {
-    let msg = '';
-
-    if (price === null) {
-        msg = `${seller} is currently selling ${item} on Project 1999 ${server} server.  I was unable to determine the price.\n`
-    } else {
-        msg  = `${seller} is currently selling ${item} for ${price}pp on Project 1999 ${server} server.\n`
-    }
-    msg += `***${fullAuction}***\nTo snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕.`
-    
+    const formattedPrice = price === null ? 'No Price Listed' : price;
+    let msg = new Discord.MessageEmbed()
+        .setColor(SERVER_COLOR[server])
+        .setAuthor(seller) //TODO: let's use this for the wiki link once available
+        .setTitle(item)
+        .setDescription(`${seller} is currently selling ${item} on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
+        .addField(formattedPrice, seller, false)
+        .setFooter('To snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕.')
+        .setTimestamp()
     if (bot.users.cache.get(userID.toString()) === undefined) {
         console.log('sending msg to user ', userID)
         bot.guilds.cache.get(GUILD).members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
     } else {
         bot.users.cache.get(userID.toString()).send(msg)
         .then(message => {
-            message.react('💤')              // for "snooze watch"
+            message
+            .react('💤')                     // for "snooze watch"
             .then(() => message.react('❌')) // for "delete watch"
             .then(() => message.react('🔕')) // for "silence seller"
             .then(() => {

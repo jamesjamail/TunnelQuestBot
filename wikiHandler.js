@@ -15,7 +15,7 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
-const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
+export const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -45,7 +45,8 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
         .setColor(SERVER_COLOR[server])
         .setTitle(`${auction_user} (${auction_mode})`)
         .setDescription(`\`\`\`${auction_contents}\`\`\``)
-        .addFields(fields);
+        .addFields(fields)
+        .setTimestamp()
 }
 
 function formatItemData(item_data) {

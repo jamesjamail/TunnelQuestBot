@@ -191,7 +191,8 @@ function showWatch(user, item, callback) {
                 if (res.rowCount === 0) {
                     callback({success: false})
                 }  else {
-                    callback({success: true, msg:`${res.rows[0].name}, ${res.rows[0].price}, ${res.rows[0].server}, ${res.rows[0].datetime}`})
+                    const formattedPrice = res.rows[0].price === -1 ? 'No price criteria' : res.rows[0].price
+                    callback({success: true, msg:`\`${res.rows[0].name} | ${formattedPrice} | ${res.rows[0].server} | ${res.rows[0].datetime}\``})
                 }
             })
             .catch((err) => {
@@ -221,12 +222,7 @@ function showWatches(user, callback) {
                 if (res.rowCount === 0) {
                     callback({success: false})
                 }  else {
-                    let watchList = '';
-                    res.rows.forEach((item) => {
-                        let singleWatch = `${item.name}, ${item.price}, ${item.server}, ${item.datetime}  \n`;
-                        watchList += singleWatch;
-                    });
-                    callback({success: true, msg: watchList})
+                    callback({success: true, msg: res.rows})
                 }
             })
             .catch((err) => {
