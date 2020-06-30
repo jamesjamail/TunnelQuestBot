@@ -15,7 +15,7 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
-export const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
+const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -147,3 +147,4 @@ async function findWikiData(auction_contents, server) {
 
 exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
 exports.getWikiPricing = getWikiPricing;
+exports.SERVER_COLOR = SERVER_COLOR;
