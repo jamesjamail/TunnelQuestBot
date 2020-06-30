@@ -191,7 +191,7 @@ bot.on('message', function (message) {
 function pingUser (userID, seller, item, price, server, fullAuction) {
     const formattedPrice = price === null ? 'No Price Listed' : price;
     let msg = new Discord.MessageEmbed()
-        .setColor(SERVER_COLOR[server])
+        // .setColor(SERVER_COLOR[server]) //TODO: test this!
         .setAuthor(seller) //TODO: let's use this for the wiki link once available
         .setTitle(item)
         .setDescription(`${seller} is currently selling ${item} on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
