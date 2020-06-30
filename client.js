@@ -191,9 +191,9 @@ bot.on('message', function (message) {
 function pingUser (userID, seller, item, price, server, fullAuction) {
     const formattedPrice = price === null ? 'No Price Listed' : price;
     let msg = new Discord.MessageEmbed()
-        .setColor(SERVER_COLOR[server])
-        .setAuthor(seller)
-        .setTitle(item)
+        // .setColor(SERVER_COLOR[server])
+        // .setAuthor(seller)
+        // .setTitle(item)
         .setDescription(`${seller} is currently selling ${item} on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
         .addField(formattedPrice, seller, false)
         .setFooter('To snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕.')
