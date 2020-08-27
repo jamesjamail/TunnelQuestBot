@@ -23,13 +23,14 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     const auction_modes = [];
     if (auction_wtb.length > 0) { auction_modes.push("WTB") }
     if (auction_wts.length > 0) { auction_modes.push("WTS") }
-    const auction_mode = auction_modes.join(" / ") || "???";
+    const auction_mode = auction_modes.join(" / ") || "   ";
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
     const item_data = await findWikiData(auction_contents, server);
     const formatted_items = formatItemData(item_data);
     const fields = [];
+    // const date = new Date;
     Object.keys(formatted_items).forEach((item_name) => {
         const price = formatted_items[item_name].auction_price;
         const pricing_data = formatted_items[item_name].historical_pricing;
@@ -43,10 +44,9 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     })
     return new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
-        .setTitle(`${auction_user} (${auction_mode})`)
+        .setTitle(`**${auction_mode}**   -   *${auction_user}*`)
         .setDescription(`\`\`\`${auction_contents}\`\`\``)
         .addFields(fields)
-        .setTimestamp()
 }
 
 function formatItemData(item_data) {

@@ -210,8 +210,7 @@ function showWatch(user, item, callback) {
 
 function showWatches(user, callback) {
     findOrAddUser(user)
-    .then((results) => {
-        let userId = results;
+    .then((userId) => {
         let queryStr = '' +
             'SELECT items.name, price, server, datetime ' +
             'FROM watches ' +

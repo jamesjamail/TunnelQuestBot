@@ -24,8 +24,6 @@ bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
 });
 
-//invite in case I can't find server after leaving https://discord.gg/Q8nzh5
-
 //server greeting for users who join
 bot.on('guildMemberAdd', (member) => {
     let guild = member.guild; // Reading property `guild` of guildmember object.
@@ -136,21 +134,20 @@ bot.on('message', function (message) {
                 db.showWatches(message.author.id, (res) => {
                     if (res.success) {
                         let watches = [];
-                        res.rows.forEach(watch => {
+                        res.msg.forEach(watch => {
                             const price = watch.price == -1 ? 'No Price Criteria' : watch.price
                             const localDateTime = new Date(watch.datetime).toLocaleString()
                             watches.push({
-                                name: localDateTime,
-                                value: `${watch.name} | ${price} | ${watch.server} | `,
+                                name: `\`${watch.name}\` | \`${price}pp\` | \`${watch.server}\``,
+                                value: localDateTime,
                                 inline: false
                             })
                         })
                         message.author.send(
                             new Discord.MessageEmbed()
                             .setColor('#d500f9')
-                            .setTitle(`Here are your watches:`)
+                            .setTitle(`__Active Watches__`)
                             .addFields(watches)
-                            .setTimestamp()
                         );
                     }  else {
                         message.author.send("You don\'t have any watches.  Add some with `!add watch:`");
@@ -192,11 +189,11 @@ function pingUser (userID, seller, item, price, server, fullAuction) {
     const formattedPrice = price === null ? 'No Price Listed' : price;
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
-        .setAuthor(seller)
-        .setTitle(item)
-        .setDescription(`${seller} is currently selling ${item} on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
+        // .setAuthor(seller)
+        .setTitle(`WATCH NOTIFICATION -- ${item}${formattedPrice} (${server}) `)
+        .setDescription(`**${seller}** is currently selling **${item}** on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
         .addField(formattedPrice, seller, false)
-        .setFooter('To snooze notifications for this watch for the next hour, click 💤. To remove it, click ❌. To ignore auctions by this seller, click 🔕.')
+        .setFooter('To snooze notifications for this watch for the next hour, click 💤.\n To remove it, click ❌.\n To ignore auctions by this seller, click 🔕.\n')
         .setTimestamp()
     if (bot.users.cache.get(userID.toString()) === undefined) {
         console.log('sending msg to user ', userID)
