@@ -6,7 +6,7 @@ const aho_corasick = require('ahocorasick');
 const redis = require("redis");
 const cache = redis.createClient();
  
-const cache_expiration = 1 * 24 * 60 *60 * 1000;
+const cache_expiration = 1 * 24 * 60 * 60 * 1000;
 const BASE_WIKI_URL = 'http://wiki.project1999.com';
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
