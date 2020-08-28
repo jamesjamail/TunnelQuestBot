@@ -117,7 +117,6 @@ async function getWikiPricing(item_url, server) {
         if (err) console.error(err);
         //use cached data if available
         if (cached_data !== null) {
-            console.log('cached_data = ', cached_data)
             return JSON.parse(cached_data);
         } else {
             //otherwise fetch new data
