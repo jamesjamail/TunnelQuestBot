@@ -114,8 +114,7 @@ async function getWikiPricing(item_url, server) {
     cache.get(item_url, (err, cached_data) => {
         if (err) console.error(err);
         //use cached data if available
-        if (cached_data) {
-            console.log('cached worked for ', item_url)
+        if (cached_data !== null) {
             parsePage(cached_data, server)
         } else {
             //otherwise fetch new data
@@ -132,21 +131,6 @@ async function getWikiPricing(item_url, server) {
                 .catch(console.error)
         }
     })
-
-    return fetch(item_url)
-        .then(response => response.text())
-        .then(text => {
-            const $ = cheerio.load(text);
-            const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
-            let price_data = {};
-            if (auc_data !== undefined && auc_data[0] !== undefined) {
-                price_data[30] = auc_data[0].data.trim();
-            }
-            if (auc_data !== undefined && auc_data[1] !== undefined) {
-                price_data[90] = auc_data[1].data.trim();
-            }
-            return price_data;
-        }).catch(console.error)
 }
 
 async function findWikiData(auction_contents, server) {
