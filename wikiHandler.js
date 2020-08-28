@@ -110,23 +110,30 @@ async function getWikiPricing(item_url, server) {
     // Translate server name to "capitalized" form, eg: GREEN -> Green
     server = server[0] + server.slice(1).toLowerCase();
 
+    //key for caching system is item_url underscore server
+    const key = `${item_url}_${server}`
     //check cache before fetching
-    cache.get(item_url, (err, cached_data) => {
+    cache.get(key, (err, cached_data) => {
         if (err) console.error(err);
         //use cached data if available
         if (cached_data !== null) {
-            parsePage(cached_data, server)
+            console.log('cached_data = ', cached_data)
+            return JSON.parse(cached_data);
         } else {
             //otherwise fetch new data
             return fetch(item_url)
                 .then(response => response.text())
                 .then(text => {
-                    //store newly fetched data in cache
-                    cache.setex(item_url, cache_expiration, text, (err) => {
+                    const priceData = parsePage(text, server);
+                    //arrays aren't valid redis keys
+                    const priceDataStr = JSON.stringify(priceData)
+                    
+                    //store parsed data in cache as a string
+                    cache.setex(key, cache_expiration, priceDataStr, (err) => {
                         if (err) console.error(err);
-                        //parse for price
-                        parsePage(text, server)
                     })
+                    //return parsed data as array
+                    return priceData;
                 })
                 .catch(console.error)
         }
