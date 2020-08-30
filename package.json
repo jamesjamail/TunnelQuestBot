@@ -25,14 +25,16 @@
   },
   "homepage": "https://github.com/jamesjamail/tunnelQuestBot#readme",
   "dependencies": {
+    "ahocorasick": "^1.0.2",
+    "cheerio": "^1.0.0-rc.3",
     "discord.js": "^12.1.1",
+    "jest": "^26.0.1",
+    "jquery": "^3.5.1",
+    "jsdom": "^16.4.0",
+    "node-fetch": "^2.6.0",
     "pg": "^7.12.1",
     "tail": "^2.0.3",
-    "winston": "^3.2.1",
-    "ahocorasick": "^1.0.2",
-    "node-fetch": "^2.6.0",
-    "cheerio": "^1.0.0-rc.3",
-    "jest": "^26.0.1"
+    "winston": "^3.2.1"
   },
   "devDependencies": {
     "faker": "^4.1.0"

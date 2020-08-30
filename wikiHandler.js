@@ -3,6 +3,8 @@ const utils = require('./utils.js');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
+const $ = require( "jquery" );
+const jsdom = require("jsdom");
 
 const BASE_WIKI_URL = 'http://wiki.project1999.com';
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
@@ -17,13 +19,14 @@ const ALL_ITEM_KEYS = new Set([
 ]);
 const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
 
+
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
     const auction_wtb = [...auction_contents.matchAll(WTB_REGEX)];
     const auction_modes = [];
     if (auction_wtb.length > 0) { auction_modes.push("WTB") }
     if (auction_wts.length > 0) { auction_modes.push("WTS") }
-    const auction_mode = auction_modes.join(" / ") || "   ";
+    const auction_mode = auction_modes.join(" / ") || "---";
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
@@ -42,11 +45,14 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
         }
         fields.push(field);
     })
+
     return new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
-        .setTitle(`**${auction_mode}**   -   *${auction_user}*`)
+        .setTitle(`**${auction_mode}**`)
         .setDescription(`\`\`\`${auction_contents}\`\`\``)
         .addFields(fields)
+        .setFooter(`${auction_user} on Project 1999 ${utils.formatCapitalCase(server)}`)
+        .setTimestamp()
 }
 
 function formatItemData(item_data) {
@@ -145,6 +151,36 @@ async function findWikiData(auction_contents, server) {
     return resolved_wiki_data;
 }
 
+async function fetchImageUrl(itemName) {
+    let url = '';
+
+    await fetch(`https://wiki.project1999.com/${utils.formatItemNameForWiki(itemName)}`)
+        .then((response) => {
+            if (response.ok) {
+                return response.text()
+                    .then((body) => {
+                        // console.log(text.body)
+                        url = parseResponse(body);
+                    })
+            } else {
+                url = `https://i.imgur.com/wXJsk7Y.png`;
+            }
+        })
+        .catch(console.error)    
+
+    return url;
+}
+
+function parseResponse(html) {
+    const {JSDOM} = jsdom;
+    const dom = new JSDOM(html);
+    const $ = (require('jquery'))(dom.window);
+    var items = $(".itemicon");
+    console.log(`https://wiki.project1999.com` + $(items[0]).children().children().attr('src'))
+    return `https://wiki.project1999.com` + $(items[0]).children().children().attr('src');
+}
+
 exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
 exports.getWikiPricing = getWikiPricing;
 exports.SERVER_COLOR = SERVER_COLOR;
+exports.fetchImageUrl = fetchImageUrl;

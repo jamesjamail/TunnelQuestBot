@@ -3,8 +3,9 @@ const logger = require('winston');
 const settings = require('./settings.json');
 const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
-const { fetchAndFormatAuctionData } = require("./wikiHandler");
+const { fetchAndFormatAuctionData, fetchImageUrl } = require("./wikiHandler");
 const { SERVER_COLOR } = require('./wikiHandler')
+const { formatCapitalCase, removeLogTimestamp, formatItemNameForWiki } = require('./utils')
 
 // logger settings
 logger.remove(logger.transports.Console);
@@ -55,6 +56,10 @@ bot.on('message', function (message) {
         }
 
         switch(cmd) {
+
+            case 'PING':
+                pingUser(message.userID, args[1], args[0], null, 'GREEN', `WTS ${args[0]}`)
+                break;
             // !help
             case 'HELP':
                 message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg)
@@ -66,7 +71,7 @@ bot.on('message', function (message) {
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     message.author.send(`Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
                 } else if (args[2] === undefined && args[1].toUpperCase().includes('GREEN') || args[2] === undefined && args[1].toUpperCase().includes('BLUE')) {
-                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 ${args[1]} server.`)
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`ANY PRICE\` on Project 1999 \`${args[1]}\ server\`.`)
                     args[2] = args[1];
                     args[1] = -1;
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
@@ -185,15 +190,17 @@ bot.on('message', function (message) {
     }   
 })
 
-function pingUser (userID, seller, item, price, server, fullAuction) {
-    const formattedPrice = price === null ? 'No Price Listed' : price;
+async function pingUser (userID, seller, item, price, server, fullAuction) {
+    const url = await fetchImageUrl(item);
+    const formattedPrice = price ? `${price}pp` : 'No Price Listed' ;
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
-        // .setAuthor(seller)
-        .setTitle(`WATCH NOTIFICATION -- ${item}${formattedPrice} (${server}) `)
-        .setDescription(`**${seller}** is currently selling **${item}** on Project 1999 ${server}. \n\n\`\`${fullAuction}\`\``)
-        .addField(formattedPrice, seller, false)
-        .setFooter('To snooze notifications for this watch for the next hour, click 💤.\n To remove it, click ❌.\n To ignore auctions by this seller, click 🔕.\n')
+        .setImage(url === `https://i.imgur.com/wXJsk7Y.png` ? null : url)
+        .setTitle(`${formatCapitalCase(item)}`)
+        .setAuthor('Watch Notification', url, `https://wiki.project1999.com/${formatItemNameForWiki(item)}`)
+        .setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
+        .addField(formattedPrice || 'No Price Listed', formatCapitalCase(item), false)
+        .setFooter('To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\n⌚')
         .setTimestamp()
     if (bot.users.cache.get(userID.toString()) === undefined) {
         console.log('sending msg to user ', userID)
