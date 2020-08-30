@@ -3,7 +3,10 @@ const utils = require('./utils.js');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
-
+const redis = require("redis");
+const cache = redis.createClient();
+ 
+const cache_expiration = 1 * 24 * 60 * 60 * 1000;
 const BASE_WIKI_URL = 'http://wiki.project1999.com';
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
@@ -16,6 +19,10 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(ALIASES),
 ]);
 const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
+
+cache.on("error", function(error) {
+    console.error(error);
+  });
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
     const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -86,24 +93,50 @@ function formatPrice(price) {
     }
 }
 
+function parsePage(page, server) {
+    const $ = cheerio.load(page);
+    const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
+    let price_data = {};
+    if (auc_data !== undefined && auc_data[0] !== undefined) {
+        price_data[30] = auc_data[0].data.trim();
+    }
+    if (auc_data !== undefined && auc_data[1] !== undefined) {
+        price_data[90] = auc_data[1].data.trim();
+    }
+    return price_data;
+}
+
 async function getWikiPricing(item_url, server) {
     // Translate server name to "capitalized" form, eg: GREEN -> Green
     server = server[0] + server.slice(1).toLowerCase();
 
-    return fetch(item_url)
-        .then(response => response.text())
-        .then(text => {
-            const $ = cheerio.load(text);
-            const auc_data = $(`#auc_${server} .eoTable3 td`).contents();
-            let price_data = {};
-            if (auc_data !== undefined && auc_data[0] !== undefined) {
-                price_data[30] = auc_data[0].data.trim();
-            }
-            if (auc_data !== undefined && auc_data[1] !== undefined) {
-                price_data[90] = auc_data[1].data.trim();
-            }
-            return price_data;
-        }).catch(console.error)
+    //key for caching system is item_url underscore server
+    const key = `${item_url}_${server}`
+    //check cache before fetching
+    cache.get(key, (err, cached_data) => {
+        if (err) console.error(err);
+        //use cached data if available
+        if (cached_data !== null) {
+            return JSON.parse(cached_data);
+        } else {
+            //otherwise fetch new data
+            return fetch(item_url)
+                .then(response => response.text())
+                .then(text => {
+                    const priceData = parsePage(text, server);
+                    //arrays aren't valid redis keys
+                    const priceDataStr = JSON.stringify(priceData)
+                    
+                    //store parsed data in cache as a string
+                    cache.setex(key, cache_expiration, priceDataStr, (err) => {
+                        if (err) console.error(err);
+                    })
+                    //return parsed data as array
+                    return priceData;
+                })
+                .catch(console.error)
+        }
+    })
 }
 
 async function findWikiData(auction_contents, server) {
