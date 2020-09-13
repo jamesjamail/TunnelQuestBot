@@ -58,7 +58,7 @@ bot.on('message', function (message) {
         switch(cmd) {
 
             case 'PING':
-                pingUser(message.userID, args[1], args[0], null, 'GREEN', `WTS ${args[0]}`)
+                pingUser(1, message.userID, args[1], args[0], null, 'GREEN', `WTS ${args[0]}`)
                 break;
             // !help
             case 'HELP':
@@ -174,6 +174,44 @@ bot.on('message', function (message) {
                 message.author.send('All watches succesfully extended for another 7 days.');
                 break;
 
+            // !add block
+            case 'ADD BLOCK':
+                if (args[1] === 'BLUE' || args[1] === 'GREEN') {
+                    db.blockSeller(message.author.id, args[0], null, server)
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${seller} on ${server} for any current or future watches.`);
+                } else {
+                    db.blockSeller(message.author.id, args[0], null, null)
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${seller} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!add block: ${seller}, server`);
+                }
+                break;
+
+            //TODO:
+            case 'DELETE BLOCK':
+                if (args[1] === 'BLUE' || args[1] === 'GREEN') {
+                    db.unblockSeller(message.author.id, args[0], null, server)
+                } else {
+                    db.unblockSeller(message.author.id, args[0], null, null)
+                }
+                break;
+
+            //TODO:
+            case 'SHOW BLOCKS':
+                //TODO: format an embedded message for all blocks, user and watch
+                break;
+            // TODO:
+            case: 'SNOOZE ALL':
+                //TODO: snooze all watches based on argument or default
+                break;
+            case: 'UNSNOOZE ALL':
+                //TODO: unsnooze all watches
+                break;
+            case: 'GNOME FACT':
+                //TODO: deliver gnome fact based on # provided or random if no number
+                break;
+            case: 'TIP':
+                //TODO: deliver tip based on # provided or random if no number
+                break;
+
             // default: command not recognized...
             default:
                 message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
@@ -190,7 +228,10 @@ bot.on('message', function (message) {
     }   
 })
 
-async function pingUser (userID, seller, item, price, server, fullAuction) {
+async function pingUser (watchId, userID, seller, item, price, server, fullAuction) {
+    //query db for communication history and blocked sellers - abort if not valid
+    if  (!db.validateWatchNotification(userId, watchId, seller)) return;
+
     const url = await fetchImageUrl(item);
     const formattedPrice = price ? `${price}pp` : 'No Price Listed' ;
     let msg = new Discord.MessageEmbed()
@@ -219,9 +260,16 @@ async function pingUser (userID, seller, item, price, server, fullAuction) {
                 const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 });
                 collector.on('collect', (reaction, user) => {
                     switch (reaction.emoji.name) {
-                        case '💤':
-                            // Snooze this watch for an hour? more?
+                        //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
+                        // 👋 🛑 🛎 ⏰ 🔔 ▶ ⏯ ⏸ 🔁 ♻ ✔ 💣
+                        case '💤': //alt: 🔕
+                            // Snooze this watch for 6 hours
                             break;
+                        case '⏰': //alt: 🔔 
+                            //unsnooze this watch
+                            break;
+                        case '✔': //add watch
+                            //todo, refactor endWatch and add active boolean field to watches
                         case '❌':
                             // Delete this watch
                             db.endWatch(user.id, item, server);
@@ -229,6 +277,16 @@ async function pingUser (userID, seller, item, price, server, fullAuction) {
                             break;
                         case '🔕':
                             // Ignore this seller's auctions for this watch
+                            db.blockSeller(user.id, seller, watchId)
+                            user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                            break;
+                        case '🔔': //unblocked user
+                            //TODO
+                            break;
+                        case '♻': //extend watch
+                            //TODO
+                            break;
+                        default:
                             break;
                     }
                 })
