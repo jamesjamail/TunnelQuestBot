@@ -26,7 +26,7 @@ const helpMsg = '\n\n' +
     '\n' +
     '***TIPS:***\n' +
     ' • You can use `!add watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
-    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail'
+    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas, or create an issue here: https://github.com/jamesjamail/TunnelQuestBot/issues'
 
 
 const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +

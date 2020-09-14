@@ -72,13 +72,11 @@ function findOrAddItem(item) {
 
 //TODO: this function should not return duplicate items, just the item once with lowest price
 function getWatches(callback) {
-
-    //TODO: add WHERE active = true condition
     const query =
-        "SELECT watches.id AS watch_id, items.name AS item_name, user_id, users.name AS user_name, price, server " +
+        "SELECT watches.id AS watch_id, items.name AS item_name, user_id, users.name AS user_name, price, server, datetime as timestamp " +
         "FROM items " +
         "INNER JOIN watches ON watches.item_id = items.id " +
-        "INNER JOIN users ON watches.user_id = users.id;";
+        "INNER JOIN users ON watches.user_id = users.id WHERE active = true;";
     connection.query(query)
     .then((res) => {
         callback(res.rows)
@@ -120,7 +118,7 @@ function addWatch(user, item, price, server) {
                 })
         .catch(console.error);
         })
-    }
+    })
 }
 
 function endWatch(user, item, server) {
@@ -132,8 +130,7 @@ function endWatch(user, item, server) {
         findOrAddItem(item)
         .then((results) => {
             let itemId = results;
-            //TODO: change DELETE to UPDATE and set active to false
-            let queryStr = 'DELETE FROM watches WHERE user_id = $1 AND item_id = $2 AND server = $3';
+            let queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';
             connection.query(queryStr, [userId, itemId, server]);
         })
     })
@@ -144,8 +141,7 @@ function endAllWatches(user) {
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
-        //TODO: change DELETE to UPDATE and set active to false
-        let queryStr = 'DELETE FROM watches WHERE user_id = $1';
+        let queryStr = 'UPDATE watches SET active = false WHERE user_id = $1';
         connection.query(queryStr, [userId]);
     })
     .catch((err) => {
@@ -154,28 +150,26 @@ function endAllWatches(user) {
 }
 
 function showWatch(user, item, callback) {
-    // console.log('db.showWatch item = ', item)
-    // let item = unsanitizedItem.replace(/\'/g, "''");
-
     findOrAddUser(user)
     .then((results) => {
         let userId = results;
-        findOrAddItem(item)
-        .then((results) => {
-            let itemId = results;
-            //TODOP: add WHERE active = true condition
+        //do we need to find item anymore if using like?
+        // findOrAddItem(item)
+        // .then((results) => {
+            // let itemId = results;
+
+            const pattern = '%'.concat(item).concat('%')
             let queryStr = '' +
                 'SELECT items.name, price, server, datetime ' +
                 'FROM watches ' +
                 'INNER JOIN items ON items.id = item_id ' +
-                'WHERE user_id = $1 AND item_id = $2';
-            connection.query(queryStr, [userId, itemId])
+                'WHERE user_id = $1 AND items.name LIKE $2 AND active = true ORDER BY items.name ASC;';
+            connection.query(queryStr, [userId, pattern])
             .then((res) => {
                 if (res.rowCount === 0) {
                     callback({success: false})
                 }  else {
-                    const formattedPrice = res.rows[0].price === -1 ? 'No price criteria' : res.rows[0].price
-                    callback({success: true, msg:`\`${res.rows[0].name} | ${formattedPrice} | ${res.rows[0].server} | ${res.rows[0].datetime}\``})
+                    callback({success: true, data: res.rows})
                 }
             })
             .catch((err) => {
@@ -185,7 +179,7 @@ function showWatch(user, item, callback) {
         .catch((err) => {
             console.log(err);
         })
-    })
+    // })
     .catch((err) => {
         console.log(err);
     })
@@ -194,12 +188,11 @@ function showWatch(user, item, callback) {
 function showWatches(user, callback) {
     findOrAddUser(user)
     .then((userId) => {
-        //TODO: add WHERE active = true condition
         let queryStr = '' +
             'SELECT items.name, price, server, datetime ' +
             'FROM watches ' +
             'INNER JOIN items ON items.id = item_id ' +
-            'WHERE user_id = $1';
+            'WHERE user_id = $1 AND active = true ORDER BY items.name;';
         connection.query(queryStr, [userId])
             .then((res) => {
                 if (res.rowCount === 0) {
@@ -217,31 +210,38 @@ function showWatches(user, callback) {
     })
 }
 
+function extendWatch(watchId) {
+    console.log('extendWatch invoked')
+    const queryStr = `UPDATE watches SET datetime = current_timestamp WHERE watches.id = $1`
+    connection.query(queryStr, [watchId])
+        .catch(console.error)
+}
+
 function extendAllWatches(user) {
-        //TODO: add WHERE active = true condition
     let  queryStr = '' +
         'UPDATE watches ' +
         'SET datetime = current_timestamp ' +
         'FROM users ' +
-        'WHERE watches.user_id = users.id AND users.name = $1 ';
-    connection.query(queryStr, [user]);
+        'WHERE watches.user_id = users.id AND users.name = $1 AND active = true;';
+    connection.query(queryStr, [user])
+        .catch(console.error)
 }
 
 function blockSeller(user, seller, watchId, server) {
     //if watchId provided, block based on watch
     if (watchId !== undefined) {
-        const queryStr = 'CASE WHEN NOT EXISTS (SELECT id FROM blocked_seller_by_watch WHERE seller = $1 AND watchId = $2)' +
-        ' THEN INSERT INTO blocked_seller_by_watch (seller, watchId) VALUES ($1, $2)'
+        const queryStr = 'CASE WHEN NOT EXISTS (SELECT id FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2)' +
+        ' THEN INSERT INTO blocked_seller_by_watch (seller, watch_id) VALUES ($1, $2);'
         connection.query(queryStr, [seller, watchId]).catch(console.error);
     } else {
         //otherwise, block account wide (all watches)
         if (server) {
             const queryStr = 'CASE WHEN NOT EXISTS (SELECT id FROM blocked_seller_by_user WHERE seller = $1 AND user = $2 AND server = $3)' +
-            ' INSERT INTO blocked_seller_by_user (seller, user, server) VALUES ($1, $2, $3)'
+            ' INSERT INTO blocked_seller_by_user (seller, user, server) VALUES ($1, $2, $3);'
             connection.query(queryStr, [seller, user, server]).catch(console.error);
         } else {
             const queryStr = 'CASE WHEN NOT EXISTS (SELECT id FROM blocked_seller_by_user WHERE seller = $1 AND user = $2)' +
-            ' INSERT INTO blocked_seller_by_user (seller, user) VALUES ($1, $2)'
+            ' INSERT INTO blocked_seller_by_user (seller, user) VALUES ($1, $2);'
             connection.query(queryStr, [seller, user]).catch(console.error);
         }
     }
@@ -250,15 +250,15 @@ function blockSeller(user, seller, watchId, server) {
 function unblockSeller(user, seller, watchId, server) {
     //if watchId provided, unblock based on watch
     if (watchId !== undefined) {
-        const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watchId = $2)'
+        const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2);'
         connection.query(queryStr, [seller, watchId]).catch(console.error);
     } else {
         //otherwise, block account wide (all watches)
         if (server) {
-            const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user = $2 AND server = $3)';
+            const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user = $2 AND server = $3);';
             connection.query(queryStr, [seller, user, server]).catch(console.error);
         } else {
-            const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user = $2)'
+            const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user = $2);'
             connection.query(queryStr, [seller, user]).catch(console.error);
         }
     }
@@ -269,8 +269,11 @@ function snooze(type, id, hours = 6) {
     switch(type.toUpperCase()) {
         case 'WATCH':
             //insert into watch snoooze
+            const queryStr = `INSERT INTO snooze_by_watch (watch_id, expiration) VALUES ($1, now() + interval $2 hours) ON CONFLICT (watch_id_unique) DO UPDATE SET expiration = now() + interval $2 hours;`;
+            connection.query(queryStr, [id, hours])
+                .catch(console.error)
             break;
-        case: 'USER':
+        case 'USER':
             //insert into account snooze
             break;
     }
@@ -282,41 +285,44 @@ function unsnooze(type, id, hours = 6) {
         case 'WATCH':
             //insert into watch snoooze
             break;
-        case: 'USER':
+        case 'USER':
             //insert into account snooze
             break;
     }
+}
+
+function postSuccessfulCommunication(watchId, seller) {
+    const queryStr = `INSERT INTO communication_history (watch_id, seller, timestamp) VALUES ($1, $2, now()) ON CONFLICT ON CONSTRAINT watch_id_seller DO UPDATE SET timestamp = now();`
+    connection.query(queryStr, [watchId, seller]).catch(console.error);
+}
 
 
-function validateWatchNotification(userId, watchId, seller) {    
-    let isValid;
-
+async function validateWatchNotification(userId, watchId, seller) {    
     //check communication history to see if notified in the past 15 minutes
-    const queryStr = "SELECT * FROM communication_history WHERE watchId = $1 AND seller = $2 AND dateTime > now() - interval '15 days'";
-    connection.query(queryStr, [watchId, seller])
+    const queryStr = "SELECT id FROM communication_history WHERE watch_id = $1 AND seller = $2 AND timestamp > now() - interval '15 minutes';";
+    const isValid = await connection.query(queryStr, [watchId, seller])
         .then((res) => {
+            console.log(res.rows)
             if (res.rows && res.rows.length > 0) {
-                isValid = false;
-                return;
-            }
-            //check blocked sellers for both watches and users - TODO: Test this query
-            const queryStr = "SELECT DISTINCT * FROM blocked_seller_by_watch FULL JOIN blocked_seller_by_user ON blocked_seller_by_watch.seller = blocked_seller_by_user.seller WHERE watchId IN ($1, null) AND userId IN ($2, null) AND seller = $3;'
-            connection.query(queryStr, [watchId, userId, seller])
+                return false;
+            } else {
+                //check blocked sellers for both watches and users - TODO: Test this query
+                const queryStr = "SELECT DISTINCT * FROM blocked_seller_by_watch FULL JOIN blocked_seller_by_user ON blocked_seller_by_watch.seller = blocked_seller_by_user.seller WHERE watch_id IN ($1, null) AND user_id IN ($2, null) AND blocked_seller_by_watch.seller = $3;";
+                return connection.query(queryStr, [watchId, userId, seller])
                 .then((res) => {
-                    if (res.rows && res.rows.length > 0) {
-                        isValid = false;
-                        return;
-                    }
-                })
+                        if (res.rows && res.rows.length > 0) {
+                            return false;
+                        }
+                        return true;
+                    })
+            }
         })
         .catch(console.error)
-    
-    return isValid;
+        return isValid;
 }
 
 function upkeep() {
-    //TODO: change delete to update and set active to false
-    let query = "DELETE FROM watches WHERE datetime < now() -  interval '7 days'";
+    let query = "UPDATE watches SET active = false WHERE datetime < now() -  interval '7 days';";
             connection.query(query)
                 .then((res) => {
                     //TODO: pipe this to a private health_status channel on discord on devs have access to - write a log for every watch notification, command entry, etc.
@@ -325,4 +331,4 @@ function upkeep() {
                 .catch(console.error)
 }
 
-module.exports = {addWatch, endWatch, endAllWatches, extendAllWatches, showWatch, showWatches, getWatches, validateWatchNotification, upkeep};
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatches, getWatches, postSuccessfulCommunication, validateWatchNotification, upkeep };

@@ -6,7 +6,7 @@ const db = require('./db.js');
 const { fetchAndFormatAuctionData, fetchImageUrl } = require("./wikiHandler");
 const { SERVER_COLOR } = require('./wikiHandler')
 const { formatCapitalCase, removeLogTimestamp, formatItemNameForWiki } = require('./utils')
-
+const moment = require('moment');
 // logger settings
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
@@ -98,53 +98,117 @@ bot.on('message', function (message) {
             // !show watch: <item>
             case 'SHOW WATCH':
                 // console.log('show watch command received.  args = ', args)
-                if (args === undefined || args[0] === "") {
-                    db.showWatches(message.author.id, (res) => {
-                        if (res.success) {
+                
+                db.showWatch(message.author.id, args[0], (res) => {
+                    if (res.success) {
+                        console.log(res.data)
+                        res.data.forEach(async (watch) => {
                             let watches = [];
-                            res.rows.forEach(watch => {
-                                const price = watch.price == -1 ? 'No Price Criteria' : watch.price
-                                const localDateTime = new Date(watch.datetime).toLocaleString()
-                                watches.push({
-                                    name: localDateTime,
-                                    value: `${watch.name} | ${price} | ${watch.server} | `,
-                                    inline: false
-                                })
+                            const url = await fetchImageUrl(watch.name).catch(console.error);
+                            const expiration = moment(watch.datetime).add(7, 'days');
+                            const now = moment(new Date);
+                            const diff = expiration.diff(now)
+                            const diffDuration = moment.duration(diff)
+                            const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
+                            watches.push({
+                                name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
+                                value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+                                inline: false
                             })
                             message.author.send(
                                 new Discord.MessageEmbed()
-                                .setColor('#d500f9')
-                                .setTitle(`Here are your watches:`)
+                                .setColor(SERVER_COLOR[watch.server])
+                                .setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com/${formatItemNameForWiki(watch.name)}`)
                                 .addFields(watches)
-                                .setTimestamp()
-                        );
-                        }  else {
-                            message.author.send(`You don\'t have any watches.  Add some with \`\`!add watch\`\``);
-                        }
-                    });
-                } else {
-                    db.showWatch(message.author.id, args[0], (res) => {
-                        if (res.success) {
-                            message.author.send('Here is your watch: \n' + res.msg);
-                        }  else {
-                            message.author.send(`You don\'t have any watches for ${args[0]}.`);
-                        }
-                    });
-                }
+                                .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻`)
+                            )
+                            .then((message) => {
+                                message
+                                .react('💤')                     // for "snooze watch"
+                                .then(() => message.react('❌')) // for "delete watch"
+                                .then(() => message.react('♻'))  // for "extend watch"
+                                .then(() => {
+                                    const react_filter = (reaction, user) => {
+                                        if (user.bot) {
+                                            return;
+                                        }
+                                        return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '♻';
+                                    }
+                                    const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
+                                    collector.on('collect', (reaction, user) => {
+                                        switch (reaction.emoji.name) {
+                                            //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
+                                            case '💤': //alt: 🔕
+                                                // Snooze this watch for 6 hours
+                                                // db.snooze('watch');
+                                                user.send(`Sleep is good.  Pausing notifications for the next 6 hours on this watch.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze all\`\``).catch(console.error);
+                                                break;
+                                            case '❌':
+                                                // Delete this watch
+                                                db.endWatch(user.id, item, server);
+                                                user.send(`Got it! No longer watching auctions for ${formattedItem} on P1999 ${server} server.`);
+                                                break;
+                                            case '🔕':
+                                                // Ignore this seller's auctions for this watch
+                                                // db.blockSeller(user.id, seller, watchId)
+                                                user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                                                break;
+                                            case '♻': //extend watch
+                                                console.log('extend watch')
+                                                // db.extendWatch(watchId)
+                                                user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    })
+                                    collector.on('remove', (reaction, user) => {
+                                        switch (reaction.emoji.name) {
+                                            //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
+                                            // 👋 🛑 🛎 ⏰ 🔔 ▶ ⏯ ⏸ 🔁 ♻ ✔ 💣
+                                            case '💤': //alt: 🔕
+                                                // Snooze this watch for 6 hours
+                                                // db.unsnooze('watch');
+                                                user.send(`U woke me tf up - nice!`).catch(console.error);
+                                                break;
+                                            case '❌':
+                                                // Delete this watch
+                                                db.endWatch(user.id, item, server);
+                                                user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                                                break;
+                                            case '🔕':
+                                                // Ignore this seller's auctions for this watch
+                                                // db.blockSeller(user.id, seller, watchId)
+                                                user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    })
+                                })
+                            });
+                        })
+                    }  else {
+                        message.author.send(`You don\'t have any watches for ${args[0]}.`);
+                    }
+                });
+                
                 break;
 
             // !show watches
             case 'SHOW WATCHES':
-                // console.log('show watches command received.  args = ', args)
                 db.showWatches(message.author.id, (res) => {
                     if (res.success) {
                         let watches = [];
                         res.msg.forEach(watch => {
-                            const price = watch.price == -1 ? 'No Price Criteria' : watch.price
-                            const localDateTime = new Date(watch.datetime).toLocaleString()
+                            const expiration = moment(watch.datetime).add(7, 'days');
+                            const now = moment(new Date);
+                            const diff = expiration.diff(now)
+                            const diffDuration = moment.duration(diff)
+                            const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
                             watches.push({
-                                name: `\`${watch.name}\` | \`${price}pp\` | \`${watch.server}\``,
-                                value: localDateTime,
+                                name: `\`${formatCapitalCase(watch.name)}\` | \`${price}\` | \`${formatCapitalCase(watch.server)}\``,
+                                value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
                                 inline: false
                             })
                         })
@@ -153,7 +217,8 @@ bot.on('message', function (message) {
                             .setColor('#d500f9')
                             .setTitle(`__Active Watches__`)
                             .addFields(watches)
-                        );
+                        )
+                        .catch(console.error);
                     }  else {
                         message.author.send("You don\'t have any watches.  Add some with `!add watch:`");
                     }
@@ -199,16 +264,16 @@ bot.on('message', function (message) {
                 //TODO: format an embedded message for all blocks, user and watch
                 break;
             // TODO:
-            case: 'SNOOZE ALL':
+            case 'SNOOZE ALL':
                 //TODO: snooze all watches based on argument or default
                 break;
-            case: 'UNSNOOZE ALL':
+            case 'UNSNOOZE ALL':
                 //TODO: unsnooze all watches
                 break;
-            case: 'GNOME FACT':
+            case 'GNOME FACT':
                 //TODO: deliver gnome fact based on # provided or random if no number
                 break;
-            case: 'TIP':
+            case 'TIP':
                 //TODO: deliver tip based on # provided or random if no number
                 break;
 
@@ -228,12 +293,14 @@ bot.on('message', function (message) {
     }   
 })
 
-async function pingUser (watchId, userID, seller, item, price, server, fullAuction) {
+async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
-    if  (!db.validateWatchNotification(userId, watchId, seller)) return;
+    const validity = await db.validateWatchNotification(userId, watchId, seller)
+    if (!validity) return;
 
-    const url = await fetchImageUrl(item);
+    const url = await fetchImageUrl(item).catch(console.error);
     const formattedPrice = price ? `${price}pp` : 'No Price Listed' ;
+    const formattedItem = formatCapitalCase(item);
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
         .setImage(url === `https://i.imgur.com/wXJsk7Y.png` ? null : url)
@@ -241,35 +308,61 @@ async function pingUser (watchId, userID, seller, item, price, server, fullAucti
         .setAuthor('Watch Notification', url, `https://wiki.project1999.com/${formatItemNameForWiki(item)}`)
         .setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
         .addField(formattedPrice || 'No Price Listed', formatCapitalCase(item), false)
-        .setFooter('To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\n⌚')
+        // .addField(`Watch expires: ${expiration.toLocaleString()}`)
+        .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
-    if (bot.users.cache.get(userID.toString()) === undefined) {
-        console.log('sending msg to user ', userID)
-        bot.guilds.cache.get(GUILD).members.fetch(userID.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
+    if (bot.users.cache.get(user.toString()) === undefined) {
+        console.log('sending msg to user ', user)
+        bot.guilds.cache.get(GUILD).members.fetch(user.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
     } else {
-        bot.users.cache.get(userID.toString()).send(msg)
+        bot.users.cache.get(user.toString()).send(msg)
         .then(message => {
             message
             .react('💤')                     // for "snooze watch"
             .then(() => message.react('❌')) // for "delete watch"
             .then(() => message.react('🔕')) // for "silence seller"
+            .then(() => message.react('♻'))  // for "extend watch"
             .then(() => {
                 const react_filter = (reaction, user) => {
-                    return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕';
+                    return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕' || reaction.emoji.name === '♻';
                 }
-                const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 });
+                const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
                 collector.on('collect', (reaction, user) => {
+                    switch (reaction.emoji.name) {
+                        //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
+                        case '💤': //alt: 🔕
+                            // Snooze this watch for 6 hours
+                            // db.snooze('watch');
+                            user.send(`Sleep is good.  Pausing notifications for the next 6 hours on this watch.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze all\`\``).catch(console.error);
+                            break;
+                        case '❌':
+                            // Delete this watch
+                            db.endWatch(user.id, item, server);
+                            user.send(`Got it! No longer watching auctions for ${formattedItem} on P1999 ${server} server.`);
+                            break;
+                        case '🔕':
+                            // Ignore this seller's auctions for this watch
+                            // db.blockSeller(user.id, seller, watchId)
+                            user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                            break;
+                        case '♻': //extend watch
+                            console.log('extend watch')
+                            db.extendWatch(watchId)
+                            user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                            break;
+                        default:
+                            break;
+                    }
+                })
+                collector.on('remove', (reaction, user) => {
                     switch (reaction.emoji.name) {
                         //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
                         // 👋 🛑 🛎 ⏰ 🔔 ▶ ⏯ ⏸ 🔁 ♻ ✔ 💣
                         case '💤': //alt: 🔕
                             // Snooze this watch for 6 hours
+                            // db.unsnooze('watch');
+                            user.send(`U woke me tf up - nice!`).catch(console.error);
                             break;
-                        case '⏰': //alt: 🔔 
-                            //unsnooze this watch
-                            break;
-                        case '✔': //add watch
-                            //todo, refactor endWatch and add active boolean field to watches
                         case '❌':
                             // Delete this watch
                             db.endWatch(user.id, item, server);
@@ -277,14 +370,8 @@ async function pingUser (watchId, userID, seller, item, price, server, fullAucti
                             break;
                         case '🔕':
                             // Ignore this seller's auctions for this watch
-                            db.blockSeller(user.id, seller, watchId)
+                            // db.blockSeller(user.id, seller, watchId)
                             user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
-                            break;
-                        case '🔔': //unblocked user
-                            //TODO
-                            break;
-                        case '♻': //extend watch
-                            //TODO
                             break;
                         default:
                             break;
@@ -292,8 +379,10 @@ async function pingUser (watchId, userID, seller, item, price, server, fullAucti
                 })
             })
         })
-        .catch((err)=> console.log('ping user else block', userID, err));
+        .catch(console.error);
     }
+    //add to communication_history
+    db.postSuccessfulCommunication(watchId, seller)
 }
 
 function streamAuction (auction_user, auction_contents, server) {
