@@ -110,6 +110,8 @@ bot.on('message', function (message) {
                             const diff = expiration.diff(now)
                             const diffDuration = moment.duration(diff)
                             const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
+                            const item = formatCapitalCase(watch.name)
+                            const server = `${formatCapitalCase(watch.server)} Server`
                             watches.push({
                                 name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
                                 value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
@@ -140,23 +142,18 @@ bot.on('message', function (message) {
                                             //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
                                             case '💤': //alt: 🔕
                                                 // Snooze this watch for 6 hours
-                                                // db.snooze('watch');
-                                                user.send(`Sleep is good.  Pausing notifications for the next 6 hours on this watch.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze all\`\``).catch(console.error);
+                                                db.snooze('watch', watch.id);
+                                                user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
                                                 break;
                                             case '❌':
                                                 // Delete this watch
-                                                db.endWatch(user.id, item, server);
-                                                user.send(`Got it! No longer watching auctions for ${formattedItem} on P1999 ${server} server.`);
-                                                break;
-                                            case '🔕':
-                                                // Ignore this seller's auctions for this watch
-                                                // db.blockSeller(user.id, seller, watchId)
-                                                user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                                                db.endWatch(null, null, null, watch.id);
+                                                user.send(`Very well, no longer watching for auctions of \`\`${item}\`\`\ on \`\`${server}\`\`.`);
                                                 break;
                                             case '♻': //extend watch
                                                 console.log('extend watch')
-                                                // db.extendWatch(watchId)
-                                                user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                                                db.extendWatch(watch.id)
+                                                user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${item}\`\` watch on \`\`${server}\`\`.`);
                                                 break;
                                             default:
                                                 break;
@@ -165,16 +162,15 @@ bot.on('message', function (message) {
                                     collector.on('remove', (reaction, user) => {
                                         switch (reaction.emoji.name) {
                                             //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
-                                            // 👋 🛑 🛎 ⏰ 🔔 ▶ ⏯ ⏸ 🔁 ♻ ✔ 💣
                                             case '💤': //alt: 🔕
-                                                // Snooze this watch for 6 hours
-                                                // db.unsnooze('watch');
-                                                user.send(`U woke me tf up - nice!`).catch(console.error);
+                                                // unsnooze watch
+                                                db.unsnooze('watch', watch.id);
+                                                user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
                                                 break;
                                             case '❌':
                                                 // Delete this watch
-                                                db.endWatch(user.id, item, server);
-                                                user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                                                db.addWatch(null, null, null, null, watch.id);
+                                                user.send(`Ok, watching for auctions of \`\`${item}\`\` on P1999 \`\`${server}\`\` again.`);
                                                 break;
                                             case '🔕':
                                                 // Ignore this seller's auctions for this watch
@@ -308,7 +304,6 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .setAuthor('Watch Notification', url, `https://wiki.project1999.com/${formatItemNameForWiki(item)}`)
         .setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
         .addField(formattedPrice || 'No Price Listed', formatCapitalCase(item), false)
-        // .addField(`Watch expires: ${expiration.toLocaleString()}`)
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
     if (bot.users.cache.get(user.toString()) === undefined) {
@@ -332,13 +327,13 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                         //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
                         case '💤': //alt: 🔕
                             // Snooze this watch for 6 hours
-                            // db.snooze('watch');
-                            user.send(`Sleep is good.  Pausing notifications for the next 6 hours on this watch.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze all\`\``).catch(console.error);
+                            db.snooze('watch', watch.id);
+                            user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
                             break;
                         case '❌':
                             // Delete this watch
                             db.endWatch(user.id, item, server);
-                            user.send(`Got it! No longer watching auctions for ${formattedItem} on P1999 ${server} server.`);
+                            user.send(`Got it! No longer watching auctions for ${watch.name} on P1999 ${server} server.`);
                             break;
                         case '🔕':
                             // Ignore this seller's auctions for this watch
@@ -356,12 +351,10 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                 })
                 collector.on('remove', (reaction, user) => {
                     switch (reaction.emoji.name) {
-                        //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
-                        // 👋 🛑 🛎 ⏰ 🔔 ▶ ⏯ ⏸ 🔁 ♻ ✔ 💣
-                        case '💤': //alt: 🔕
-                            // Snooze this watch for 6 hours
-                            // db.unsnooze('watch');
-                            user.send(`U woke me tf up - nice!`).catch(console.error);
+                        case '💤':
+                            // unsnooze watch
+                            db.unsnooze('watch', watch.id);
+                            user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
                             break;
                         case '❌':
                             // Delete this watch

@@ -84,7 +84,17 @@ function getWatches(callback) {
     .catch((err) => console.log(err))
 }
 
-function addWatch(user, item, price, server) {
+function addWatch(user, item, price, server, watchId) {
+    console.log(user, item, price, server, watchId)
+    //if already have watchId, simple update
+    if (watchId) {
+        const queryStr = `UPDATE watches SET active = true WHERE id = $1;`;
+        connection.query(queryStr, [watchId])
+        return;
+    }
+
+    //otherwise add each item individually...
+
     //check for 'k' and cast price to number
     let numPrice;
     if (price != -1) {
@@ -105,14 +115,15 @@ function addWatch(user, item, price, server) {
                 let itemId = results;
                 let queryStr = "" +
                     "UPDATE watches " +
-                    "SET user_id = $1, item_id = $2, price = $3, server = $4 " +
+                    "SET user_id = $1, item_id = $2, price = $3, server = $4, active = TRUE " +
                     "WHERE user_id = $1 AND item_id = $2 AND server = $4";
                 connection.query(queryStr, [userId, itemId, numPrice, server])
                 .then((results) => {
+                    console.log(results.rowCount)
                     if (results.rowCount === 0) {
                         let queryStr = "" +
-                            "INSERT INTO watches (user_id, item_id, price, server, datetime) " +
-                            "VALUES ($1, $2, $3, $4, current_timestamp)";
+                            "INSERT INTO watches (user_id, item_id, price, server, datetime, active) " +
+                            "VALUES ($1, $2, $3, $4, current_timestamp, true)";
                         connection.query(queryStr, [userId, itemId, numPrice, server]);
                     }
                 })
@@ -121,20 +132,27 @@ function addWatch(user, item, price, server) {
     })
 }
 
-function endWatch(user, item, server) {
-    // let item = unsanitizedItem.replace(/\'/g, "''");
-
-    findOrAddUser(user)
-    .then((results) => {
-        let userId = results;
-        findOrAddItem(item)
+function endWatch(user, item, server, watchId) {
+    if (watchId) {
+        const queryStr = `UPDATE watches SET active = false WHERE id = $1;`;
+        connection.query(queryStr, [watchId])
+            .catch(console.error);
+        
+    } else {
+        findOrAddUser(user)
         .then((results) => {
-            let itemId = results;
-            let queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';
-            connection.query(queryStr, [userId, itemId, server]);
+            let userId = results;
+            findOrAddItem(item)
+            .then((results) => {
+                let itemId = results;
+                console.log(userId, itemId, server)
+                let queryStr = `UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;`;
+                // FROM watches INNER JOIN users on watches.user_id = users.id INNER JOIN items on watches.item_id = items.id WHERE users.name = $1 AND FROM items WHERE items.name = $2 AND server = $3;';
+                connection.query(queryStr, [userId, itemId, server]).catch(console.error)
+            })
         })
-    })
-    .catch(console.error);
+        .catch(console.error);
+    }
 }
 
 function endAllWatches(user) {
@@ -160,7 +178,7 @@ function showWatch(user, item, callback) {
 
             const pattern = '%'.concat(item).concat('%')
             let queryStr = '' +
-                'SELECT items.name, price, server, datetime ' +
+                'SELECT watches.id, items.name, price, server, datetime ' +
                 'FROM watches ' +
                 'INNER JOIN items ON items.id = item_id ' +
                 'WHERE user_id = $1 AND items.name LIKE $2 AND active = true ORDER BY items.name ASC;';
@@ -227,9 +245,9 @@ function extendAllWatches(user) {
         .catch(console.error)
 }
 
-function blockSeller(user, seller, watchId, server) {
+function blockSeller(user, seller, server, watchId) {
     //if watchId provided, block based on watch
-    if (watchId !== undefined) {
+    if (watchId !== undefined || watchId === null) {
         const queryStr = 'CASE WHEN NOT EXISTS (SELECT id FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2)' +
         ' THEN INSERT INTO blocked_seller_by_watch (seller, watch_id) VALUES ($1, $2);'
         connection.query(queryStr, [seller, watchId]).catch(console.error);
@@ -247,7 +265,7 @@ function blockSeller(user, seller, watchId, server) {
     }
 }
 
-function unblockSeller(user, seller, watchId, server) {
+function unblockSeller(user, seller, server, watchId) {
     //if watchId provided, unblock based on watch
     if (watchId !== undefined) {
         const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2);'
@@ -264,29 +282,38 @@ function unblockSeller(user, seller, watchId, server) {
     }
 }
 
-//TODO:
 function snooze(type, id, hours = 6) {
     switch(type.toUpperCase()) {
         case 'WATCH':
             //insert into watch snoooze
-            const queryStr = `INSERT INTO snooze_by_watch (watch_id, expiration) VALUES ($1, now() + interval $2 hours) ON CONFLICT (watch_id_unique) DO UPDATE SET expiration = now() + interval $2 hours;`;
-            connection.query(queryStr, [id, hours])
-                .catch(console.error)
+            (() => {
+                const queryStr = `INSERT INTO snooze_by_watch (watch_id, expiration) VALUES ($1, now() + interval '1 hour' * $2) ON CONFLICT (watch_id) DO UPDATE SET expiration = now() + interval '1 hour' * $2;`;
+                connection.query(queryStr, [id, hours])
+                    .catch(console.error)})()
             break;
         case 'USER':
             //insert into account snooze
+            (() => {
+                const queryStr = `INSERT INTO snooze_by_user (user_id, expiration) VALUES ($1, now() + interval '1 hour' * $2) ON CONFLICT (user_id) DO UPDATE SET expiration = now() + interval '1 hour' * $2;`;
+                connection.query(queryStr, [id, hours])
+                    .catch(console.error)})();
             break;
     }
 }
 
-//TODO:
-function unsnooze(type, id, hours = 6) {
+function unsnooze(type, id) {
     switch(type.toUpperCase()) {
         case 'WATCH':
-            //insert into watch snoooze
+            (() => {
+                const queryStr = `DELETE FROM snooze_by_watch WHERE watch_id = $1;`;
+                connection.query(queryStr, [id])
+                    .catch(console.error)})()
             break;
         case 'USER':
-            //insert into account snooze
+            (() => {
+                const queryStr = `DELETE FROM snooze_by_user WHERE user_id = $1;`;
+                connection.query(queryStr, [id, hours])
+                    .catch(console.error)})();
             break;
     }
 }
@@ -331,4 +358,4 @@ function upkeep() {
                 .catch(console.error)
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatches, getWatches, postSuccessfulCommunication, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatches, snooze, unsnooze, getWatches, postSuccessfulCommunication, validateWatchNotification, upkeep };
