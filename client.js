@@ -27,15 +27,12 @@ bot.on('ready', () => {
 
 //server greeting for users who join
 bot.on('guildMemberAdd', (member) => {
-    let guild = member.guild; // Reading property `guild` of guildmember object.
     let memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
     bot.channels.cache.get(GENERAL_CHANNEL).send(`Welcome to the server, ${memberTag}!`)
     bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg);
 })
 
 bot.on('message', function (message) {
-    // console.log(message);
-
     // ignore bots
     if (message.author.bot){
         return;
@@ -56,10 +53,6 @@ bot.on('message', function (message) {
         }
 
         switch(cmd) {
-
-            case 'PING':
-                pingUser(1, message.userID, args[1], args[0], null, 'GREEN', `WTS ${args[0]}`)
-                break;
             // !help
             case 'HELP':
                 message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg)
@@ -139,8 +132,7 @@ bot.on('message', function (message) {
                                     const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
                                     collector.on('collect', (reaction, user) => {
                                         switch (reaction.emoji.name) {
-                                            //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
-                                            case '💤': //alt: 🔕
+                                            case '💤':
                                                 // Snooze this watch for 6 hours
                                                 db.snooze('watch', watch.id);
                                                 user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
@@ -161,20 +153,19 @@ bot.on('message', function (message) {
                                     })
                                     collector.on('remove', (reaction, user) => {
                                         switch (reaction.emoji.name) {
-                                            //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
-                                            case '💤': //alt: 🔕
+                                            case '💤':
                                                 // unsnooze watch
                                                 db.unsnooze('watch', watch.id);
                                                 user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
                                                 break;
                                             case '❌':
-                                                // Delete this watch
+                                                // Renew watch
                                                 db.addWatch(null, null, null, null, watch.id);
                                                 user.send(`Ok, watching for auctions of \`\`${item}\`\` on P1999 \`\`${server}\`\` again.`);
                                                 break;
                                             case '🔕':
-                                                // Ignore this seller's auctions for this watch
-                                                // db.blockSeller(user.id, seller, watchId)
+                                                //unblock seller's auctions for this watch
+                                                db.unblockSeller(user.id, seller, watch.server, watch.id)
                                                 user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
                                                 break;
                                             default:
@@ -238,20 +229,22 @@ bot.on('message', function (message) {
             // !add block
             case 'ADD BLOCK':
                 if (args[1] === 'BLUE' || args[1] === 'GREEN') {
-                    db.blockSeller(message.author.id, args[0], null, server)
-                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${seller} on ${server} for any current or future watches.`);
+                    db.blockSeller(message.author.id, args[0], args[1], null)
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]} for any current or future watches.`);
                 } else {
                     db.blockSeller(message.author.id, args[0], null, null)
-                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${seller} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!add block: ${seller}, server`);
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!add block: ${args[0]}, server\`\``);
                 }
                 break;
 
             //TODO:
             case 'DELETE BLOCK':
                 if (args[1] === 'BLUE' || args[1] === 'GREEN') {
-                    db.unblockSeller(message.author.id, args[0], null, server)
+                    db.unblockSeller(message.author.id, args[0], args[1], null)
+                    message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on ${formatCapitalCase(args[1])} server.`)
                 } else {
                     db.unblockSeller(message.author.id, args[0], null, null)
+                    message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on either server.`)
                 }
                 break;
 
@@ -260,11 +253,16 @@ bot.on('message', function (message) {
                 //TODO: format an embedded message for all blocks, user and watch
                 break;
             // TODO:
-            case 'SNOOZE ALL':
-                //TODO: snooze all watches based on argument or default
+            case 'SNOOZE':
+                // TODO: add argument for hours
+                //snooze all watches
+                db.snooze('USER', message.author.id) 
+                message.author.send(`Sleep is good.  Pausing notifications on all watches for 6 hours.  Use \`\`!unsnooze\`\` to resume watch notifications.`)
                 break;
-            case 'UNSNOOZE ALL':
+            case 'UNSNOOZE':
                 //TODO: unsnooze all watches
+                db.unsnooze('USER', message.author.id)
+                message.author.send(`Rise and grind- let's get that Loaf of Bread`)
                 break;
             case 'GNOME FACT':
                 //TODO: deliver gnome fact based on # provided or random if no number
@@ -357,13 +355,13 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                             user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
                             break;
                         case '❌':
-                            // Delete this watch
-                            db.endWatch(user.id, item, server);
+                            // renew this watch
+                            // db.endWatch(user.id, item, server);
                             user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
                             break;
                         case '🔕':
-                            // Ignore this seller's auctions for this watch
-                            // db.blockSeller(user.id, seller, watchId)
+                            // unblock the seller for this auction
+                            // db.unblockSeller(user.id, seller, watchId)
                             user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
                             break;
                         default:

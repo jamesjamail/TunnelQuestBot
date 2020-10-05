@@ -112,3 +112,17 @@ TABLESPACE pg_default;
 
 ALTER TABLE public.snooze_by_watch
     OWNER to postgres;
+
+
+    CREATE TABLE public.snooze_by_user
+(
+    id bigserial NOT NULL,
+    user_id bigint NOT NULL,
+    expiration time without time zone NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (user_id)
+
+);
+
+ALTER TABLE public.snooze_by_user
+    OWNER to postgres;
