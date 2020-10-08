@@ -102,6 +102,9 @@ bot.on('message', function (message) {
                             const now = moment(new Date);
                             const diff = expiration.diff(now)
                             const diffDuration = moment.duration(diff)
+                            const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
+                            const snoozeDiff = snoozeExpiration.diff(now)
+                            const snoozeDuration = moment.duration(snoozeDiff)
                             const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
                             const item = formatCapitalCase(watch.name)
                             const server = `${formatCapitalCase(watch.server)} Server`
@@ -110,6 +113,15 @@ bot.on('message', function (message) {
                                 value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
                                 inline: false
                             })
+
+                            if (watch.expiration) {
+                                console.log(item, expiration)
+                                watches.push({
+                                    name: `💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤`,
+                                    value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
+                                    inline: false
+                                })
+                            }
                             message.author.send(
                                 new Discord.MessageEmbed()
                                 .setColor(SERVER_COLOR[watch.server])
@@ -194,7 +206,7 @@ bot.on('message', function (message) {
                             const diffDuration = moment.duration(diff)
                             const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
                             watches.push({
-                                name: `\`${formatCapitalCase(watch.name)}\` | \`${price}\` | \`${formatCapitalCase(watch.server)}\``,
+                                name: `\`${watch.expiration ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
                                 value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
                                 inline: false
                             })
@@ -290,6 +302,7 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
+    console.log('validity = ', validity, item, userId)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -321,11 +334,12 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                 }
                 const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
                 collector.on('collect', (reaction, user) => {
+                    if (user.bot) return;
                     switch (reaction.emoji.name) {
                         //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
                         case '💤': //alt: 🔕
                             // Snooze this watch for 6 hours
-                            db.snooze('watch', watch.id);
+                            db.snooze('watch', watchId);
                             user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
                             break;
                         case '❌':
@@ -335,7 +349,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                             break;
                         case '🔕':
                             // Ignore this seller's auctions for this watch
-                            // db.blockSeller(user.id, seller, watchId)
+                            db.blockSeller(user.id, seller, null, watchId)
                             user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
                             break;
                         case '♻': //extend watch
@@ -361,7 +375,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                             break;
                         case '🔕':
                             // unblock the seller for this auction
-                            // db.unblockSeller(user.id, seller, watchId)
+                            db.unblockSeller(user.id, seller, null, watchId)
                             user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
                             break;
                         default:

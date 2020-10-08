@@ -126,3 +126,48 @@ ALTER TABLE public.snooze_by_watch
 
 ALTER TABLE public.snooze_by_user
     OWNER to postgres;
+
+
+--dont forget snooze_by_user
+
+--...
+
+ALTER TABLE public.snooze_by_user
+    ADD UNIQUE (user_id);
+
+
+    CREATE TABLE public.snooze_by_watch
+(
+    id bigserial NOT NULL,
+    watch_id bigint NOT NULL,
+    expiration timestamp without time zone NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (watch_id)
+        REFERENCES public.watches (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+--dont forget to add unique
+
+ALTER TABLE public.snooze_by_watch
+    OWNER to postgres;
+
+
+    CREATE TABLE public.blocked_seller_by_watch
+(
+    id bigserial NOT NULL,
+    watch_id bigint NOT NULL,
+    seller text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (watch_id)
+        INCLUDE(seller, server),
+    FOREIGN KEY (watch_id)
+        REFERENCES public.watches (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE public.blocked_seller_by_watch
+    OWNER to postgres;

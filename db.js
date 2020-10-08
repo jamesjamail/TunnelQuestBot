@@ -82,7 +82,7 @@ function getWatches(callback) {
     .then((res) => {
         callback(res.rows)
     })
-    .catch((err) => console.log(err))
+    .catch((err) => console.error(err))
 }
 
 function addWatch(user, item, price, server, watchId) {
@@ -174,10 +174,12 @@ function showWatch(user, item, callback) {
         let userId = results;
         const pattern = '%'.concat(item).concat('%')
         let queryStr = '' +
-            'SELECT watches.id, items.name, price, server, datetime ' +
+            'SELECT watches.id, items.name, price, server, datetime, expiration ' +
             'FROM watches ' +
             'INNER JOIN items ON items.id = item_id ' +
-            'WHERE user_id = $1 AND items.name LIKE $2 AND active = true ORDER BY items.name ASC;';
+            'LEFT JOIN snooze_by_watch ON snooze_by_watch.watch_id = watches.id ' +
+            'WHERE watches.user_id = $1 AND items.name LIKE $2 AND watches.active = true;'
+            'AND expiration IS NULL OR expiration > now() ORDER BY items.name ASC;';
         connection.query(queryStr, [userId, pattern])
         .then((res) => {
             if (res.rowCount === 0) {
@@ -194,10 +196,12 @@ function showWatches(user, callback) {
     findOrAddUser(user)
     .then((userId) => {
         let queryStr = '' +
-            'SELECT items.name, price, server, datetime ' +
+            'SELECT items.name, price, server, datetime, expiration ' +
             'FROM watches ' +
             'INNER JOIN items ON items.id = item_id ' +
-            'WHERE user_id = $1 AND active = true ORDER BY items.name;';
+            'LEFT JOIN snooze_by_watch ON watch_id = watches.id ' +
+            'WHERE user_id = $1 AND active = true ' +
+            'AND expiration IS NULL OR expiration > now() ORDER BY items.name;';
         connection.query(queryStr, [userId])
             .then((res) => {
                 if (res.rowCount === 0) {
@@ -234,6 +238,7 @@ function extendAllWatches(user) {
 
 function blockSeller(user, seller, server, watchId) {
     //no watchId, account based block
+    console.log(user, seller, server, watchId)
     if (watchId === undefined || watchId === null) {
         //add or find user
         findOrAddUser(user).then((userId) => {
@@ -248,6 +253,7 @@ function blockSeller(user, seller, server, watchId) {
         }).catch(console.error)
         } else {
             //if watchId provided, block based on watch
+            console.log('this is rly happening')
             const queryStr = 'INSERT INTO blocked_seller_by_watch (seller, watch_id) VALUES ($1, $2) ON CONFLICT DO NOTHING'
             connection.query(queryStr, [seller, watchId]).catch(console.error);
         }
@@ -356,21 +362,40 @@ async function validateWatchNotification(userId, watchId, seller) {
             } else {
                 //otherwise check if seller is blocked by user
                 const queryStr = 'SELECT seller FROM blocked_seller_by_user WHERE user_id = $1 AND seller = $2'
-                connection.query(queryStr, [userId, seller])
+                return connection.query(queryStr, [userId, seller])
                     .then((res) => {
-                        if (res && res.row > 0) {
+                        if (res && res.rows.length > 0) {
                             //return false if seller is blocked by user
                             return false;
                         } else {
                             //otherwise check if seller is blocked by watch
                             const queryStr = 'SELECT seller FROM blocked_seller_by_watch WHERE watch_id = $1 AND seller = $2';
-                            connection.query(queryStr, [userId, seller])
+                            return connection.query(queryStr, [watchId, seller])
                                 .then((res) => {
-                                    if (res  && res.rows > 0){
-                                        return false
+                                    if (res && res.rows.length > 0){
+                                        return false;
                                     } else {
-                                        //if no results for any of these queries, it's safe to notify the user
-                                        return true;
+                                        //otherwise check if watch is snoozed
+                                        const queryStr = 'SELECT id FROM snooze_by_watch WHERE watch_id = $1 AND expiration > now()'
+                                        return connection.query(queryStr, [watchId])
+                                            .then((res) => {
+                                                console.log(res.rows.length, watchId)
+                                                if (res && res.rows.length > 0) {
+                                                    return false;
+                                                } else {
+                                                    //otherwise check if user is snoozed
+                                                    const queryStr = 'SELECT id FROM snooze_by_user WHERE user_id = $1 AND expiration < now()'
+                                                    return connection.query(queryStr, [userId])
+                                                        .then((res) => {
+                                                            if (res && res.rows.length > 0) {
+                                                                return false;
+                                                            } else {
+                                                                //if no results for any of these queries, it's safe to notify the user
+                                                                return true;
+                                                            }
+                                                        })
+                                                }
+                                            })
                                     }
                                 })
                         }
