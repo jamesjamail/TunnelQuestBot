@@ -232,7 +232,7 @@ bot.on('message', function (message) {
                         })
                         message.author.send(
                             new Discord.MessageEmbed()
-                            .setColor('#ffea00')
+                            .setColor('#EFE357')
                             .setTitle(res.msg[0].global_snooze ? `__Active Watches (Snoozed)__`: `__Active Watches__`)
                             .addFields(watches)
                         )
@@ -340,7 +340,7 @@ bot.on('message', function (message) {
                         }  
                         message.author.send(
                             new Discord.MessageEmbed()
-                            .setColor('#ffea00')
+                            .setColor('#EFE357')
                             .setTitle(`__Blocks__`)
                             .addFields(blocks)
                         )

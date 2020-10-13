@@ -3,7 +3,6 @@ const { parsePrice } = require('./utils');
 // Poll DB for new watches on a set interval:
 //                   m   s    ms
 const pullInterval = 1 * 10 * 1000;
-//TODO: change to auctions below  - changed for testing
 const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 

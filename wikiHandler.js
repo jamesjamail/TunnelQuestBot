@@ -17,7 +17,7 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
-const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
+const SERVER_COLOR = {BLUE: '#1C58B8', GREEN: '#2FC374'};
 
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
