@@ -78,6 +78,14 @@ function formatItemData(item_data) {
     return formatted_items;
 }
 
+async function fetchWikiPricing(auction_contents, server) {
+    const item_data = await findWikiData(auction_contents, server);
+    if (Object.entries(item_data).length === 0) return null;
+
+    const formatted_items = formatItemData(item_data);
+    return formatted_items[Object.keys(formatted_items)[0]].historical_pricing
+}
+
 function formatPrice(price) {
     //if price is undefined, return 'no price lsited'
     if (price === undefined) {
@@ -184,3 +192,4 @@ exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
 exports.getWikiPricing = getWikiPricing;
 exports.SERVER_COLOR = SERVER_COLOR;
 exports.fetchImageUrl = fetchImageUrl;
+exports.fetchWikiPricing = fetchWikiPricing;

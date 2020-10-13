@@ -3,7 +3,7 @@ const logger = require('winston');
 const settings = require('./settings.json');
 const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
-const { fetchAndFormatAuctionData, fetchImageUrl } = require("./wikiHandler");
+const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing } = require("./wikiHandler");
 const { SERVER_COLOR } = require('./wikiHandler')
 const { formatCapitalCase, removeLogTimestamp, formatItemNameForWiki } = require('./utils')
 const moment = require('moment');
@@ -41,60 +41,82 @@ bot.on('message', function (message) {
     // listen for messages that will start with `!`
     if (message.content.startsWith('!')) {
         console.log(message.content);
-        let colIndex = message.content.indexOf(':');
-        let cmd;
+        const spaceIndex = message.content.indexOf(' ');
+        let cmd = '';
         let args;
-        if (colIndex === -1) {
-            cmd = message.content.substring(1).toUpperCase().trim();
-        } else {
-            cmd = message.content.substring(1, colIndex).toUpperCase();
-            args = message.content.substring(colIndex+1).toUpperCase().split(',');
+        //allow users to enter single word commands with no spaces
+        if (spaceIndex === -1) {
+            cmd = message.content.substring(1).toUpperCase();
+        } else  {
+            cmd = message.content.substring(1, spaceIndex).toUpperCase();
+            args = message.content.substring(spaceIndex+1).toUpperCase().split(',');
             args.forEach((elem, index, array) => array[index] = elem.trim().replace(/[<>"\{\}\[\]]/g, ''));
         }
 
+        //if user entered a depreciated command, inform them
+        const deprecatedCmds = ['ADD', 'END', 'SHOW'];
+        let abort = false;
+        deprecatedCmds.forEach((deprecatedCmd) => {
+            if (deprecatedCmd === cmd) {
+                message.author.send(`It looks like you've entered a deprecated command.  Please see the current commands below:${helpMsg}`)
+                abort = true;
+            }
+        })
+
+        if (abort) return;
+
+        //if user entered a current command ending in ':', inform them and trim the colon off
+        const colonCmds = ['WATCH:', 'UNWATCH:', 'BLOCK:', 'UNBLOCK:', 'SNOOZE:', 'UNSNOOZE:', 'LIST:', 'WATCHES:', 'EXTEND:', 'HELP:'];
+        colonCmds.forEach((colonCmd) => {
+            if (colonCmd === cmd) {
+                message.author.send(`Current commands do not require a colon.  I entered your command, but wanted to give you a heads-up.`)
+                cmd = cmd.substring(0, cmd.length - 1)
+                return;
+            }
+        })
         switch(cmd) {
             // !help
             case 'HELP':
                 message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg)
                 break;
 
-            // !add watch <item>
-            case 'ADD WATCH':
-                // console.log('add watch command received.  args = ', args)
+            // !watch <item>
+            case 'WATCH':
+                //required arguments
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
-                    message.author.send(`Sorry, it looks like your missing some arguments.  Please specify ITEM, PRICE, SERVER in that order separated by commas.  Try "!help" for syntax structure.`)
-                } else if (args[2] === undefined && args[1].toUpperCase().includes('GREEN') || args[2] === undefined && args[1].toUpperCase().includes('BLUE')) {
-                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`ANY PRICE\` on Project 1999 \`${args[1]}\ server\`.`)
-                    args[2] = args[1];
-                    args[1] = -1;
+                    message.author.send(`Sorry, it looks like your missing some arguments.  Please specify \`ITEM\` and \`SERVER\`.  Try "!help" for syntax structure.`)
+                //validate server
+                } else if (args[1].toUpperCase() !== 'GREEN' && args[1].toUpperCase() !== 'BLUE') {
+                    message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\``);
+                // check for price argument
+                } else if (args[2] !== undefined && args[2] !== null && args[2] !== '') {
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
-                } 
-                else if (args[2] !== undefined && args[2].toUpperCase() !== 'GREEN' && args[2].toUpperCase() !== 'BLUE') {
-                    message.author.send(`Sorry, I don't recognize the server name ${args[2]}.  Please try "green" or "blue"`);
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]} server\`.`)
+                //if no price, set watch accordingly
                 } else {
-                    db.addWatch(message.author.id, args[0], args[1], args[2]);
-                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[1]}pp\` or less on Project 1999 \`${args[2]} server\`.`)
+                    db.addWatch(message.author.id, args[0], args[1], -1);
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]} server\`.`)
                 }
                 break;
 
-            // !end watch: <item>, <server>
-            case 'END WATCH':
-                // console.log('end watch command received.  args = ', args)
+            // !unwatch: <item>, <server>
+            case 'UNWATCH':
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
-                    message.author.send('Please specify both \`item\` and \`server\` to end a watch, or use "!end all watches" to end all watches.')
+                    message.author.send('Please specify both \`item\` and \`server\` to end a watch.')
+                //validate server
+                } else if (args[1] !== 'GREEN' || args[1] !== 'BLUE') {
+                    message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
                 } else {
+                // end the watch
                     db.endWatch(message.author.id, args[0], args[1]);
                     message.author.send(`Got it! No longer watching auctions for \`${args[0]}\` on Project 1999 \`${args[1]} server\`.`);
                 }
                 break;
 
-            // !show watch: <item>
-            case 'SHOW WATCH':
-                // console.log('show watch command received.  args = ', args)
-                
-                db.showWatch(message.author.id, args[0], (res) => {
+            // !watches: [search term]
+            case 'WATCHES':
+                db.showWatch(message.author.id, args && args[0] ? args[0] : '', (res) => {
                     if (res.success) {
-                        console.log(res.data)
                         res.data.forEach(async (watch) => {
                             let watches = [];
                             const url = await fetchImageUrl(watch.name).catch(console.error);
@@ -114,8 +136,7 @@ bot.on('message', function (message) {
                                 inline: false
                             })
 
-                            if (watch.expiration) {
-                                console.log(item, expiration)
+                            if (watch.snoozed) {
                                 watches.push({
                                     name: `💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤`,
                                     value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
@@ -155,7 +176,6 @@ bot.on('message', function (message) {
                                                 user.send(`Very well, no longer watching for auctions of \`\`${item}\`\`\ on \`\`${server}\`\`.`);
                                                 break;
                                             case '♻': //extend watch
-                                                console.log('extend watch')
                                                 db.extendWatch(watch.id)
                                                 user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${item}\`\` watch on \`\`${server}\`\`.`);
                                                 break;
@@ -191,11 +211,10 @@ bot.on('message', function (message) {
                         message.author.send(`You don\'t have any watches for ${args[0]}.`);
                     }
                 });
-                
                 break;
 
-            // !show watches
-            case 'SHOW WATCHES':
+            // !list
+            case 'LIST':
                 db.showWatches(message.author.id, (res) => {
                     if (res.success) {
                         let watches = [];
@@ -206,40 +225,74 @@ bot.on('message', function (message) {
                             const diffDuration = moment.duration(diff)
                             const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp')
                             watches.push({
-                                name: `\`${watch.expiration ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
+                                name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
                                 value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
                                 inline: false
                             })
                         })
                         message.author.send(
                             new Discord.MessageEmbed()
-                            .setColor('#d500f9')
-                            .setTitle(`__Active Watches__`)
+                            .setColor('#ffea00')
+                            .setTitle(res.msg[0].global_snooze ? `__Active Watches (Snoozed)__`: `__Active Watches__`)
                             .addFields(watches)
                         )
+                        .then((message) => {
+                            message
+                            .react('💤')                     // for "snooze (all)"
+                            .then(() => message.react('♻'))  // for "extend (all)"
+                            .then(() => {
+                                const react_filter = (reaction, user) => {
+                                    if (user.bot) {
+                                        return;
+                                    }
+                                    return reaction.emoji.name === '💤' || reaction.emoji.name === '♻';
+                                }
+                                const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
+                                collector.on('collect', (reaction, user) => {
+                                    if (user.bot) return;
+                                    switch (reaction.emoji.name) {
+                                        case '💤':
+                                            // Snooze this watch for 6 hours
+                                            db.snooze('user', user.id);
+                                            user.send(`Sleep is good.  Pausing notifications for the next 6 hours on all watches.  Click 💤 again to unsnooze.  To snooze an individual watch, use \`!watches\` and react with the \`🔕\` emoji.`)
+                                            .catch(console.error);
+                                            break;
+                                        case '♻': //extend watch
+                                            db.extendAllWatches(user.id)
+                                            user.send(`Good things come to those who wait.  I extended all your watches another 7 days.`);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                })
+                                collector.on('remove', (reaction, user) => {
+                                    if (user.bot) return;
+                                    switch (reaction.emoji.name) {
+                                        case '💤':
+                                            // unsnooze all watches
+                                            db.unsnooze('user', user.id);
+                                            user.send(`Rise and grind.  Your account is no longer snoozed.`).catch(console.error);
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                })
+                            })
+                        })
                         .catch(console.error);
                     }  else {
-                        message.author.send("You don\'t have any watches.  Add some with `!add watch:`");
+                        message.author.send("You don\'t have any watches.  Add some with `!watch`");
                     }
                 });
                 break;
 
-            // !end all watches
-            case 'END ALL WATCHES':
-                // console.log('end all watches command received.  args = ', args)
-                db.endAllWatches(message.author.id);
-                message.author.send('All watches succesfully ended.');
-                break;
-
-            // !extend all watches
-            case 'EXTEND ALL WATCHES':
-                // console.log('extend all watches command received.  args = ', args)
-                db.extendAllWatches(message.author.id);
+            // !extend
+            case 'EXTEND':
                 message.author.send('All watches succesfully extended for another 7 days.');
                 break;
 
             // !add block
-            case 'ADD BLOCK':
+            case 'BLOCK':
                 if (args[1] === 'BLUE' || args[1] === 'GREEN') {
                     db.blockSeller(message.author.id, args[0], args[1], null)
                     message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]} for any current or future watches.`);
@@ -250,7 +303,7 @@ bot.on('message', function (message) {
                 break;
 
             //TODO:
-            case 'DELETE BLOCK':
+            case 'UNBLOCK':
                 if (args[1] === 'BLUE' || args[1] === 'GREEN') {
                     db.unblockSeller(message.author.id, args[0], args[1], null)
                     message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on ${formatCapitalCase(args[1])} server.`)
@@ -261,27 +314,61 @@ bot.on('message', function (message) {
                 break;
 
             //TODO:
-            case 'SHOW BLOCKS':
-                //TODO: format an embedded message for all blocks, user and watch
+            case 'BLOCKS':
+                db.showBlocks(message.author.id, (res) => {
+                    let blocks = [];
+                    if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
+                        message.author.send(`You haven't blocked any sellers.  Use \`!block seller, server\` to block a seller on all watches, or react with the \`🔕\` emoji on a watch notification to block a seller only for a certain item.`)
+                    } else {
+                        if (res.user_blocks.length > 0) {
+                            res.user_blocks.forEach(block => {
+                                blocks.push({
+                                    name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
+                                    value: `All Watches`,
+                                    inline: false
+                                })
+                            })
+                            
+                        } if (res.watch_blocks.length > 0) {
+                            res.watch_blocks.forEach(block => {
+                                blocks.push({
+                                    name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
+                                    value: `\`${formatCapitalCase(block.name)}\` Watch`,
+                                    inline: false
+                                })
+                            })
+                        }  
+                        message.author.send(
+                            new Discord.MessageEmbed()
+                            .setColor('#ffea00')
+                            .setTitle(`__Blocks__`)
+                            .addFields(blocks)
+                        )
+                        .catch(console.error);
+                    }
+                })
                 break;
-            // TODO:
             case 'SNOOZE':
-                // TODO: add argument for hours
                 //snooze all watches
-                db.snooze('USER', message.author.id) 
-                message.author.send(`Sleep is good.  Pausing notifications on all watches for 6 hours.  Use \`\`!unsnooze\`\` to resume watch notifications.`)
+                if (args && args[0]) {
+                    db.snooze('USER', message.author.id, args[0]) 
+                    message.author.send(`Sleep is good.  Pausing notifications on all watches for ${args[0]} hours.  Use \`\`!unsnooze\`\` to resume watch notifications.`)
+                } else {
+                    db.snooze('USER', message.author.id) 
+                    message.author.send(`Sleep is good.  Pausing notifications on all watches for 6 hours.  Use \`\`!unsnooze\`\` to resume watch notifications.`)
+                }
                 break;
             case 'UNSNOOZE':
                 //TODO: unsnooze all watches
                 db.unsnooze('USER', message.author.id)
-                message.author.send(`Rise and grind- let's get that Loaf of Bread`)
+                message.author.send(`Rise and grind.  Let's get that Loaf of Bread`)
                 break;
-            case 'GNOME FACT':
-                //TODO: deliver gnome fact based on # provided or random if no number
-                break;
-            case 'TIP':
-                //TODO: deliver tip based on # provided or random if no number
-                break;
+            // case 'GNOME FACT':
+            //     //TODO: deliver gnome fact based on # provided or random if no number
+            //     break;
+            // case 'TIP':
+            //     //TODO: deliver tip based on # provided or random if no number
+            //     break;
 
             // default: command not recognized...
             default:
@@ -302,24 +389,40 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    console.log('validity = ', validity, item, userId)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
     const formattedPrice = price ? `${price}pp` : 'No Price Listed' ;
     const formattedItem = formatCapitalCase(item);
+    const historical_pricing = await fetchWikiPricing(item, server)
+
+    const fields = []
+
+    fields.push({
+        name: formattedPrice || 'No Price Listed',
+        value: `${formatCapitalCase(item)}`,
+        inline: false
+    })
+
+    if (historical_pricing) {
+        fields.push({
+            name: `Historical Pricing Data`,
+            value: historical_pricing,
+            inline: false
+        })
+    }
+
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
         .setImage(url === `https://i.imgur.com/wXJsk7Y.png` ? null : url)
         .setTitle(`${formatCapitalCase(item)}`)
         .setAuthor('Watch Notification', url, `https://wiki.project1999.com/${formatItemNameForWiki(item)}`)
         .setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
-        .addField(formattedPrice || 'No Price Listed', formatCapitalCase(item), false)
+        .addFields(fields)
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
     if (bot.users.cache.get(user.toString()) === undefined) {
-        console.log('sending msg to user ', user)
-        bot.guilds.cache.get(GUILD).members.fetch(user.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.log(err)});
+        bot.guilds.cache.get(GUILD).members.fetch(user.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.error(err)});
     } else {
         bot.users.cache.get(user.toString()).send(msg)
         .then(message => {
@@ -336,7 +439,6 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                 collector.on('collect', (reaction, user) => {
                     if (user.bot) return;
                     switch (reaction.emoji.name) {
-                        //TODO: when an emoji is clicked, remove and add the opposite (undo) function.
                         case '💤': //alt: 🔕
                             // Snooze this watch for 6 hours
                             db.snooze('watch', watchId);
@@ -345,7 +447,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                         case '❌':
                             // Delete this watch
                             db.endWatch(user.id, item, server);
-                            user.send(`Got it! No longer watching auctions for ${watch.name} on P1999 ${server} server.`);
+                            user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
                             break;
                         case '🔕':
                             // Ignore this seller's auctions for this watch
@@ -353,7 +455,6 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                             user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
                             break;
                         case '♻': //extend watch
-                            console.log('extend watch')
                             db.extendWatch(watchId)
                             user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
                             break;
@@ -362,6 +463,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                     }
                 })
                 collector.on('remove', (reaction, user) => {
+                    if (user.bot) return;
                     switch (reaction.emoji.name) {
                         case '💤':
                             // unsnooze watch
@@ -392,12 +494,10 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
 
 function streamAuction (auction_user, auction_contents, server) {
     const channelID = settings.servers[server].stream_channel;
-    // console.log(msg, server, channelID);
 
     fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
         bot.channels.fetch(channelID.toString())
             .then((channel) => {
-                // console.log('channel = ', channel)
                 channel.send(formattedAuctionMessage)
             })
             .catch(console.error)
@@ -405,6 +505,5 @@ function streamAuction (auction_user, auction_contents, server) {
 }
 
 bot.login(TOKEN);
-
 
 module.exports = {pingUser, streamAuction}
