@@ -342,8 +342,8 @@ function unsnooze(type, id) {
 }
 
 function postSuccessfulCommunication(watchId, seller) {
-    const queryStr = `INSERT INTO communication_history (watch_id, seller, timestamp) VALUES ($1, $2, now()) ON CONFLICT ON CONSTRAINT watch_id_seller DO UPDATE SET timestamp = now();`
-    connection.query(queryStr, [watchId, seller]).catch(console.error);
+    const queryStr = `INSERT INTO communication_history (watch_id, seller, timestamp) VALUES ($1, $2, now()) ON CONFLICT ON CONSTRAINT communication_history_watch_id_seller_key DO UPDATE SET timestamp = now();`
+    connection.query(queryStr, [watchId, seller.toUpperCase()]).catch(console.error);
 }
 
 
@@ -352,6 +352,7 @@ async function validateWatchNotification(userId, watchId, seller) {
     const queryStr = "SELECT id FROM communication_history WHERE watch_id = $1 AND seller = $2 AND timestamp > now() - interval '15 minutes';";
     const isValid = await connection.query(queryStr, [watchId, seller.toUpperCase()])
         .then((res) => {
+            console.log('validate res', res)
             //notified within 15 minute window already, return false
             if (res.rows && res.rows.length > 0) {
                 return false;

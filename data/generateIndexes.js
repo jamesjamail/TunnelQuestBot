@@ -9,7 +9,7 @@ async function get_items_in_category(category) {
     let item_map = new Map();
     let next_page = BASE_URL + CATEGORY_URL + category;
     while (next_page) {
-        console.log(`Getting page: ${next_page}`);
+        // console.log(`Getting page: ${next_page}`);
         let page = await fetch(next_page)
             .then(response => response.text())
             .then(text => { return text });

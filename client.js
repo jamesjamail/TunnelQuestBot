@@ -104,7 +104,7 @@ bot.on('message', function (message) {
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     message.author.send('Please specify both \`item\` and \`server\` to end a watch.')
                 //validate server
-                } else if (args[1] !== 'GREEN' || args[1] !== 'BLUE') {
+                } else if (args[1] !== 'GREEN' && args[1] !== 'BLUE') {
                     message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
                 } else {
                 // end the watch
@@ -389,6 +389,7 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
+    console.log('watchId: ', watchId, 'seller:', seller, 'item:', item, 'validity:', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -422,7 +423,75 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
     if (bot.users.cache.get(user.toString()) === undefined) {
-        bot.guilds.cache.get(GUILD).members.fetch(user.toString()).then((res)=>{res.send(msg)}).catch((err)=> {console.error(err)});
+        bot.guilds.cache.get(GUILD).members.fetch(user.toString())
+            .then((res)=>{
+                res.send(msg)
+                    .then(message => {
+                        message
+                        .react('💤')                     // for "snooze watch"
+                        .then(() => message.react('❌')) // for "delete watch"
+                        .then(() => message.react('🔕')) // for "silence seller"
+                        .then(() => message.react('♻'))  // for "extend watch"
+                        .then(() => {
+                            const react_filter = (reaction, user) => {
+                                return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕' || reaction.emoji.name === '♻';
+                            }
+                            const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
+                            collector.on('collect', (reaction, user) => {
+                                if (user.bot) return;
+                                switch (reaction.emoji.name) {
+                                    case '💤': //alt: 🔕
+                                        // Snooze this watch for 6 hours
+                                        db.snooze('watch', watchId);
+                                        user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
+                                        break;
+                                    case '❌':
+                                        // Delete this watch
+                                        db.endWatch(user.id, item, server);
+                                        user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                                        break;
+                                    case '🔕':
+                                        // Ignore this seller's auctions for this watch
+                                        db.blockSeller(user.id, seller, null, watchId)
+                                        user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                                        break;
+                                    case '♻': //extend watch
+                                        db.extendWatch(watchId)
+                                        user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            })
+                            collector.on('remove', (reaction, user) => {
+                                if (user.bot) return;
+                                switch (reaction.emoji.name) {
+                                    case '💤':
+                                        // unsnooze watch
+                                        db.unsnooze('watch', watch.id);
+                                        user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
+                                        break;
+                                    case '❌':
+                                        // renew this watch
+                                        // db.endWatch(user.id, item, server);
+                                        user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                                        break;
+                                    case '🔕':
+                                        // unblock the seller for this auction
+                                        db.unblockSeller(user.id, seller, null, watchId)
+                                        user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            })
+                        })
+                    })
+                    .catch(console.error);
+            })
+            .catch((err) => {
+                console.error(err)
+            });
     } else {
         bot.users.cache.get(user.toString()).send(msg)
         .then(message => {
@@ -489,6 +558,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .catch(console.error);
     }
     //add to communication_history
+    console.log('posting to communication history', watchId, seller)
     db.postSuccessfulCommunication(watchId, seller)
 }
 

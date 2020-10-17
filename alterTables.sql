@@ -171,3 +171,23 @@ ALTER TABLE public.snooze_by_watch
 
 ALTER TABLE public.blocked_seller_by_watch
     OWNER to postgres;
+
+
+CREATE TABLE public.communication_history
+(
+    id bigserial NOT NULL,
+    watch_id bigint NOT NULL,
+    seller text NOT NULL,
+    "timestamp" timestamp without time zone NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (watch_id)
+        INCLUDE(seller),
+    FOREIGN KEY (watch_id)
+        REFERENCES public.watches (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+        NOT VALID
+);
+
+ALTER TABLE public.communication_history
+    OWNER to postgres;

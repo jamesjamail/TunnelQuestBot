@@ -59,7 +59,6 @@ function parseLog(text, itemList, logServer, client) {
                     let logPrice = parsePrice(filteredAuction, item_name.length);
                     if (price === -1) {
                         const msg = {watchId: watch_id, userId: user_id, userName: user_name, itemName: item_name, sellingPrice: logPrice, seller: auction_user, server, fullAuction: text, timestamp};
-                        console.log(msg)
                         outgoing.push(msg);
                     }
                     else if (logPrice && logPrice <= price) {
