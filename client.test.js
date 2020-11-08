@@ -1,6 +1,6 @@
 jest.unmock("./client.js");
 jest.mock('discord.js');
-const discord = require("discord.js")
+const discord = require("discord.js");
 const client = require("./client.js");
 
 const clientTests = {

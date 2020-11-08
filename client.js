@@ -20,6 +20,7 @@ const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
 const GENERAL_CHANNEL = settings.discord.general_channel;
+const wiki_url = require('./data/items.json')
 
 bot.on('ready', () => {
     logger.info(`Logged in as ${bot.user.tag}!`);
@@ -84,7 +85,7 @@ bot.on('message', function (message) {
             case 'WATCH':
                 //required arguments
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
-                    message.author.send(`Sorry, it looks like your missing some arguments.  Please specify \`ITEM\` and \`SERVER\`.  Try "!help" for syntax structure.`)
+                    message.author.send(`Sorry, it looks like you're missing some arguments.  Please specify \`ITEM\` and \`SERVER\`.  Try "!help" for syntax structure.`)
                 //validate server
                 } else if (args[1].toUpperCase() !== 'GREEN' && args[1].toUpperCase() !== 'BLUE') {
                     message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\``);
@@ -146,7 +147,7 @@ bot.on('message', function (message) {
                             message.author.send(
                                 new Discord.MessageEmbed()
                                 .setColor(SERVER_COLOR[watch.server])
-                                .setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com/${formatItemNameForWiki(watch.name)}`)
+                                .setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com/${wiki_url[watch.name]}`)
                                 .addFields(watches)
                                 .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻`)
                             )
@@ -208,7 +209,11 @@ bot.on('message', function (message) {
                             });
                         })
                     }  else {
-                        message.author.send(`You don\'t have any watches for ${args[0]}.`);
+                        if (args && args[0]) {
+                            message.author.send(`You don\'t have any watches for ${args[0]}.`);
+                        } else {
+                            message.author.send(`You don\'t have any watches.`);
+                        }
                     }
                 });
                 break;
@@ -417,7 +422,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .setColor(SERVER_COLOR[server])
         .setImage(url === `https://i.imgur.com/wXJsk7Y.png` ? null : url)
         .setTitle(`${formatCapitalCase(item)}`)
-        .setAuthor('Watch Notification', url, `https://wiki.project1999.com/${formatItemNameForWiki(item)}`)
+        .setAuthor('Watch Notification', url, `https://wiki.project1999.com${wiki_url[item]}`)
         .setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
         .addFields(fields)
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)

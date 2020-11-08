@@ -21,7 +21,7 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
-const SERVER_COLOR = {BLUE: '#1C58B8', GREEN: '#2FC374'};
+const SERVER_COLOR = {BLUE: '#1C58B8', GREEN: '#249458'};
 
 
 cache.on("error", function(error) {
@@ -196,7 +196,7 @@ async function findWikiData(auction_contents, server) {
 async function fetchImageUrl(itemName) {
     let url = '';
 
-    await fetch(`https://wiki.project1999.com/${utils.formatItemNameForWiki(itemName)}`)
+    await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`)
         .then((response) => {
             if (response.ok) {
                 return response.text()

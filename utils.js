@@ -43,23 +43,6 @@ function _in(needle, haystack) {
     return false;
 }
 
-function formatHeader(player, auctionMode) {
-
-    let arrayBuffer = [];
-    let padding = ''
-    //70 for iphone, 124 for desktop
-    for (let i = 0; i < 70 - (player.length + auctionMode.length); i++){
-        arrayBuffer.push(' ');
-    }
-    if (auctionMode === '---') {
-        console.log('---')
-        padding = '     ';
-    }
-    const test = `${player}${arrayBuffer.join('')}${padding}*${auctionMode}*`
-    console.log(test.length)
-    return `${player}${arrayBuffer.join('')}${padding}*${auctionMode}*`;
-}
-
 function formatCapitalCase(sentence) {
     const words = sentence.split(' ');
     return words.reduce((acc, val, index) => {
@@ -74,22 +57,4 @@ function removeLogTimestamp(log) {
     return log.slice(log.indexOf(']') + 2);
 }
 
-function formatItemNameForWiki(itemName) {
-    const words = itemName.split(' ');
-    capitalizedWords = words.reduce((acc, val, index) => {
-        if (index === 0) {
-            return acc += val[0].toUpperCase() + val.slice(1).toLowerCase() 
-        }
-        if (val === 'OF') {
-            return acc += '_of'
-        }
-        if (val === 'THE') {
-            return acc += '_the';
-        }
-        return acc += '_' + val[0].toUpperCase() + val.slice(1).toLowerCase()
-    }, '');
-    return capitalizedWords;
-
-}
-
-module.exports = {parsePrice, composeRanges, _in, formatHeader, formatCapitalCase, removeLogTimestamp, formatItemNameForWiki};
+module.exports = {parsePrice, composeRanges, _in, formatCapitalCase, removeLogTimestamp};
