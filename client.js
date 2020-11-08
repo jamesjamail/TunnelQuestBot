@@ -5,7 +5,7 @@ const { helpMsg, welcomeMsg } = require('./messages')
 const db = require('./db.js');
 const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing } = require("./wikiHandler");
 const { SERVER_COLOR } = require('./wikiHandler')
-const { formatCapitalCase, removeLogTimestamp, formatItemNameForWiki } = require('./utils')
+const { formatCapitalCase, removeLogTimestamp } = require('./utils')
 const moment = require('moment');
 // logger settings
 logger.remove(logger.transports.Console);
@@ -394,7 +394,6 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    console.log('watchId: ', watchId, 'seller:', seller, 'item:', item, 'validity:', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -563,7 +562,6 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .catch(console.error);
     }
     //add to communication_history
-    console.log('posting to communication history', watchId, seller)
     db.postSuccessfulCommunication(watchId, seller)
 }
 

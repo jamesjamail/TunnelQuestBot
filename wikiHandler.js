@@ -218,7 +218,6 @@ function parseResponse(html) {
     const dom = new JSDOM(html);
     const $ = (require('jquery'))(dom.window);
     var items = $(".itemicon");
-    console.log(`https://wiki.project1999.com` + $(items[0]).children().children().attr('src'))
     return `https://wiki.project1999.com` + $(items[0]).children().children().attr('src');
 }
 

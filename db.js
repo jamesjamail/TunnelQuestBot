@@ -352,7 +352,6 @@ async function validateWatchNotification(userId, watchId, seller) {
     const queryStr = "SELECT id FROM communication_history WHERE watch_id = $1 AND seller = $2 AND timestamp > now() - interval '15 minutes';";
     const isValid = await connection.query(queryStr, [watchId, seller.toUpperCase()])
         .then((res) => {
-            console.log('validate res', res)
             //notified within 15 minute window already, return false
             if (res.rows && res.rows.length > 0) {
                 return false;
