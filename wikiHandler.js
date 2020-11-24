@@ -87,10 +87,12 @@ function formatItemData(item_data) {
 }
 
 async function fetchWikiPricing(auction_contents, server) {
-    const item_data = await findWikiData(auction_contents, server);
+    const item_data = await findWikiData('WTS ' + auction_contents, server);
+    console.log('item_data = ', item_data)
     if (Object.entries(item_data).length === 0) return null;
 
     const formatted_items = formatItemData(item_data);
+    console.log('formatted items ', formatted_items)
     return formatted_items[Object.keys(formatted_items)[0]].historical_pricing
 }
 
@@ -156,6 +158,7 @@ async function getWikiPricing(item_url, server) {
 }
 
 async function findWikiData(auction_contents, server) {
+    console.log('auct cont', auction_contents, server)
     let ac = new aho_corasick(ALL_ITEM_KEYS);
     const results = ac.search(auction_contents.toUpperCase());
 
@@ -190,13 +193,14 @@ async function findWikiData(auction_contents, server) {
     for (let name in wiki_data) {
         resolved_wiki_data[name] = [wiki_data[name][0], await wiki_data[name][1]];
     }
+    console.log(resolved_wiki_data)
     return resolved_wiki_data;
 }
 
 async function fetchImageUrl(itemName) {
     let url = '';
-
-    await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`)
+    if (ITEMS[itemName]) {
+        await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`)
         .then((response) => {
             if (response.ok) {
                 return response.text()
@@ -209,7 +213,7 @@ async function fetchImageUrl(itemName) {
             }
         })
         .catch(console.error)    
-
+    }
     return url;
 }
 

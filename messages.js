@@ -10,8 +10,8 @@ const helpMsg = '\n\n' +
     '__***COMMANDS***__\n' +
     '**!help**\n' +
     '> Displays available commands.\n\n' +
-    '**!watch `item`, `maximum price`, `server`**\n' +
-    '> Starts a watch based on entered parameters - watches expire after 7 days.  Price is optional.\n\n' +
+    '**!watch `item`, `server`, `maximum price`,**\n' +
+    '> Starts a watch based on entered parameters. Price is optional.\n\n' +
     '**!unwatch `item`, `server`**\n' +
     '> Ends a currently running watch.\n\n' +
     '**!watches**\n' +

@@ -91,11 +91,11 @@ bot.on('message', function (message) {
                 // check for price argument
                 } else if (args[2] !== undefined && args[2] !== null && args[2] !== '') {
                     db.addWatch(message.author.id, args[0], args[1], args[2]);
-                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]} server\`.`)
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`)
                 //if no price, set watch accordingly
                 } else {
                     db.addWatch(message.author.id, args[0], args[1], -1);
-                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]} server\`.`)
+                    message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`)
                 }
                 break;
 
@@ -297,7 +297,7 @@ bot.on('message', function (message) {
                     message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]} for any current or future watches.`);
                 } else {
                     db.blockSeller(message.author.id, args[0], null, null)
-                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!add block: ${args[0]}, server\`\``);
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!block ${args[0]}, server\`\``);
                 }
                 break;
 
@@ -388,6 +388,7 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
+    console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -440,7 +441,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                         case '🔕':
                             // Ignore this seller's auctions for this watch
                             db.blockSeller(user.id, seller, null, watchId)
-                            user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!add block: ${seller}`);
+                            user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!block ${seller}\`\``);
                             break;
                         case '♻': //extend watch
                             db.extendWatch(watchId)
@@ -461,7 +462,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
                         case '❌':
                             // renew this watch
                             db.addWatch(user.id, null, null, null, watchId);
-                            user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                            user.send(`Got it! Once again watching auctions for ${item} on P1999 ${server} server.`);
                             break;
                         case '🔕':
                             // unblock the seller for this auction
@@ -487,17 +488,14 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
     if (bot.users.cache.get(user.toString()) === undefined) {
+        console.log(bot.guilds.cache.get(GUILD), GUILD)
         bot.guilds.cache.get(GUILD).members.fetch(user.toString())
             .then((user)=>{
                 sendMessageWithReactions(user, msg)
             })
             .catch(console.error(err));
     } else {
-        bot.users.cache.get(user.toString())
-            .then((user)=>{
-                sendMessageWithReactions(user, msg)
-            })
-            .catch(console.error(err));
+        sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
     }
     //add to communication_history
     db.postSuccessfulCommunication(watchId, seller)
