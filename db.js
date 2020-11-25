@@ -316,8 +316,9 @@ function snooze(type, id, hours = 6) {
                     (() => {
                         const queryStr = `INSERT INTO snooze_by_user (user_id, expiration) VALUES ($1, now() + interval '1 hour' * $2) ON CONFLICT (user_id) DO UPDATE SET expiration = now() + interval '1 hour' * $2;`;
                         connection.query(queryStr, [userId, hours])
-                            .catch(console.error)})();
-                })
+                            .catch(console.error)
+                        })();
+                }).catch(console.error)
             break;
     }
 }
@@ -354,11 +355,8 @@ async function validateWatchNotification(userId, watchId, seller) {
         .then((res) => {
             //notified within 15 minute window already, return false
             if (res.rows && res.rows.length > 0) {
-                console.log(`userId ${userId} has been notified about watchId ${watchId} by seller ${seller} in the past 15 minutes`)
                 return false;
             } else {
-                console.log(`userId ${userId} has NOT been notified about watchId ${watchId} by seller ${seller} in the past 15 minutes`)
-
                 //otherwise check if seller is blocked by user
                 const queryStr = 'SELECT seller FROM blocked_seller_by_user WHERE user_id = $1 AND seller = $2'
                 return connection.query(queryStr, [userId, seller.toUpperCase()])
@@ -382,7 +380,7 @@ async function validateWatchNotification(userId, watchId, seller) {
                                                     return false;
                                                 } else {
                                                     //otherwise check if user is snoozed
-                                                    const queryStr = 'SELECT id FROM snooze_by_user WHERE user_id = $1 AND expiration < now()'
+                                                    const queryStr = 'SELECT id FROM snooze_by_user WHERE user_id = $1 AND expiration > now()'
                                                     return connection.query(queryStr, [userId])
                                                         .then((res) => {
                                                             if (res && res.rows.length > 0) {

@@ -455,7 +455,7 @@ function sendMessageWithReactions(user, msg) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
+    // console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -492,13 +492,11 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
     if (bot.users.cache.get(user.toString()) === undefined) {
         bot.guilds.cache.get(GUILD).members.fetch(user.toString())
             .then((user)=>{
-                // sendMessageWithReactions(user, msg)
-                console.log('cache match')
+                sendMessageWithReactions(user, msg)
             })
             .catch(console.error);
     } else {
-        // sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
-        console.log('guild match')
+        sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
     }
     //add to communication_history
     db.postSuccessfulCommunication(watchId, seller)
