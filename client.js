@@ -40,7 +40,7 @@ bot.on('message', function (message) {
     
     // listen for messages that will start with `!`
     if (message.content.startsWith('!')) {
-        console.log(message.content);
+        // console.log(message.content);
         const spaceIndex = message.content.indexOf(' ');
         let cmd = '';
         let args;
@@ -388,7 +388,7 @@ bot.on('message', function (message) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
+    // console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
@@ -488,12 +488,11 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
         .setTimestamp()
     if (bot.users.cache.get(user.toString()) === undefined) {
-        console.log(bot.guilds.cache.get(GUILD), GUILD)
         bot.guilds.cache.get(GUILD).members.fetch(user.toString())
             .then((user)=>{
                 sendMessageWithReactions(user, msg)
             })
-            .catch(console.error(err));
+            .catch(console.error);
     } else {
         sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
     }

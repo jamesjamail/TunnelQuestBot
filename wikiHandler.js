@@ -87,12 +87,10 @@ function formatItemData(item_data) {
 }
 
 async function fetchWikiPricing(auction_contents, server) {
-    const item_data = await findWikiData('WTS ' + auction_contents, server);
-    console.log('item_data = ', item_data)
+    const item_data = await findWikiData(auction_contents, server);
     if (Object.entries(item_data).length === 0) return null;
 
     const formatted_items = formatItemData(item_data);
-    console.log('formatted items ', formatted_items)
     return formatted_items[Object.keys(formatted_items)[0]].historical_pricing
 }
 
@@ -131,34 +129,39 @@ async function getWikiPricing(item_url, server) {
     //key for caching system is item_url underscore server
     const key = `${item_url}_${server}`
     //check cache before fetching
-    cache.get(key, (err, cached_data) => {
-        if (err) console.error(err);
-        //use cached data if available
-        if (cached_data !== null) {
-            return JSON.parse(cached_data);
-        } else {
-            //otherwise fetch new data
-            return fetch(item_url)
-                .then(response => response.text())
-                .then(text => {
-                    const priceData = parsePage(text, server);
-                    //arrays aren't valid redis keys
-                    const priceDataStr = JSON.stringify(priceData)
-                    
-                    //store parsed data in cache as a string
-                    cache.setex(key, cache_expiration, priceDataStr, (err) => {
-                        if (err) console.error(err);
+    return new Promise((resolve, reject) => {
+        cache.get(key, (err, cached_data) => {
+            if (err) {
+                reject(err)
+            };
+            //use cached data if available
+            if (cached_data !== null) {
+                resolve(JSON.parse(cached_data));
+            } else {
+                //otherwise fetch new data
+                return fetch(item_url)
+                    .then(response => response.text())
+                    .then(text => {
+                        const priceData = parsePage(text, server);
+                        //arrays aren't valid redis keys
+                        const priceDataStr = JSON.stringify(priceData)
+                        
+                        //store parsed data in cache as a string
+                        cache.setex(key, cache_expiration, priceDataStr, (err) => {
+                            if (err) console.error(err);
+                        })
+                        //return parsed data as array
+                        resolve(priceData);
                     })
-                    //return parsed data as array
-                    return priceData;
-                })
-                .catch(console.error)
-        }
+                    .catch((err) => reject(err))
+            }
+        })
     })
+    
+
 }
 
 async function findWikiData(auction_contents, server) {
-    console.log('auct cont', auction_contents, server)
     let ac = new aho_corasick(ALL_ITEM_KEYS);
     const results = ac.search(auction_contents.toUpperCase());
 
@@ -184,16 +187,16 @@ async function findWikiData(auction_contents, server) {
         else if (ALIASES.hasOwnProperty(item_name)) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
-        let historical_pricing = exports.getWikiPricing(link, server);
+        let historical_pricing = await getWikiPricing(link, server);
         let sale_price = utils.parsePrice(auction_contents, item[0]+1);
         if (link) {
-            wiki_data[link] = [sale_price, historical_pricing]; }
+            wiki_data[link] = [sale_price, historical_pricing];
+        }
     }
     let resolved_wiki_data = {};
     for (let name in wiki_data) {
-        resolved_wiki_data[name] = [wiki_data[name][0], await wiki_data[name][1]];
+        resolved_wiki_data[name] = [wiki_data[name][0], wiki_data[name][1]];
     }
-    console.log(resolved_wiki_data)
     return resolved_wiki_data;
 }
 
@@ -205,7 +208,6 @@ async function fetchImageUrl(itemName) {
             if (response.ok) {
                 return response.text()
                     .then((body) => {
-                        // console.log(text.body)
                         url = parseResponse(body);
                     })
             } else {
