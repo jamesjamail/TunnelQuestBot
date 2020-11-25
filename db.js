@@ -354,8 +354,11 @@ async function validateWatchNotification(userId, watchId, seller) {
         .then((res) => {
             //notified within 15 minute window already, return false
             if (res.rows && res.rows.length > 0) {
+                console.log(`userId ${userId} has been notified about watchId ${watchId} by seller ${seller} in the past 15 minutes`)
                 return false;
             } else {
+                console.log(`userId ${userId} has NOT been notified about watchId ${watchId} by seller ${seller} in the past 15 minutes`)
+
                 //otherwise check if seller is blocked by user
                 const queryStr = 'SELECT seller FROM blocked_seller_by_user WHERE user_id = $1 AND seller = $2'
                 return connection.query(queryStr, [userId, seller.toUpperCase()])

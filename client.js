@@ -385,14 +385,81 @@ bot.on('message', function (message) {
     }   
 })
 
+function sendMessageWithReactions(user, msg) {
+    user.send(msg)
+    .then(message => {
+        message
+        .react('💤')                     // for "snooze watch"
+        .then(() => message.react('❌')) // for "delete watch"
+        .then(() => message.react('🔕')) // for "silence seller"
+        .then(() => message.react('♻'))  // for "extend watch"
+        .then(() => {
+            const react_filter = (reaction, user) => {
+                return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕' || reaction.emoji.name === '♻';
+            }
+            const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
+            collector.on('collect', (reaction, user) => {
+                if (user.bot) return;
+                switch (reaction.emoji.name) {
+                    case '💤':
+                        // Snooze this watch for 6 hours
+                        db.snooze('watch', watchId);
+                        user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
+                        break;
+                    case '❌':
+                        // Delete this watch
+                        db.endWatch(user.id, item, server);
+                        user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
+                        break;
+                    case '🔕':
+                        // Ignore this seller's auctions for this watch
+                        db.blockSeller(user.id, seller, null, watchId)
+                        user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!block ${seller}\`\``);
+                        break;
+                    case '♻': //extend watch
+                        db.extendWatch(watchId)
+                        user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                        break;
+                    default:
+                        break;
+                }
+            })
+            collector.on('remove', (reaction, user) => {
+                if (user.bot) return;
+                switch (reaction.emoji.name) {
+                    case '💤':
+                        // unsnooze watch
+                        db.unsnooze('watch', watch.id);
+                        user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
+                        break;
+                    case '❌':
+                        // renew this watch
+                        db.addWatch(user.id, null, null, null, watchId);
+                        user.send(`Got it! Once again watching auctions for ${item} on P1999 ${server} server.`);
+                        break;
+                    case '🔕':
+                        // unblock the seller for this auction
+                        db.unblockSeller(user.id, seller, null, watchId)
+                        user.send(`People change.  No longer blocking ${formatCapitalCase(seller)} with regard to this watch.`);
+                        break;
+                    default:
+                        break;
+                }
+            })
+        })
+    })
+    .catch(console.error);
+}
+
+
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    // console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
+    console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
     if (!validity) return;
 
     const url = await fetchImageUrl(item).catch(console.error);
-    const formattedPrice = price ? `${price}pp` : 'No Price Listed' ;
+    const formattedPrice = price ? `${price}pp` : 'No Price Listed';
     const formattedItem = formatCapitalCase(item);
     const historical_pricing = await fetchWikiPricing(item, server)
 
@@ -412,72 +479,7 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         })
     }
 
-    function sendMessageWithReactions(user, msg) {
-        user.send(msg)
-        .then(message => {
-            message
-            .react('💤')                     // for "snooze watch"
-            .then(() => message.react('❌')) // for "delete watch"
-            .then(() => message.react('🔕')) // for "silence seller"
-            .then(() => message.react('♻'))  // for "extend watch"
-            .then(() => {
-                const react_filter = (reaction, user) => {
-                    return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕' || reaction.emoji.name === '♻';
-                }
-                const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24 , dispose: true});
-                collector.on('collect', (reaction, user) => {
-                    if (user.bot) return;
-                    switch (reaction.emoji.name) {
-                        case '💤':
-                            // Snooze this watch for 6 hours
-                            db.snooze('watch', watchId);
-                            user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${item}\`\` watch on \`\`${server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
-                            break;
-                        case '❌':
-                            // Delete this watch
-                            db.endWatch(user.id, item, server);
-                            user.send(`Got it! No longer watching auctions for ${item} on P1999 ${server} server.`);
-                            break;
-                        case '🔕':
-                            // Ignore this seller's auctions for this watch
-                            db.blockSeller(user.id, seller, null, watchId)
-                            user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!block ${seller}\`\``);
-                            break;
-                        case '♻': //extend watch
-                            db.extendWatch(watchId)
-                            user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
-                            break;
-                        default:
-                            break;
-                    }
-                })
-                collector.on('remove', (reaction, user) => {
-                    if (user.bot) return;
-                    switch (reaction.emoji.name) {
-                        case '💤':
-                            // unsnooze watch
-                            db.unsnooze('watch', watch.id);
-                            user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
-                            break;
-                        case '❌':
-                            // renew this watch
-                            db.addWatch(user.id, null, null, null, watchId);
-                            user.send(`Got it! Once again watching auctions for ${item} on P1999 ${server} server.`);
-                            break;
-                        case '🔕':
-                            // unblock the seller for this auction
-                            db.unblockSeller(user.id, seller, null, watchId)
-                            user.send(`People change.  No longer blocking ${formatCapitalCase(seller)} with regard to this watch.`);
-                            break;
-                        default:
-                            break;
-                    }
-                })
-            })
-        })
-        .catch(console.error);
-    }
-
+    
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
         .setImage(url === `https://i.imgur.com/wXJsk7Y.png` ? null : url)
@@ -490,11 +492,13 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
     if (bot.users.cache.get(user.toString()) === undefined) {
         bot.guilds.cache.get(GUILD).members.fetch(user.toString())
             .then((user)=>{
-                sendMessageWithReactions(user, msg)
+                // sendMessageWithReactions(user, msg)
+                console.log('cache match')
             })
             .catch(console.error);
     } else {
-        sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
+        // sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
+        console.log('guild match')
     }
     //add to communication_history
     db.postSuccessfulCommunication(watchId, seller)
