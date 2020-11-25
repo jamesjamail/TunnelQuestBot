@@ -43,4 +43,18 @@ function _in(needle, haystack) {
     return false;
 }
 
-module.exports = {parsePrice, composeRanges, _in};
+function formatCapitalCase(sentence) {
+    const words = sentence.split(' ');
+    return words.reduce((acc, val, index) => {
+        if (index == 0) {
+            return acc + val[0].toUpperCase() + val.slice(1).toLowerCase();
+        }
+        return acc + ' ' + val[0].toUpperCase() + val.slice(1).toLowerCase();
+    }, '')
+}
+
+function removeLogTimestamp(log) {
+    return log.slice(log.indexOf(']') + 2);
+}
+
+module.exports = {parsePrice, composeRanges, _in, formatCapitalCase, removeLogTimestamp};

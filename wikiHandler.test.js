@@ -1,5 +1,5 @@
 jest.unmock("./wikiHandler.js");
-jest.unmock("discord.js")
+jest.unmock("discord.js");
 const wikiHandler = require("./wikiHandler.js");
 
 // Mock getWikiPricing for our tests

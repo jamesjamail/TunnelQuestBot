@@ -11,7 +11,7 @@ function rand(max) {
 function writeLine() {
     fs.appendFile('./fakeLogs/fakeLog.txt', `\n${users[rand(3)]} auctions, 'WTS ${items[rand(3)]} ${prices[rand(5)]}'`, (err) => {
         if (err) {
-            console.log('ERROR: ', err);
+            console.error('ERROR: ', err);
         }
     });
 };

@@ -13,9 +13,9 @@ yourself a break by setting up a Watch and let tunnelQuestBot do the work for
 you.
 
 
-> "TunnelQuestBot takes the chore out of trading items." - James Jamail (tunnelQuestBot creator)
+> "TunnelQuestBot takes the chore out of trading items." - James Jamail (TunnelQuestBot creator)
 
-> "This looks a lot like the bot I was going to make. I guess I'll make a PR..." - rm_you
+> "This looks a lot like the bot I was going to make. I guess I'll make a PR..." - rm_you (Star contributor)
  
 
 #### GETTING STARTED

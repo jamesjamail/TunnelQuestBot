@@ -3,6 +3,9 @@ const utils = require('./utils.js');
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
 const aho_corasick = require('ahocorasick');
+const $ = require( "jquery" );
+const jsdom = require("jsdom");
+
 const redis = require("redis");
 const cache = redis.createClient();
  
@@ -18,7 +21,8 @@ const ALL_ITEM_KEYS = new Set([
     ...Object.keys(SPELLS),
     ...Object.keys(ALIASES),
 ]);
-const SERVER_COLOR = {BLUE: '#1e1e92', GREEN: '#008000'};
+const SERVER_COLOR = {BLUE: '#1C58B8', GREEN: '#249458'};
+
 
 cache.on("error", function(error) {
     console.error(error);
@@ -30,13 +34,14 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
     const auction_modes = [];
     if (auction_wtb.length > 0) { auction_modes.push("WTB") }
     if (auction_wts.length > 0) { auction_modes.push("WTS") }
-    const auction_mode = auction_modes.join(" / ") || "???";
+    const auction_mode = auction_modes.join(" / ") || "---";
 
     // strip out backticks
     auction_contents = auction_contents.replace(/`/g, '');
     const item_data = await findWikiData(auction_contents, server);
     const formatted_items = formatItemData(item_data);
     const fields = [];
+    // const date = new Date;
     Object.keys(formatted_items).forEach((item_name) => {
         const price = formatted_items[item_name].auction_price;
         const pricing_data = formatted_items[item_name].historical_pricing;
@@ -48,11 +53,14 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
         }
         fields.push(field);
     })
+
     return new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
-        .setTitle(`${auction_user} (${auction_mode})`)
+        .setTitle(`**${auction_mode}**`)
         .setDescription(`\`\`\`${auction_contents}\`\`\``)
-        .addFields(fields);
+        .addFields(fields)
+        .setFooter(`${auction_user} on Project 1999 ${utils.formatCapitalCase(server)}`)
+        .setTimestamp()
 }
 
 function formatItemData(item_data) {
@@ -76,6 +84,14 @@ function formatItemData(item_data) {
     }
 
     return formatted_items;
+}
+
+async function fetchWikiPricing(auction_contents, server) {
+    const item_data = await findWikiData(auction_contents, server);
+    if (Object.entries(item_data).length === 0) return null;
+
+    const formatted_items = formatItemData(item_data);
+    return formatted_items[Object.keys(formatted_items)[0]].historical_pricing
 }
 
 function formatPrice(price) {
@@ -113,30 +129,36 @@ async function getWikiPricing(item_url, server) {
     //key for caching system is item_url underscore server
     const key = `${item_url}_${server}`
     //check cache before fetching
-    cache.get(key, (err, cached_data) => {
-        if (err) console.error(err);
-        //use cached data if available
-        if (cached_data !== null) {
-            return JSON.parse(cached_data);
-        } else {
-            //otherwise fetch new data
-            return fetch(item_url)
-                .then(response => response.text())
-                .then(text => {
-                    const priceData = parsePage(text, server);
-                    //arrays aren't valid redis keys
-                    const priceDataStr = JSON.stringify(priceData)
-                    
-                    //store parsed data in cache as a string
-                    cache.setex(key, cache_expiration, priceDataStr, (err) => {
-                        if (err) console.error(err);
+    return new Promise((resolve, reject) => {
+        cache.get(key, (err, cached_data) => {
+            if (err) {
+                reject(err)
+            };
+            //use cached data if available
+            if (cached_data !== null) {
+                resolve(JSON.parse(cached_data));
+            } else {
+                //otherwise fetch new data
+                return fetch(item_url)
+                    .then(response => response.text())
+                    .then(text => {
+                        const priceData = parsePage(text, server);
+                        //arrays aren't valid redis keys
+                        const priceDataStr = JSON.stringify(priceData)
+                        
+                        //store parsed data in cache as a string
+                        cache.setex(key, cache_expiration, priceDataStr, (err) => {
+                            if (err) console.error(err);
+                        })
+                        //return parsed data as array
+                        resolve(priceData);
                     })
-                    //return parsed data as array
-                    return priceData;
-                })
-                .catch(console.error)
-        }
+                    .catch((err) => reject(err))
+            }
+        })
     })
+    
+
 }
 
 async function findWikiData(auction_contents, server) {
@@ -165,17 +187,48 @@ async function findWikiData(auction_contents, server) {
         else if (ALIASES.hasOwnProperty(item_name)) {
             link = BASE_WIKI_URL + ALIASES[item_name]; }
 
-        let historical_pricing = exports.getWikiPricing(link, server);
+        let historical_pricing = await getWikiPricing(link, server);
         let sale_price = utils.parsePrice(auction_contents, item[0]+1);
         if (link) {
-            wiki_data[link] = [sale_price, historical_pricing]; }
+            wiki_data[link] = [sale_price, historical_pricing];
+        }
     }
     let resolved_wiki_data = {};
     for (let name in wiki_data) {
-        resolved_wiki_data[name] = [wiki_data[name][0], await wiki_data[name][1]];
+        resolved_wiki_data[name] = [wiki_data[name][0], wiki_data[name][1]];
     }
     return resolved_wiki_data;
 }
 
+async function fetchImageUrl(itemName) {
+    let url = '';
+    if (ITEMS[itemName]) {
+        await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`)
+        .then((response) => {
+            if (response.ok) {
+                return response.text()
+                    .then((body) => {
+                        url = parseResponse(body);
+                    })
+            } else {
+                url = `https://i.imgur.com/wXJsk7Y.png`;
+            }
+        })
+        .catch(console.error)    
+    }
+    return url;
+}
+
+function parseResponse(html) {
+    const {JSDOM} = jsdom;
+    const dom = new JSDOM(html);
+    const $ = (require('jquery'))(dom.window);
+    var items = $(".itemicon");
+    return `https://wiki.project1999.com` + $(items[0]).children().children().attr('src');
+}
+
 exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
 exports.getWikiPricing = getWikiPricing;
+exports.SERVER_COLOR = SERVER_COLOR;
+exports.fetchImageUrl = fetchImageUrl;
+exports.fetchWikiPricing = fetchWikiPricing;
