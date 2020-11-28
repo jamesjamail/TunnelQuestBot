@@ -23,7 +23,7 @@ const helpMsg = '\n\n' +
     '**!unblock `seller`, `server`**\n' +
     '> Unblocks a seller for all watch notifications.  `server` is optional- if omitted the seller will be unblocked on both servers.\n\n' +
     '**!snooze `hours`**\n' +
-    '> Pauses notifications on all watches.  \`hours\` is opitional; if omitted, watches are snoozed for 6 hours.\n\n' +
+    '> Pauses notifications on all watches.  \`hours\` is optional; if omitted, watches are snoozed for 6 hours.\n\n' +
     '**!unsnooze**\n' +
     '> Resumes notifications on all watches.\n\n' +
     '**!extend**\n' +

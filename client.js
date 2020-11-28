@@ -385,7 +385,8 @@ bot.on('message', function (message) {
     }   
 })
 
-function sendMessageWithReactions(user, msg) {
+function sendMessageWithReactions(user, msg, data) {
+    const { seller, item, server, watchId } = data;
     user.send(msg)
     .then(message => {
         message
@@ -418,7 +419,7 @@ function sendMessageWithReactions(user, msg) {
                         break;
                     case '♻': //extend watch
                         db.extendWatch(watchId)
-                        user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${formattedItem}\`\` watch.`);
+                        user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${item}\`\` watch.`);
                         break;
                     default:
                         break;
@@ -429,7 +430,7 @@ function sendMessageWithReactions(user, msg) {
                 switch (reaction.emoji.name) {
                     case '💤':
                         // unsnooze watch
-                        db.unsnooze('watch', watch.id);
+                        db.unsnooze('watch', watchId);
                         user.send(`Rise and grind.  No longer snoozing on your \`\`${item}\`\` watch on \`\`${server}\`\`.`).catch(console.error);
                         break;
                     case '❌':
@@ -479,6 +480,12 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
         })
     }
 
+    const data ={
+        item,
+        seller,
+        server,
+        watchId,
+    }
     
     let msg = new Discord.MessageEmbed()
         .setColor(SERVER_COLOR[server])
@@ -492,11 +499,11 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
     if (bot.users.cache.get(user.toString()) === undefined) {
         bot.guilds.cache.get(GUILD).members.fetch(user.toString())
             .then((user)=>{
-                sendMessageWithReactions(user, msg)
+                sendMessageWithReactions(user, msg, data)
             })
             .catch(console.error);
     } else {
-        sendMessageWithReactions(bot.users.cache.get(user.toString()), msg)
+        sendMessageWithReactions(bot.users.cache.get(user.toString()), msg, data)
     }
     //add to communication_history
     db.postSuccessfulCommunication(watchId, seller)
