@@ -3,7 +3,7 @@ ALTER TABLE public.watches
 --add active column to watches, setting existing watches as true (will be fine since old watches are deleted)
     ADD COLUMN active boolean DEFAULT true,
 --add warned timestamp for the 'warn a user 1 day before their watch expires' feature (to be implemented)
-    ADD COLUMN warned timestamp without time zone DEFAULT false,
+    ADD COLUMN warned timestamp without time zone DEFAULT null,
 --add auction type column for wts/wtb/all feature (to be implmenented)
     ADD COLUMN auction_type text;
 
@@ -36,7 +36,7 @@ CREATE TABLE public.blocked_seller_by_watch
     seller text NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (watch_id)
-        INCLUDE(seller, server),
+        INCLUDE(seller, watch_id),
     FOREIGN KEY (watch_id)
         REFERENCES public.watches (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -56,7 +56,7 @@ CREATE TABLE public.blocked_seller_by_user
         REFERENCES public.users (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
+);
 
 
 
