@@ -65,7 +65,7 @@ CREATE TABLE public.snooze_by_user
 (
     id bigserial NOT NULL,
     user_id bigint NOT NULL,
-    expiration time without time zone NOT NULL,
+    expiration timestamp without time zone NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (user_id)
 
@@ -77,7 +77,7 @@ CREATE TABLE public.snooze_by_watch
 (
     id bigint NOT NULL,
     watch_id bigint NOT NULL,
-    expiration time without time zone NOT NULL,
+    expiration timestamp without time zone NOT NULL,
     CONSTRAINT snooze_by_watch_pkey PRIMARY KEY (id),
     CONSTRAINT watch_id_unique UNIQUE (watch_id)
         INCLUDE(watch_id),
@@ -85,4 +85,4 @@ CREATE TABLE public.snooze_by_watch
         REFERENCES public.watches (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE CASCADE
-)
+);
