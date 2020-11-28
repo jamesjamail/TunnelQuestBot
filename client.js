@@ -292,7 +292,7 @@ bot.on('message', function (message) {
 
             // !add block
             case 'BLOCK':
-                if (args[1] === 'BLUE' || args[1] === 'GREEN') {
+                if (args && args[1] && args[1] === 'BLUE' || args[1] === 'GREEN') {
                     db.blockSeller(message.author.id, args[0], args[1], null)
                     message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]} for any current or future watches.`);
                 } else {
@@ -303,7 +303,7 @@ bot.on('message', function (message) {
 
             //TODO:
             case 'UNBLOCK':
-                if (args[1] === 'BLUE' || args[1] === 'GREEN') {
+                if (args && args[1] && args[1] === 'BLUE' || args[1] === 'GREEN') {
                     db.unblockSeller(message.author.id, args[0], args[1], null)
                     message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on ${formatCapitalCase(args[1])} server.`)
                 } else {
