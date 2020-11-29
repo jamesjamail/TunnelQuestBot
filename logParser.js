@@ -43,6 +43,7 @@ function filterWTS(auction_contents) {
 }
 
 function parseLog(text, itemList, logServer, client) {
+    console.log(text)
     const outgoing = [];
     //test if is auction
     const auction_text = text.match(AUC_REGEX);
