@@ -16,6 +16,9 @@ if (require.main === module) {
     for (const server in settings.servers) {
         const log_tail = new tail.Tail(settings.servers[server].log_file_path);
         log_tail.on("line", function(data) {
+            if (server === "BLUE") {
+                console.log(data)
+            }
             parseLog(data, itemList, server, client);
         });
         log_tail.on("error", function(error) {
@@ -43,7 +46,6 @@ function filterWTS(auction_contents) {
 }
 
 function parseLog(text, itemList, logServer, client) {
-    console.log(text)
     const outgoing = [];
     //test if is auction
     const auction_text = text.match(AUC_REGEX);
