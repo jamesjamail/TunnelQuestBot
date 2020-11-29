@@ -47,7 +47,7 @@ CREATE TABLE public.blocked_seller_by_watch
 --for blocking a seller across all watches/items...
 CREATE TABLE public.blocked_seller_by_user
 (
-    id bigint NOT NULL,
+    id bigserial NOT NULL,
     user_id bigint NOT NULL,
     server character varying(10) COLLATE pg_catalog."default",
     seller character varying(30) COLLATE pg_catalog."default" NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE public.snooze_by_user
 --for snoozing all watches/items...
 CREATE TABLE public.snooze_by_watch
 (
-    id bigint NOT NULL,
+    id bigserial NOT NULL,
     watch_id bigint NOT NULL,
     expiration timestamp without time zone NOT NULL,
     CONSTRAINT snooze_by_watch_pkey PRIMARY KEY (id),
