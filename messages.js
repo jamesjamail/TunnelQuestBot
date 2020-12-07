@@ -1,3 +1,7 @@
+const settings = require('./settings.json');
+const FEEDBACK_AND_IDEAS = settings.discord.feedback_and_ideas_channel;
+const COMMAND_CHANNEL = settings.discord.command_channel;
+
 const helpMsg = '\n\n' +
     '__***NOTE***__\n' +
     ' • All commands begin with an exclamation mark (\"!\").\n' +
@@ -31,11 +35,11 @@ const helpMsg = '\n\n' +
     '__***TIPS***__\n' +
     ' • You can use `!watch` to update an existing watch if you wish to modify the price requirement.\n' +
     ' • Watch notifications and results from the \`!watches\` command have emoji reactions that trigger useful commands.\n' +
-    ' • To report a problem or request a feature, talk to us in #feedback_and_ideas.'
+    ' • To report a problem or request a feature, talk to us in ' + `<#${FEEDBACK_AND_IDEAS}>`;
 
 
 const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
-    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in the \`#public_command_space channel\`:\n\n' +
+    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in ' + `<#${COMMAND_CHANNEL}>:\n\n` +
     '\`!watch rusty bastard sword, green\`\n\n' +
     'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
     '\`!watch rusty bastard sword, green, 5pp\`\n\n' + 
@@ -44,7 +48,7 @@ const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please al
     'Most of the commands needed interact with watches are available through emoji reactions.\n\n\n' +
     'You can also check out our Tunnel Stream channels.\n\n' +
     'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data courtesy of the P1999 wiki.\n\n\n' +
-    'For more information, try the !help command.\n\n\n' +
+    'For more information, try the \`!help\` command.\n\n\n' +
     '**Welcome to the server!**'
 
 module.exports = { helpMsg, welcomeMsg }

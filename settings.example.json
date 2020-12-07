@@ -2,17 +2,22 @@
   "servers": {
     "BLUE": {
       "log_file_path": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_CHARNAME_project1999.txt",
-      "stream_channel": "CHANNEL_ID"
+      "stream_channel": "CHANNEL_ID",
+      "trading_channel": "CHANNEL_ID"
     },
     "GREEN": {
       "log_file_path": "C:\\Program Files (x86)\\Sony\\EverQuest\\Logs\\eqlog_CHARNAME_P1999Green.txt",
-      "stream_channel": "CHANNEL_ID"
+      "stream_channel": "CHANNEL_ID",
+      "trading_channel": "CHANNEL_ID"
     }
   },
   "discord": {
     "token": "DISCORD_API_TOKEN",
     "guild": "GUILD_ID",
-    "command_channel": "CHANNEL_ID"
+    "general_channel": "CHANNEL_ID",
+    "command_channel": "CHANNEL_ID",
+    "feedback_and_ideas_channel": "CHANNEL_ID",
+    "logs": "CHANNEL_ID",
   },
   "sql": {
     "user": "DB_USER",

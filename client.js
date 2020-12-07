@@ -19,6 +19,9 @@ const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
 const GENERAL_CHANNEL = settings.discord.general_channel;
+const BLUE_TRADING_CHANNEL = settings.servers.BLUE.trading_channel;
+const GREEN_TRADING_CHANNEL = settings.servers.GREEN.trading_channel;
+
 const wiki_url = require('./data/items.json')
 
 bot.on('ready', () => {
@@ -28,8 +31,8 @@ bot.on('ready', () => {
 //server greeting for users who join
 bot.on('guildMemberAdd', (member) => {
     let memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-    bot.channels.cache.get(GENERAL_CHANNEL).send(`Welcome to the server, ${memberTag}!`)
-    bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg);
+    bot.channels.cache.get(GENERAL_CHANNEL).send(`Welcome to the server, ${memberTag}!`).catch(console.error);
+    bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
 })
 
 bot.on('message', function (message) {
@@ -378,15 +381,35 @@ bot.on('message', function (message) {
                 message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. ' + helpMsg);
                 break;
         }
+
         // message the general channel that commands are not recognized in this channel if command detected:
         if (!message.author.bot && message.channel.type === 'text' && message.channel.id !== COMMAND_CHANNEL){
-            bot.channels.cache.get(COMMAND_CHANNEL).send(`Hi <@${message.author.id}>, I received your command but deleted it from the \`general\` channel to keep things tidy.  In the future, please use this channel instead or send me a direct message.  Thanks!`)
-            message.delete();
+            bot.channels.cache.get(COMMAND_CHANNEL).send(`Hi <@${message.author.id}>, I received your command but deleted it from <#${GENERAL_CHANNEL}> to keep things tidy.  In the future, please use this channel instead or send me a direct message.  Thanks!`).catch(console.error);
+            message.delete().catch(console.error);
+        }
+    }
+    //delete or remove auction spam from general chat
+    else if (!message.author.bot && message.channel.type === 'text' && message.channel.id === GENERAL_CHANNEL) {
+        const content = message.content.toUpperCase();
+        if (content.includes('WTS') || content.includes('WTB') || content.includes('WTT')) {
+            let msgMoved = false;
+            if (content.includes('BLUE')) {
+                bot.channels.cache.get(BLUE_TRADING_CHANNEL).send(`Hi <@${message.author.id}>, I'm trying to keep <#${GENERAL_CHANNEL}> free of auction listings.  I've moved your message to this channel instead.\n\n**${message.author.username} auctions:** \n\`${message.content}\``).catch(console.error);
+                msgMoved = true;
+            }
+            if (content.includes('GREEN')) {
+                bot.channels.cache.get(BLUE_TRADING_CHANNEL).send(`Hi <@${message.author.id}>, I'm trying to keep <#${GENERAL_CHANNEL}> free of auction listings.  I've moved your message to this channel instead.\n\n**${message.author.username} auctions:** \n\`${message.content}\``).catch(console.error);
+                msgMoved = true;
+            }
+            if (!msgMoved) {
+                message.author.send(`Hi <@${message.author.id}>, I'm trying to keep #general_chat free of auction listings.  Please use either <#${GREEN_TRADING_CHANNEL}> or <#${BLUE_TRADING_CHANNEL}>. Thanks!`).catch(console.error);
+            }
+            message.delete().catch(console.error);
         }
     }
     else if (message.channel.id === COMMAND_CHANNEL || message.channel.type === 'dm') {
-        message.author.send('I\'d love to chat, but I\'m just a dumb bot.  Try !help');
-    }   
+        message.author.send('I\'d love to chat, but I\'m just a dumb bot.  Try !help').catch(console.error);
+    }
 })
 
 function sendMessageWithReactions(user, msg, data) {
