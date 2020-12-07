@@ -342,9 +342,9 @@ function unsnooze(type, id) {
     }
 }
 
-function postSuccessfulCommunication(watchId, seller) {
+async function postSuccessfulCommunication(watchId, seller) {
     const queryStr = `INSERT INTO communication_history (watch_id, seller, timestamp) VALUES ($1, $2, now()) ON CONFLICT ON CONSTRAINT communication_history_watch_id_seller_key DO UPDATE SET timestamp = now();`
-    connection.query(queryStr, [watchId, seller.toUpperCase()]).catch(console.error);
+    await connection.query(queryStr, [watchId, seller.toUpperCase()]).catch(console.error);
 }
 
 
@@ -368,14 +368,14 @@ async function validateWatchNotification(userId, watchId, seller) {
                             //otherwise check if seller is blocked by watch
                             const queryStr = 'SELECT seller FROM blocked_seller_by_watch WHERE watch_id = $1 AND seller = $2';
                             return connection.query(queryStr, [watchId, seller.toUpperCase()])
-                                .then((res) => {
+                            .then((res) => {
                                     if (res && res.rows.length > 0){
                                         return false;
                                     } else {
                                         //otherwise check if watch is snoozed
                                         const queryStr = 'SELECT id FROM snooze_by_watch WHERE watch_id = $1 AND expiration > now()'
                                         return connection.query(queryStr, [watchId])
-                                            .then((res) => {
+                                        .then((res) => {
                                                 if (res && res.rows.length > 0) {
                                                     return false;
                                                 } else {

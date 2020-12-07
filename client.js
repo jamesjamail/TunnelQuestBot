@@ -104,7 +104,11 @@ bot.on('message', function (message) {
                 if (args === undefined || args[0] === undefined || args[1] === undefined) {
                     message.author.send('Please specify both \`item\` and \`server\` to end a watch.')
                 //validate server
-                } else if (args[1] !== 'GREEN' && args[1] !== 'BLUE') {
+                } else if (args[0] === 'ALL') {
+                    db.endAllWatches(message.author.id);
+                    message.author.send(`Succesfully ended all your watches.`);
+                }
+                else if (args[1] !== 'GREEN' && args[1] !== 'BLUE') {
                     message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
                 } else {
                 // end the watch
@@ -146,7 +150,7 @@ bot.on('message', function (message) {
                             message.author.send(
                                 new Discord.MessageEmbed()
                                 .setColor(SERVER_COLOR[watch.server])
-                                .setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com/${wiki_url[watch.name]}`)
+                                .setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com${wiki_url[watch.name]}`)
                                 .addFields(watches)
                                 .setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻`)
                             )
@@ -251,7 +255,7 @@ bot.on('message', function (message) {
                                     if (user.bot) return;
                                     switch (reaction.emoji.name) {
                                         case '💤':
-                                            // Snooze this watch for 6 hours
+                                            // Snooze account for 6 hours
                                             db.snooze('user', user.id);
                                             user.send(`Sleep is good.  Pausing notifications for the next 6 hours on all watches.  Click 💤 again to unsnooze.  To snooze an individual watch, use \`!watches\` and react with the \`🔕\` emoji.`)
                                             .catch(console.error);
@@ -456,8 +460,10 @@ function sendMessageWithReactions(user, msg, data) {
 async function pingUser (watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
     //query db for communication history and blocked sellers - abort if not valid
     const validity = await db.validateWatchNotification(userId, watchId, seller)
-    // console.log('user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
+    // const now = Date.now();
+    // console.log(now, 'user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
     if (!validity) return;
+    await db.postSuccessfulCommunication(watchId, seller)
 
     const url = await fetchImageUrl(item).catch(console.error);
     const formattedPrice = price ? `${price}pp` : 'No Price Listed';
@@ -505,8 +511,6 @@ async function pingUser (watchId, user, userId, seller, item, price, server, ful
     } else {
         sendMessageWithReactions(bot.users.cache.get(user.toString()), msg, data)
     }
-    //add to communication_history
-    db.postSuccessfulCommunication(watchId, seller)
 }
 
 function streamAuction (auction_user, auction_contents, server) {

@@ -17,8 +17,7 @@ CREATE TABLE public.communication_history
     seller text NOT NULL,
     "timestamp" timestamp without time zone NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE (watch_id)
-        INCLUDE(seller),
+    UNIQUE (watch_id, seller),
     FOREIGN KEY (watch_id)
         REFERENCES public.watches (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -35,8 +34,7 @@ CREATE TABLE public.blocked_seller_by_watch
     watch_id bigint NOT NULL,
     seller text NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE (watch_id)
-        INCLUDE(seller, watch_id),
+    UNIQUE (watch_id, seller),
     FOREIGN KEY (watch_id)
         REFERENCES public.watches (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -79,8 +77,7 @@ CREATE TABLE public.snooze_by_watch
     watch_id bigint NOT NULL,
     expiration timestamp without time zone NOT NULL,
     CONSTRAINT snooze_by_watch_pkey PRIMARY KEY (id),
-    CONSTRAINT watch_id_unique UNIQUE (watch_id)
-        INCLUDE(watch_id),
+    CONSTRAINT watch_id_unique UNIQUE (watch_id),
     CONSTRAINT watch_id FOREIGN KEY (watch_id)
         REFERENCES public.watches (id) MATCH SIMPLE
         ON UPDATE NO ACTION

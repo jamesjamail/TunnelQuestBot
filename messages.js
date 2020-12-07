@@ -14,6 +14,8 @@ const helpMsg = '\n\n' +
     '> Starts a watch based on entered parameters. Price is optional.\n\n' +
     '**!unwatch `item`, `server`**\n' +
     '> Ends a currently running watch.\n\n' +
+    '**!unwatch `all`**\n' +
+    '> Ends all currently running watches.\n\n' +
     '**!watches**\n' +
     '> Returns every watch as an individual message. An optional search term can be specified.  For example:\n `!watches belt of` returns all watches containing \"belt of\".\n\n' +
     '**!list**\n' +
@@ -26,10 +28,8 @@ const helpMsg = '\n\n' +
     '> Pauses notifications on all watches.  \`hours\` is optional; if omitted, watches are snoozed for 6 hours.\n\n' +
     '**!unsnooze**\n' +
     '> Resumes notifications on all watches.\n\n' +
-    '**!extend**\n' +
-    '> Extends your current watches another 7 days.\n\n' +
     '__***TIPS***__\n' +
-    ' • You can use `!watch` to update an existing watch if you wish to modify the price and/or reset the 7 day expiration timer.\n' +
+    ' • You can use `!watch` to update an existing watch if you wish to modify the price requirement.\n' +
     ' • Watch notifications and results from the \`!watches\` command have emoji reactions that trigger useful commands.\n' +
     ' • To report a problem or request a feature, talk to us in #feedback_and_ideas.'
 
