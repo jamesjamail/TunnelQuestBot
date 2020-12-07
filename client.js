@@ -298,10 +298,10 @@ bot.on('message', function (message) {
             case 'BLOCK':
                 if (args && args[1] && args[1] === 'BLUE' || args[1] === 'GREEN') {
                     db.blockSeller(message.author.id, args[0], args[1], null)
-                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]} for any current or future watches.`);
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]}.`);
                 } else {
                     db.blockSeller(message.author.id, args[0], null, null)
-                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers for any current or future watches.  To only block this seller on one server, use \`\`!block ${args[0]}, server\`\``);
+                    message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers.  To only block this seller on one server, use \`\`!block ${args[0]}, server\`\``);
                 }
                 break;
 
@@ -419,7 +419,7 @@ function sendMessageWithReactions(user, msg, data) {
                     case '🔕':
                         // Ignore this seller's auctions for this watch
                         db.blockSeller(user.id, seller, null, watchId)
-                        user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all present and future watches, use \`\`!block ${seller}\`\``);
+                        user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${seller} with regard to this watch.\n  To block ${seller} on all watches, use \`\`!block ${seller}\`\``);
                         break;
                     case '♻': //extend watch
                         db.extendWatch(watchId)
