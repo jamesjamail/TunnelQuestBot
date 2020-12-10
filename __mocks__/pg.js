@@ -1,9 +1,9 @@
 const pg = jest.createMockFromModule('pg');
 
 pg.Client.prototype.query.mockReturnValue({
-    then: jest.fn().mockReturnValue({
-        catch: jest.fn()
-    })
-})
+	then: jest.fn().mockReturnValue({
+		catch: jest.fn(),
+	}),
+});
 
-module.exports = pg
+module.exports = pg;
