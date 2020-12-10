@@ -14,11 +14,11 @@ const helpMsg = '\n\n' +
     '__***COMMANDS***__\n' +
     '**!help**\n' +
     '> Displays available commands.\n\n' +
-    '**!watch `item`, `server`, `maximum price`,**\n' +
+    '**!watch `item`, `server`, `maximum price`**\n' +
     '> Starts a watch based on entered parameters. Price is optional.\n\n' +
     '**!unwatch `item`, `server`**\n' +
     '> Ends a currently running watch.\n\n' +
-    '**!unwatch `all`**\n' +
+    '**!unwatch all**\n' +
     '> Ends all currently running watches.\n\n' +
     '**!watches**\n' +
     '> Returns every watch as an individual message. An optional search term can be specified.  For example:\n `!watches belt of` returns all watches containing \"belt of\".\n\n' +
