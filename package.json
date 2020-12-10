@@ -11,7 +11,8 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "node logParser.js"
+    "start": "pm2 start logParser.js",
+    "stop": "pm2 stop logParser.js"
   },
   "repository": {
     "type": "git",
