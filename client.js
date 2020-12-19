@@ -550,6 +550,8 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 
 function streamAuction(auction_user, auction_contents, server) {
 	const channelID = settings.servers[server].stream_channel;
+	const classicChannelID = settings.servers[server].stream_channel_classic;
+	const rawAuction = `\`\`\`\n${auction_user} auctions, \'${auction_contents}\'\`\`\``
 
 	fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
 		bot.channels.fetch(channelID.toString())
@@ -558,6 +560,12 @@ function streamAuction(auction_user, auction_contents, server) {
 			})
 			.catch(console.error);
 	});
+
+	bot.channels.fetch(classicChannelID.toString())
+		.then((channel) => {
+			channel.send(rawAuction)
+		})
+		.catch(console.error)
 }
 
 bot.login(TOKEN);
