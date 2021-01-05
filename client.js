@@ -108,7 +108,11 @@ bot.on('message', function(message) {
 
 			// !unwatch: <item>, <server>
 		case 'UNWATCH':
-			if (args === undefined || args[0] === undefined || args[1] === undefined) {
+			if (args && args[0] === 'ALL') {
+				db.endAllWatches(message.author.id);
+				message.author.send('Succesfully ended all your watches.');
+			}
+			else if (args === undefined || args[0] === undefined || args[1] === undefined) {
 				message.author.send('Please specify both \`item\` and \`server\` to end a watch.');
 				// validate server
 			}
