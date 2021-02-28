@@ -56,10 +56,10 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 
 	return new Discord.MessageEmbed()
 		.setColor(SERVER_COLOR[server])
-		.setTitle(`**${auction_mode}**`)
+		.setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
 		.setDescription(`\`\`\`${auction_contents}\`\`\``)
 		.addFields(fields)
-		.setFooter(`${auction_user} on Project 1999 ${utils.formatCapitalCase(server)}`)
+		.setFooter(`Project 1999 ${utils.formatCapitalCase(server)}`)
 		.setTimestamp();
 }
 

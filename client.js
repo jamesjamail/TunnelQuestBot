@@ -1,3 +1,4 @@
+/* eslint-disable max-nested-callbacks */
 const Discord = require('discord.js');
 const logger = require('winston');
 const settings = require('./settings.json');
@@ -498,7 +499,6 @@ function sendMessageWithReactions(user, msg, data) {
 async function pingUser(watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
 	// query db for communication history and blocked sellers - abort if not valid
 	const validity = await db.validateWatchNotification(userId, watchId, seller);
-	// const now = Date.now();
 	// console.log(now, 'user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
 	if (!validity) return;
 	await db.postSuccessfulCommunication(watchId, seller);
@@ -535,7 +535,7 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 		.setColor(SERVER_COLOR[server])
 		.setImage(url === 'https://i.imgur.com/wXJsk7Y.png' ? null : url)
 		.setTitle(`${formatCapitalCase(item)}`)
-		.setAuthor('Watch Notification', url, `https://wiki.project1999.com${wiki_url[item]}`)
+		.setAuthor('Watch Notification', url, wiki_url[item] ? `https://wiki.project1999.com${wiki_url[item]}` : null)
 		.setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
 		.addFields(fields)
 		.setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
