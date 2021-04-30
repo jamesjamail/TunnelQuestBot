@@ -32,7 +32,6 @@ bot.on('ready', () => {
 // server greeting for users who join
 bot.on('guildMemberAdd', (member) => {
 	const memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-	bot.channels.cache.get(GENERAL_CHANNEL).send(`Welcome to the server, ${memberTag}!`).catch(console.error);
 	bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
 });
 
