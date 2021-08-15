@@ -29,7 +29,7 @@ for (const testCase in clientTests) {
 	const auction_contents = clientTests[testCase].auctionContents;
 	const expected_message = clientTests[testCase].expectedMessage;
 	test(testCase, () => {
-		client.pingUser(watch_id, user_id, auction_user, item, price, server, auction_contents);
+		client.pingUser(bot, watch_id, user_id, auction_user, item, price, server, auction_contents);
 		expect(discord.Client.prototype.users.cache.get().send).toBeCalledWith(expected_message);
 	});
 }

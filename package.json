@@ -11,8 +11,9 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "pm2 start logParser.js",
-    "stop": "pm2 stop logParser.js"
+    "start": "pm2 start src/parser/logParser.js",
+    "stop": "pm2 stop src/parser/logParser.js",
+    "dev": "node src/parser/logParser.js"
   },
   "repository": {
     "type": "git",
@@ -34,13 +35,15 @@
     "jquery": "^3.5.1",
     "jsdom": "^16.4.0",
     "moment": "^2.28.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "pg": "^7.12.1",
-    "redis": "^3.0.2",
+    "redis": "^3.1.2",
     "tail": "^2.0.3",
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "faker": "^4.1.0"
+    "faker": "^4.1.0",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.3.5"
   }
 }

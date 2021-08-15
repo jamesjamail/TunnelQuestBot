@@ -1,4 +1,4 @@
-const settings = require('./settings.json');
+const settings = require('../settings/settings.json');
 const FEEDBACK_AND_IDEAS = settings.discord.feedback_and_ideas_channel;
 const COMMAND_CHANNEL = settings.discord.command_channel;
 

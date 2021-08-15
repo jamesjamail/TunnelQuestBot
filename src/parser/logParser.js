@@ -1,4 +1,4 @@
-const { parsePrice } = require('./utils');
+const { parsePrice } = require('../utility/utils');
 
 // Poll DB for new watches on a set interval:
 //                   s    ms
@@ -8,9 +8,9 @@ const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 
 // stream log file(s)
 if (require.main === module) {
-	const client = require('./client.js');
-	const db = require('./db.js');
-	const settings = require('./settings.json');
+	const client = require('../client/client.js');
+	const db = require('../db/db.js');
+	const settings = require('../settings/settings.json');
 	const tail = require('tail');
 	let itemList = [];
 	for (const server in settings.servers) {
