@@ -130,8 +130,8 @@ function embedReactions(message, data, messageType) {
                     break;
                 case '🔕':
                     // Ignore this seller's auctions for this watch
-                    db.blockSeller(user.id, seller, null, data.watchId);
-                    user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${data.seller} with regard to this watch.\n  To block ${seller} on all watches, use \`\`!block ${seller}\`\``);
+                    db.blockSeller(user.id, data.seller, null, data.watchId);
+                    user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${data.seller} with regard to this watch.\n  To block ${data.seller} on all watches, use \`\`!block ${data.seller}\`\``);
                     break;
                 case '♻': // extend watch
                     db.extendWatch(data.watchId);

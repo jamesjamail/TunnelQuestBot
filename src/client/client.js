@@ -220,8 +220,8 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 		.setTimestamp();
 	if (bot.users.cache.get(user.toString()) === undefined) {
 		bot.guilds.cache.get(GUILD).members.fetch(user.toString())
-			.then((user)=>{
-				sendMessageWithReactions(user, msg, data);
+			.then((myUser)=>{
+				sendMessageWithReactions(myUser, msg, data);
 			})
 			.catch(console.error);
 	}
