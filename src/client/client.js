@@ -11,7 +11,7 @@ const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
 const { embedReactions, MessageType } = require('./clientHelpers');
 const { helpMsg, welcomeMsg } = require('../content/messages');
-// logger settings
+const https = require('https');
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
 	colorize: true,
@@ -241,13 +241,13 @@ function streamAuction(auction_user, auction_contents, server) {
 				channel.send(formattedAuctionMessage);
 			})
 			.catch(console.error);
-	});
+	}).catch(console.error);
 
 	bot.channels.fetch(classicChannelID.toString())
 		.then((channel) => {
 			channel.send(rawAuction)
 		})
-		.catch(console.error)
+		.catch(console.error);
 }
 
 bot.login(TOKEN);

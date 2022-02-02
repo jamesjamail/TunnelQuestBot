@@ -5,12 +5,12 @@ const cheerio = require('cheerio');
 const aho_corasick = require('ahocorasick');
 const $ = require('jquery');
 const jsdom = require('jsdom');
-
+const https = require('https');
 const redis = require('redis');
 const cache = redis.createClient();
 
 const cache_expiration = 1 * 24 * 60 * 60 * 1000;
-const BASE_WIKI_URL = 'http://wiki.project1999.com';
+const BASE_WIKI_URL = 'https://wiki.project1999.com';
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
 const ITEMS = require('./data/items.json');
@@ -27,6 +27,11 @@ const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458' };
 cache.on('error', function(error) {
 	console.error(error);
 });
+
+//2/1/22 - p99 wiki appears to have invalid cert - causing errors. Below is a temporary solution until they fix it upstream.
+const httpsAgent = new https.Agent({
+	rejectUnauthorized: false,
+  });
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
 	const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -140,13 +145,12 @@ async function getWikiPricing(item_url, server) {
 			}
 			else {
 				// otherwise fetch new data
-				return fetch(item_url)
+				return fetch(item_url, {agent: httpsAgent})
 					.then(response => response.text())
 					.then(text => {
 						const priceData = parsePage(text, server);
 						// arrays aren't valid redis keys
 						const priceDataStr = JSON.stringify(priceData);
-
 						// store parsed data in cache as a string
 						cache.setex(key, cache_expiration, priceDataStr, (err) => {
 							if (err) console.error(err);
@@ -207,7 +211,7 @@ async function findWikiData(auction_contents, server) {
 async function fetchImageUrl(itemName) {
 	let url = '';
 	if (ITEMS[itemName]) {
-		await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`)
+		await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`, {agent:httpsAgent})
 			.then((response) => {
 				if (response.ok) {
 					return response.text()
@@ -221,6 +225,7 @@ async function fetchImageUrl(itemName) {
 			})
 			.catch(console.error);
 	}
+	console.log('url = ', url)
 	return url;
 }
 
