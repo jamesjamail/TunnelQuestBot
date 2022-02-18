@@ -126,7 +126,7 @@ function embedReactions(message, data, messageType) {
                 case '❌':
                     // Delete this watch
                     db.endWatch(user.id, data.item, data.server);
-                    user.send(`Got it! No longer watching auctions for ${data.item} on P1999 ${data.server}.`);
+                    user.send(`Got it! No longer watching auctions for ${data.item} on P1999 ${data.server} data.server.`);
                     break;
                 case '🔕':
                     // Ignore this seller's auctions for this watch
@@ -152,7 +152,7 @@ function embedReactions(message, data, messageType) {
                 case '❌':
                     // renew this watch
                     db.addWatch(user.id, null, null, null, data.watchId);
-                    user.send(`Got it! Once again watching auctions for ${data.item} on P1999 ${data.server}.`);
+                    user.send(`Got it! Once again watching auctions for ${data.item} on P1999 ${data.server} data.server.`);
                     break;
                 case '🔕':
                     // unblock the seller for this auction
