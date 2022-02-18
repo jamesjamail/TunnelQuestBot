@@ -11,23 +11,23 @@ function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
 
-function watch(message, args) {
+function watch(member, args) {
 	if (args === undefined || args[0] === undefined || args[1] === undefined) {
-		message.author.send('Sorry, it looks like you\'re missing some arguments.  Please specify `ITEM` and `SERVER`.  Try ``!help`` for syntax structure.');
+		member.send('Sorry, it looks like you\'re missing some arguments.  Please specify `ITEM` and `SERVER`.  Try ``!help`` for syntax structure.');
 		// validate server
 	}
 	else if (args[1].toUpperCase() !== 'GREEN' && args[1].toUpperCase() !== 'BLUE') {
-		message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\``);
+		member.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\``);
 		// check for price argument
 	}
 	else if (args[2] !== undefined && args[2] !== null && args[2] !== '') {
-		db.addWatch(message.author.id, args[0], args[1], args[2]);
-		message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`);
+		db.addWatch(member.id, args[0], args[1], args[2]);
+		member.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`);
 		// if no price, set watch accordingly
 	}
 	else {
-		db.addWatch(message.author.id, args[0], args[1], -1);
-		message.author.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`);
+		db.addWatch(member.id, args[0], args[1], -1);
+		member.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`);
 	}
 }
 
@@ -88,7 +88,7 @@ function watches(message, args) {
 						.setColor(SERVER_COLOR[watch.server])
 						.setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com${wiki_url[watch.name]}`)
 						.addFields(watches)
-						.setFooter('To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻'),
+						.setFooter({text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻'}),
 				)
 					.then((message) => {
 						const data = {
@@ -109,8 +109,10 @@ function watches(message, args) {
 	});
 }
 
-function list(message, args) {
-	db.showWatches(message.author.id, (res) => {
+function list(member, args) {
+	//TODO: this should return an embedded message and command file should call embedReactions()
+	//TODO: if less than 10 embeds, use interaction.reply - otherwise send all as separate messages
+	db.showWatches(member.id, (res) => {
 		if (res.success) {
 			const watches = [];
 			res.msg.forEach(watch => {
@@ -125,19 +127,22 @@ function list(message, args) {
 					inline: false,
 				});
 			});
-			message.author.send(
-				new Discord.MessageEmbed()
-					.setColor('#EFE357')
-					.setTitle(res.msg[0].global_snooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
-					.addFields(watches),
+			console.log(watches)
+			const embed = new Discord.MessageEmbed()
+			.setColor('#EFE357')
+			.setTitle(res.msg[0].global_snooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
+			.addFields(watches)
+			member.send(
+				{embeds: [embed]}
 			)
 				.then((message) => {
+					console.log('message = ', message)
 					embedReactions(message, null, MessageType[1]);
 				})
 				.catch(console.error);
 		}
 		else {
-			message.author.send('You don\'t have any watches.  Add some with `!watch`');
+			member.send('You don\'t have any watches.  Add some with `!watch`');
 		}
 	});
 }

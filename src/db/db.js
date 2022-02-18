@@ -101,18 +101,10 @@ function addWatch(user, item, server, price, watchId) {
 
 	// otherwise add each item individually...
 
-	// check for 'k' and cast price to number
-	let numPrice;
-	if (price != -1) {
-		numPrice = price.match(/[0-9.]*/gm);
-		numPrice = Number(numPrice[0]);
-		if (price.includes('K')) {
-			numPrice *= 1000;
-		}
-	}
-	else {
-		numPrice = -1;
-	}
+	//convert price from 1k to 1000pp
+	//-1 denotes no price filter
+	//this also prevents user from entering a maximum price of 0
+	const convertedPrice = !price ? -1 : Number(price) * 1000;
 
 	findOrAddUser(user)
 		.then((results) => {
@@ -124,13 +116,13 @@ function addWatch(user, item, server, price, watchId) {
                     'UPDATE watches ' +
                     'SET user_id = $1, item_id = $2, price = $3, server = $4, active = TRUE, datetime = current_timestamp ' +
                     'WHERE user_id = $1 AND item_id = $2 AND server = $4';
-					connection.query(queryStr, [userId, itemId, numPrice, server])
+					connection.query(queryStr, [userId, itemId, convertedPrice, server])
 						.then((results) => {
 							if (results.rowCount === 0) {
 								const queryStr = '' +
                             'INSERT INTO watches (user_id, item_id, price, server, datetime, active) ' +
                             'VALUES ($1, $2, $3, $4, current_timestamp, true)';
-								connection.query(queryStr, [userId, itemId, numPrice, server]);
+								connection.query(queryStr, [userId, itemId, convertedPrice, server]);
 							}
 						})
 						.catch(console.error);
@@ -201,6 +193,7 @@ function showWatch(user, item, callback) {
 }
 
 function showWatches(user, callback) {
+	console.log(user)
 	findOrAddUser(user)
 		.then((userId) => {
 			const queryStr = '' +

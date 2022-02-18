@@ -64,7 +64,7 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 		.setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
 		.setDescription(`\`\`\`${auction_contents}\`\`\``)
 		.addFields(fields)
-		.setFooter(`Project 1999 ${utils.formatCapitalCase(server)}`)
+		.setFooter({text: `Project 1999 ${utils.formatCapitalCase(server)}`})
 		.setTimestamp();
 }
 
