@@ -5,9 +5,23 @@ const { unwatch } = require('../executors')
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('unwatch')
-		.setDescription('End a currently running watch.')
-		.addStringOption(option => option.setName('item').setDescription('Enter item name').setRequired(true))
-		.addStringOption(option => option.setName('server').setDescription('Select a server').addChoices([['blue server', 'BLUE'],['green server', 'GREEN']]).setRequired(true)),
+		.setDescription('End currently running watches')
+		.addSubcommandGroup(subcommandGroup => 
+			subcommandGroup
+				.setName('subcommandgroup')
+				.setDescription('subcommandgroup')
+		)
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('all')
+                    .setDescription('End all watches.')
+                )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('item')
+                    .setDescription('end a specfific watch')
+                    .addStringOption(option => option.setName('item').setDescription('watch to remove'))
+            ),
 	async execute(interaction) {
 		const item = interaction.options.getString('item');
 		const server = interaction.options.getString('server');

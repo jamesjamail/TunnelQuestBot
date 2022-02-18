@@ -2,6 +2,8 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { watch } = require('../executors')
 
+//TODO: add subommands like unwatch.js, /watch item and /watch player
+///watch player could be useful for players who spotted auctions after the player logged
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('watch')
