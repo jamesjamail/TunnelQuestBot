@@ -31,26 +31,26 @@ function watch(member, args) {
 	}
 }
 
-function unwatch(message, args) {
+function unwatch(user, args) {
 	if (args && args[0] === 'ALL') {
-		db.endAllWatches(message.author.id);
-		message.author.send('Succesfully ended all your watches.');
+		db.endAllWatches(user.id);
+		user.send('Succesfully ended all your watches.');
 	}
 	else if (args === undefined || args[0] === undefined || args[1] === undefined) {
-		message.author.send('Please specify both \`item\` and \`server\` to end a watch.');
+		user.send('Please specify both \`item\` and \`server\` to end a watch.');
 		// validate server
 	}
 	else if (args[0] === 'ALL') {
-		db.endAllWatches(message.author.id);
-		message.author.send('Succesfully ended all your watches.');
+		db.endAllWatches(user.id);
+		user.send('Succesfully ended all your watches.');
 	}
 	else if (args[1] !== 'GREEN' && args[1] !== 'BLUE') {
-		message.author.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
+		user.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
 	}
 	else {
 		// end the watch
-		db.endWatch(message.author.id, args[0], args[1]);
-		message.author.send(`Got it! No longer watching auctions for \`${args[0]}\` on Project 1999 \`${args[1]} server\`.`);
+		db.endWatch(user.id, args[0], args[1]);
+		user.send(`Got it! No longer watching auctions for \`${args[0]}\` on Project 1999 \`${args[1]} server\`.`);
 	}
 }
 
