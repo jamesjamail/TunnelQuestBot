@@ -13,7 +13,8 @@
     "test": "jest",
     "start": "pm2 start src/parser/logParser.js",
     "stop": "pm2 stop src/parser/logParser.js",
-    "dev": "node src/parser/logParser.js"
+    "dev": "node src/parser/logParser.js",
+    "lint": "eslint . --ext .js"
   },
   "repository": {
     "type": "git",

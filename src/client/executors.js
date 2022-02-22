@@ -54,12 +54,23 @@ function unwatch(user, args) {
 	}
 }
 
-function watches(message, args) {
-	db.showWatch(message.author.id, args && args[0] ? args[0] : '', (res) => {
+async function watches(interaction) {
+	const args = interaction.options.data;
+
+	// TODO: if less than 10 embeds, use interaction.reply - otherwise send all as separate messages
+	db.showWatch(interaction.user.id, args && args[0] ? args[0] : '', async (res) => {
 		if (res.success) {
-			res.data.forEach(async (watch) => {
+			const urls = await Promise.all(res.data.map(async (item) => {
+				return await fetchImageUrl(item.name.toUpperCase())
+			}));
+			
+			// const urls = res.data.map((item) => {
+			// 	return await fetchImageUrl(item.name.toUpperCase())
+			// })
+			console.log('urls = ', urls)
+
+			const embeds = res.data.map((watch, index) => {
 				const watches = [];
-				const url = await fetchImageUrl(watch.name).catch(console.error);
 				const expiration = moment(watch.datetime).add(7, 'days');
 				const now = moment(new Date);
 				const diff = expiration.diff(now);
@@ -70,6 +81,7 @@ function watches(message, args) {
 				const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
 				const item = formatCapitalCase(watch.name);
 				const server = `${formatCapitalCase(watch.server)} Server`;
+				const url = urls[index] || null
 				watches.push({
 					name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
 					value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
@@ -83,23 +95,34 @@ function watches(message, args) {
 						inline: false,
 					});
 				}
-				message.author.send(
-					new Discord.MessageEmbed()
-						.setColor(SERVER_COLOR[watch.server])
-						.setAuthor(`${formatCapitalCase(watch.name)}`, url, `https://wiki.project1999.com${wiki_url[watch.name]}`)
-						.addFields(watches)
-						.setFooter({text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻'}),
-				)
-					.then((message) => {
-						const data = {
-							item,
-							watchId: watch.id,
-							server,
-						};
-						embedReactions(message, data, MessageType[0]);
-					});
+
+				const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
+				const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null
+				console.log('href = ', href)
+				return new Discord.MessageEmbed()
+					.setColor(SERVER_COLOR[watch.server])
+					.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: url })
+					.addFields(watches)
+					.setTitle(watch.name)
+					.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' })
+					// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
+					// .setImage(href)
+					// .setThumbnail(url)
+
+
 			});
+			if (embeds.length <= 10) {
+				// return interaction.user.send({embeds: embeds})
+				return interaction.reply({ embeds: embeds });
+			}
+			else {
+				return embeds.forEach((embed) => {
+					interaction.reply({ embeds: [embed] });
+				});
+
+			}
 		}
+
 		else if (args && args[0]) {
 			message.author.send(`You don\'t have any watches for ${args[0]}.`);
 		}
@@ -109,11 +132,10 @@ function watches(message, args) {
 	});
 }
 
-function list(member, args) {
-	//TODO: this should return an embedded message and command file should call embedReactions()
-	//TODO: if less than 10 embeds, use interaction.reply - otherwise send all as separate messages
-	db.showWatches(member.id, (res) => {
+async function list(interaction, args) {
+	return db.showWatches(interaction.member.id, (res) => {
 		if (res.success) {
+			const globalSnooze = res.msg[0].global_snooze;
 			const watches = [];
 			res.msg.forEach(watch => {
 				const expiration = moment(watch.datetime).add(7, 'days');
@@ -127,22 +149,16 @@ function list(member, args) {
 					inline: false,
 				});
 			});
-			console.log(watches)
 			const embed = new Discord.MessageEmbed()
-			.setColor('#EFE357')
-			.setTitle(res.msg[0].global_snooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
-			.addFields(watches)
-			member.send(
-				{embeds: [embed]}
-			)
-				.then((message) => {
-					console.log('message = ', message)
-					embedReactions(message, null, MessageType[1]);
-				})
-				.catch(console.error);
+				.setColor('#EFE357')
+				.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
+				.addFields(watches);
+			console.log(embed);
+			interaction.reply({ embeds: [embed] });
+
 		}
 		else {
-			member.send('You don\'t have any watches.  Add some with `!watch`');
+			interaction.reply('You don\'t have any watches.  Add some with /watch');
 		}
 	});
 }
@@ -232,7 +248,7 @@ function gnomeFact(message, args) {
 }
 
 function unrecognized(message, args) {
-    message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. Try ``!help`` for more info.');
+	message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. Try ``!help`` for more info.');
 }
 
 module.exports = {
@@ -248,5 +264,5 @@ module.exports = {
 	snooze,
 	unsnooze,
 	gnomeFact,
-    unrecognized,
+	unrecognized,
 };
