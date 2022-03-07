@@ -91,7 +91,7 @@ function getWatches(callback) {
 		.catch((err) => console.error(err));
 }
 
-function addWatch(user, item, server, price, watchId) {
+async function addWatch(user, item, server, price, watchId) {
 	// if already have watchId, simple update
 	if (watchId) {
 		const queryStr = 'UPDATE watches SET active = true WHERE id = $1;';
@@ -106,7 +106,7 @@ function addWatch(user, item, server, price, watchId) {
 	//this also prevents user from entering a maximum price of 0
 	const convertedPrice = !price ? -1 : Number(price) * 1000;
 
-	findOrAddUser(user)
+	return findOrAddUser(user)
 		.then((results) => {
 			const userId = results;
 			findOrAddItem(item)

@@ -1,6 +1,12 @@
 /* eslint-disable indent */
 const db = require('../db/db.js');
 const { formatCapitalCase } = require('../utility/utils.js');
+const { fetchImageUrl } = require('../utility/wikiHandler.js');
+const moment = require('moment');
+const wiki_url = require('../utility/data/items.json');
+const Discord = require('discord.js');
+const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458' };
+
 
 const MessageType = {
 	0: 'WATCH',
@@ -169,4 +175,58 @@ function embedReactions(message, data, messageType) {
 	}
 }
 
-module.exports = { MessageType, embedReactions };
+async function watchBuilder({item, price, server, datetime}){
+	// const urls = await Promise.all(res.data.map(async (item) => {
+	// 	return await fetchImageUrl(item.name.toUpperCase())
+	// }));
+
+	const url = await fetchImageUrl(item).catch(console.error)
+
+	
+	// const urls = res.data.map((item) => {
+	// 	return await fetchImageUrl(item.name.toUpperCase())
+	// })
+
+	const watches = [];
+	const expiration = moment(datetime).add(7, 'days');
+	const now = moment(new Date);
+	const diff = expiration.diff(now);
+	const diffDuration = moment.duration(diff);
+	const snoozeExpiration = moment(expiration).add(0, 'seconds');
+	const snoozeDiff = snoozeExpiration.diff(now);
+	const snoozeDuration = moment.duration(snoozeDiff);
+	const prettyPrice = price == -1 ? 'No Price Criteria' : price.toString().concat('pp');
+	const prettyItem = formatCapitalCase(item);
+	const prettyServer = `${formatCapitalCase(server)} Server`;
+	watches.push({
+		name: `${prettyItem} | ${prettyPrice} | ${formatCapitalCase(server)}`,
+		value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+		inline: false,
+	});
+
+	// if (watch.snoozed) {
+	// 	watches.push({
+	// 		name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
+	// 		value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
+	// 		inline: false,
+	// 	});
+	// }
+
+	const matchingItemName = !!wiki_url[item.toUpperCase()];
+	const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[item.toUpperCase()]}` : null
+	console.log('href = ', href)
+	return Promise.resolve(new Discord.MessageEmbed()
+		.setColor(SERVER_COLOR[server])
+		.setAuthor({ name: `${prettyItem}`, url: href, iconURL: url })
+		.addFields(watches)
+		.setTitle(item)
+		.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' })
+		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
+		// .setImage(href)
+		// .setThumbnail(url)
+
+	)
+}
+
+
+module.exports = { MessageType, embedReactions, watchBuilder };

@@ -13,12 +13,13 @@ module.exports = {
 		.addNumberOption(option => option.setName('price').setDescription('Enter optional maximum price'))
 		.addStringOption(option => option.setName('units').setDescription('Select a current format').addChoices([['kpp', 'TODO'],['pp', 'fix this']])),
 	async execute(interaction) {
-		const item = interaction.options.getString('item');
-		const server = interaction.options.getString('server');
-		const price = interaction.options.getNumber('price');
-		console.log([item, server, price]);
-
-		watch(interaction.user, [item, server, price])
-		interaction.reply({content: 'Done!  Please check your Direct Messages.'})
+		await watch(interaction)
+			.then((res) => {
+				console.log('outside res = ', res)
+				interaction.reply({embeds: [res]})
+			})
+			.catch((err) => {
+				interaction.reply(err.message)
+			})
 	},
 };

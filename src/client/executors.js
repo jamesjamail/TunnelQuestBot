@@ -5,29 +5,56 @@ const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js')
 const Discord = require('discord.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
-const { embedReactions, MessageType } = require('./clientHelpers');
+const { embedReactions, MessageType, watchBuilder } = require('./clientHelpers');
+const { DataNode } = require('domhandler');
 
 function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
 
-function watch(member, args) {
-	if (args === undefined || args[0] === undefined || args[1] === undefined) {
-		member.send('Sorry, it looks like you\'re missing some arguments.  Please specify `ITEM` and `SERVER`.  Try ``!help`` for syntax structure.');
-		// validate server
-	}
-	else if (args[1].toUpperCase() !== 'GREEN' && args[1].toUpperCase() !== 'BLUE') {
-		member.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\``);
-		// check for price argument
-	}
-	else if (args[2] !== undefined && args[2] !== null && args[2] !== '') {
-		db.addWatch(member.id, args[0], args[1], args[2]);
-		member.send(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`);
-		// if no price, set watch accordingly
+async function watch(interaction) {
+	const args = interaction.options.data;
+	if (args.length > 2 && args[2].value > 0) {
+		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, args[2].value)
+			.then(async (res) => {
+				console.log('res = ', res)
+				//success response should respond with watch embedded
+				// interaction.reply(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`);
+				// const msg = new Discord.MessageEmbed()
+				// 	.setColor(SERVER_COLOR[args[1].value])
+				// 	.setTitle(args[0].value)
+				// 	.setURL('https://discord.js.org/')
+				// 	.setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
+				// 	.setDescription(`at ${args[2].value}pp or less`)
+				// 	.setThumbnail('https://i.imgur.com/AfFp7pu.png')
+				// 	.addFields(
+				// 		{ name: 'Regular field title', value: 'Some value here' },
+				// 		{ name: '\u200B', value: '\u200B' },
+				// 		{ name: 'Inline field title', value: 'Some value here', inline: true },
+				// 		{ name: 'Inline field title', value: 'Some value here', inline: true },
+				// 	)
+				// 	.addField('Inline field title', 'Some value here', true)
+				// 	.setImage('https://i.imgur.com/AfFp7pu.png')
+				// 	.setTimestamp()
+				// 	.setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
+					const msg = await watchBuilder({item: args[0].value, server: args[1].value, price: args[2].value, datetime: Date.now()})	
+				return Promise.resolve(msg)
+			})
+			.catch((err) => {
+				console.error(err)
+				//TODO: log error
+				return Promise.reject(err)
+			})
 	}
 	else {
-		db.addWatch(member.id, args[0], args[1], -1);
-		member.send(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`);
+		// if no price, set watch accordingly
+		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, -1)
+			.then((res) => {
+				return Promise.resolve(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`);
+			})
+			.catch((err) => {
+				return Promise.reject(err)
+			})
 	}
 }
 
@@ -56,9 +83,10 @@ function unwatch(user, args) {
 
 async function watches(interaction) {
 	const args = interaction.options.data;
+	console.log(args)
 
 	// TODO: if less than 10 embeds, use interaction.reply - otherwise send all as separate messages
-	db.showWatch(interaction.user.id, args && args[0] ? args[0] : '', async (res) => {
+	db.showWatch(interaction.user.id, args && args.length > 0 ? args[0].value : '', async (res) => {
 		if (res.success) {
 			const urls = await Promise.all(res.data.map(async (item) => {
 				return await fetchImageUrl(item.name.toUpperCase())
@@ -124,10 +152,10 @@ async function watches(interaction) {
 		}
 
 		else if (args && args[0]) {
-			message.author.send(`You don\'t have any watches for ${args[0]}.`);
+			interaction.reply(`You don\'t have any watches for \`\`${args[0].value}\`\`.`);
 		}
 		else {
-			message.author.send('You don\'t have any watches.');
+			interaction.reply('You don\'t have any watches.');
 		}
 	});
 }
