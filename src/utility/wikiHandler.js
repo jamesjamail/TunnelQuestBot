@@ -209,23 +209,24 @@ async function findWikiData(auction_contents, server) {
 }
 
 async function fetchImageUrl(itemName) {
-	if (ITEMS[itemName]) {
-		return await fetch(`https://wiki.project1999.com${ITEMS[itemName]}`, {agent:httpsAgent})
+	if (ITEMS[itemName.toUpperCase()]) {
+		return await fetch(`https://wiki.project1999.com${ITEMS[itemName.toUpperCase()]}`)
 			.then((response) => {
 				if (response.ok) {
 					return response.text()
 						.then((body) => {
 							const url = parseResponse(body);
 							console.log('parsebody = ', url)
-							return url
+							return Promise.resolve(url)
 						});
 				}
 				else {
-					return 'https://i.imgur.com/wXJsk7Y.png';
+					return null;
 				}
 			})
-			.catch(console.error);
+			.catch((err) => Promise.reject(err));
 	}
+	return null;
 }
 
 function parseResponse(html) {

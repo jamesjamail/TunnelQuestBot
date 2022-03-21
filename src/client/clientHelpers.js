@@ -1,8 +1,16 @@
 /* eslint-disable indent */
 const db = require('../db/db.js');
+const {
+	MessageActionRow,
+	MessageButton
+} = require('discord.js');
 const { formatCapitalCase } = require('../utility/utils.js');
 const { fetchImageUrl } = require('../utility/wikiHandler.js');
 const moment = require('moment');
+const sslRootCAs = require('ssl-root-cas');
+sslRootCAs
+	.inject()
+	.addFile(__dirname + '../../../Certificates/SectigoRSADomainValidationSecureServerCA.crt');
 const wiki_url = require('../utility/data/items.json');
 const Discord = require('discord.js');
 const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458' };
@@ -175,14 +183,24 @@ function embedReactions(message, data, messageType) {
 	}
 }
 
-async function watchBuilder({item, price, server, datetime}){
+async function collectButtonInteractions(interaction) {
+	const filter = i => i.customId === 'snooze' || i.customId === 'end';
+	const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30 * 60000 });
+	collector.on('collect', async i => {
+		if (i.customId === 'snooze') {
+			await i.update({ content: 'A button was clicked!' });
+		}
+	});
+}
+
+async function watchBuilder({ item, price, server, datetime }) {
 	// const urls = await Promise.all(res.data.map(async (item) => {
 	// 	return await fetchImageUrl(item.name.toUpperCase())
 	// }));
 
-	const url = await fetchImageUrl(item).catch(console.error)
+	const url = await fetchImageUrl(item).catch(console.error);
 
-	
+
 	// const urls = res.data.map((item) => {
 	// 	return await fetchImageUrl(item.name.toUpperCase())
 	// })
@@ -195,7 +213,7 @@ async function watchBuilder({item, price, server, datetime}){
 	const snoozeExpiration = moment(expiration).add(0, 'seconds');
 	const snoozeDiff = snoozeExpiration.diff(now);
 	const snoozeDuration = moment.duration(snoozeDiff);
-	const prettyPrice = price == -1 ? 'No Price Criteria' : price.toString().concat('pp');
+	const prettyPrice = price === null ? 'No Price Criteria' : price.toString().concat('pp');
 	const prettyItem = formatCapitalCase(item);
 	const prettyServer = `${formatCapitalCase(server)} Server`;
 	watches.push({
@@ -213,20 +231,74 @@ async function watchBuilder({item, price, server, datetime}){
 	// }
 
 	const matchingItemName = !!wiki_url[item.toUpperCase()];
-	const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[item.toUpperCase()]}` : null
-	console.log('href = ', href)
+	const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[item.toUpperCase()]}` : null;
+	console.log('href1 = ', href);
+	console.log('url = ', url);
+
 	return Promise.resolve(new Discord.MessageEmbed()
 		.setColor(SERVER_COLOR[server])
 		.setAuthor({ name: `${prettyItem}`, url: href, iconURL: url })
 		.addFields(watches)
-		.setTitle(item)
-		.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' })
+		.setTitle(prettyItem)
+		.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' }),
 		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
 		// .setImage(href)
 		// .setThumbnail(url)
 
-	)
+	);
+}
+
+//TODO: this should accept an array of button names with actinve/inactive bool
+function buttonBuilder(messageType) {
+	const row = new MessageActionRow();
+	switch(messageType) {
+		case 'watch':
+			const watchBtn1 = new MessageButton()
+				.setCustomId('snooze')
+				.setLabel('💤')
+				.setStyle('PRIMARY');
+
+			const watchBtn2 = new MessageButton()
+						.setCustomId('end')
+						.setLabel('❌')
+						.setStyle('DANGER');
+
+
+			const watchBtn3 = new MessageButton()
+						.setCustomId('refresh')
+						.setLabel('♻️')
+						.setStyle('SUCCESS');
+			return row.addComponents([watchBtn1, watchBtn2, watchBtn3]);
+		case 'list':
+			const listBtn1 = new MessageButton()
+			.setCustomId('snooze')
+			.setLabel('💤')
+			.setStyle('PRIMARY');
+
+
+		const listBtn2 = new MessageButton()
+					.setCustomId('refresh')
+					.setLabel('♻️')
+					.setStyle('SUCCESS');
+		return row.addComponents([listBtn1, listBtn2]);
+		default:
+			return;
+
+	}
+	return row;
+}
+
+async function sendMessagesToUser(client, userId, messages, components) {
+	const user = await client.users.fetch(userId)
+	messages.forEach((message, index) => {
+		if (components) {
+			return user.send({ embeds: [message], components: [components] })
+		}
+		return user.send({ embeds: [message] })
+	})
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder };
+
+
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions };

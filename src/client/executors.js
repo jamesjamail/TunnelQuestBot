@@ -5,9 +5,8 @@ const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js')
 const Discord = require('discord.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
+const sendMessagesToUser = require('./client')
 const { embedReactions, MessageType, watchBuilder } = require('./clientHelpers');
-const { DataNode } = require('domhandler');
-
 function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
@@ -17,44 +16,28 @@ async function watch(interaction) {
 	if (args.length > 2 && args[2].value > 0) {
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, args[2].value)
 			.then(async (res) => {
-				console.log('res = ', res)
-				//success response should respond with watch embedded
-				// interaction.reply(`Got it! Now watching auctions for \`${args[0]}\` at \`${args[2]}pp\` or less on Project 1999 \`${args[1]}\` Server.`);
-				// const msg = new Discord.MessageEmbed()
-				// 	.setColor(SERVER_COLOR[args[1].value])
-				// 	.setTitle(args[0].value)
-				// 	.setURL('https://discord.js.org/')
-				// 	.setAuthor({ name: 'Some name', iconURL: 'https://i.imgur.com/AfFp7pu.png', url: 'https://discord.js.org' })
-				// 	.setDescription(`at ${args[2].value}pp or less`)
-				// 	.setThumbnail('https://i.imgur.com/AfFp7pu.png')
-				// 	.addFields(
-				// 		{ name: 'Regular field title', value: 'Some value here' },
-				// 		{ name: '\u200B', value: '\u200B' },
-				// 		{ name: 'Inline field title', value: 'Some value here', inline: true },
-				// 		{ name: 'Inline field title', value: 'Some value here', inline: true },
-				// 	)
-				// 	.addField('Inline field title', 'Some value here', true)
-				// 	.setImage('https://i.imgur.com/AfFp7pu.png')
-				// 	.setTimestamp()
-				// 	.setFooter({ text: 'Some footer text here', iconURL: 'https://i.imgur.com/AfFp7pu.png' });
-					const msg = await watchBuilder({item: args[0].value, server: args[1].value, price: args[2].value, datetime: Date.now()})	
-				return Promise.resolve(msg)
+				console.log('res = ', res);
+				const msg = await watchBuilder({ item: args[0].value, server: args[1].value, price: args[2].value, datetime: Date.now() });
+				return Promise.resolve(msg);
 			})
 			.catch((err) => {
-				console.error(err)
-				//TODO: log error
-				return Promise.reject(err)
-			})
+				console.error(err);
+				// TODO: log error
+				return Promise.reject(err);
+			});
 	}
 	else {
 		// if no price, set watch accordingly
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, -1)
-			.then((res) => {
-				return Promise.resolve(`Got it! Now watching auctions for \`${args[0]}\` at any price on Project 1999 \`${args[1]}\` Server.`);
+			.then(async (res) => {
+				const msg = await watchBuilder({ item: args[0].value, server: args[1].value, price: null, datetime: Date.now() }).catch(console.error);
+				return Promise.resolve(msg);
+
 			})
 			.catch((err) => {
-				return Promise.reject(err)
-			})
+				console.error(err);
+				return Promise.reject(err);
+			});
 	}
 }
 
@@ -83,113 +66,100 @@ function unwatch(user, args) {
 
 async function watches(interaction) {
 	const args = interaction.options.data;
-	console.log(args)
 
-	// TODO: if less than 10 embeds, use interaction.reply - otherwise send all as separate messages
-	db.showWatch(interaction.user.id, args && args.length > 0 ? args[0].value : '', async (res) => {
-		if (res.success) {
-			const urls = await Promise.all(res.data.map(async (item) => {
-				return await fetchImageUrl(item.name.toUpperCase())
-			}));
-			
-			// const urls = res.data.map((item) => {
-			// 	return await fetchImageUrl(item.name.toUpperCase())
-			// })
-			console.log('urls = ', urls)
+	return await db.showWatch(interaction.user.id, args && args.length > 0 ? args[0].value : '')
+		.then(async (res) => {
+			if (res.length > 0) {
+				const urls = await Promise.all(res.map(async (item) => {
+					return await fetchImageUrl(item.name);
+				}));
 
-			const embeds = res.data.map((watch, index) => {
-				const watches = [];
-				const expiration = moment(watch.datetime).add(7, 'days');
-				const now = moment(new Date);
-				const diff = expiration.diff(now);
-				const diffDuration = moment.duration(diff);
-				const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
-				const snoozeDiff = snoozeExpiration.diff(now);
-				const snoozeDuration = moment.duration(snoozeDiff);
-				const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
-				const item = formatCapitalCase(watch.name);
-				const server = `${formatCapitalCase(watch.server)} Server`;
-				const url = urls[index] || null
-				watches.push({
-					name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
-					value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
-					inline: false,
-				});
+				const embeds = res.map((watch, index) => {
+					const watches = [];
+					const expiration = moment(watch.datetime).add(7, 'days');
+					const now = moment(new Date);
+					const diff = expiration.diff(now);
+					const diffDuration = moment.duration(diff);
+					const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
+					const snoozeDiff = snoozeExpiration.diff(now);
+					const snoozeDuration = moment.duration(snoozeDiff);
+					const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+					const item = formatCapitalCase(watch.name);
+					const server = `${formatCapitalCase(watch.server)} Server`;
+					// const url = await fetchImageUrl(item).catch(console.error);
+					// console.log('watches url = ', url, item)
 
-				if (watch.snoozed) {
 					watches.push({
-						name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
-						value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
+						name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
+						value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
 						inline: false,
 					});
-				}
 
-				const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
-				const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null
-				console.log('href = ', href)
-				return new Discord.MessageEmbed()
-					.setColor(SERVER_COLOR[watch.server])
-					.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: url })
-					.addFields(watches)
-					.setTitle(watch.name)
-					.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' })
+					if (watch.snoozed) {
+						watches.push({
+							name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
+							value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
+							inline: false,
+						});
+					}
+
+					const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
+					const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
+					console.log('href = ', href);
+					return new Discord.MessageEmbed()
+						.setColor(SERVER_COLOR[watch.server])
+						.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
+						.addFields(watches)
+						.setTitle(watch.name)
+						.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
 					// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
 					// .setImage(href)
 					// .setThumbnail(url)
 
 
-			});
-			if (embeds.length <= 10) {
-				// return interaction.user.send({embeds: embeds})
-				return interaction.reply({ embeds: embeds });
+				});
+				return Promise.resolve(embeds);
+			}
+
+			else if (args && args[0]) {
+				return Promise.resolve(`You don\'t have any watches for \`\`${args[0].value}\`\`.`);
 			}
 			else {
-				return embeds.forEach((embed) => {
-					interaction.reply({ embeds: [embed] });
-				});
-
+				return Promise.resolve('You don\'t have any watches.');
 			}
-		}
-
-		else if (args && args[0]) {
-			interaction.reply(`You don\'t have any watches for \`\`${args[0].value}\`\`.`);
-		}
-		else {
-			interaction.reply('You don\'t have any watches.');
-		}
-	});
+		});
 }
 
-async function list(interaction, args) {
-	return db.showWatches(interaction.member.id, (res) => {
-		if (res.success) {
-			const globalSnooze = res.msg[0].global_snooze;
-			const watches = [];
-			res.msg.forEach(watch => {
-				const expiration = moment(watch.datetime).add(7, 'days');
-				const now = moment(new Date);
-				const diff = expiration.diff(now);
-				const diffDuration = moment.duration(diff);
-				const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
-				watches.push({
-					name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
-					value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
-					inline: false,
+async function list(interaction) {
+	return await db.listWatches(interaction.user.id)
+		.then((res) => {
+			if (res) {
+				const globalSnooze = res[0].global_snooze;
+				const watches = [];
+				res.forEach(watch => {
+					const expiration = moment(watch.datetime).add(7, 'days');
+					const now = moment(new Date);
+					const diff = expiration.diff(now);
+					const diffDuration = moment.duration(diff);
+					const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+					watches.push({
+						name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
+						value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+						inline: false,
+					});
 				});
-			});
-			const embed = new Discord.MessageEmbed()
-				.setColor('#EFE357')
-				.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
-				.addFields(watches);
-			console.log(embed);
-			interaction.reply({ embeds: [embed] });
-
-		}
-		else {
-			interaction.reply('You don\'t have any watches.  Add some with /watch');
-		}
-	});
+				const embed = new Discord.MessageEmbed()
+					.setColor('#EFE357')
+					.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
+					.addFields(watches);
+				return Promise.resolve([embed]);
+			}
+			else {
+				return Promise.resolve('You don\'t have any watches.  Add some with /watch');
+			}
+		});
 }
+
 
 function extend(message, args) {
 	db.extendAllWatches(message.author.id);

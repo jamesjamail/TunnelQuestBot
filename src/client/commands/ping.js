@@ -49,6 +49,6 @@ module.exports = {
 		.setDescription('Replies with pong'),
 	async execute(interaction) {
 
-		await interaction.reply({ embeds: [embed1], components: [row] });
+		await interaction.reply({ embeds: [embed1, embed2], components: [row] });
 	},
 };

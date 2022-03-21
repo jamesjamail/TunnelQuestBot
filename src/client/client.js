@@ -4,20 +4,20 @@ const {
 	Client,
 	Intents,
 	Collection,
-	MessageEmbed
+	MessageEmbed,
 } = require('discord.js');
 const {
-	Routes
+	Routes,
 } = require('discord-api-types/v9');
 const {
-	REST
+	REST,
 } = require('@discordjs/rest');
 const logger = require('winston');
 const settings = require('../settings/settings.json');
 const db = require('../db/db.js');
 const fs = require('fs');
-const path = require("path");
-const commandDir = path.join(__dirname, "commands");
+const path = require('path');
+const commandDir = path.join(__dirname, 'commands');
 const standardCommands = require('./executors.js');
 const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.js'));
 const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing, SERVER_COLOR } = require('../utility/wikiHandler');
@@ -33,7 +33,7 @@ logger.add(new logger.transports.Console, {
 logger.level = 'debug';
 
 // Initialize Discord Client
-const bot = new Client({intents: [Intents.FLAGS.GUILDS]});
+const bot = new Client({ intents: [Intents.FLAGS.GUILDS] });
 const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
@@ -61,56 +61,70 @@ for (const file of commandFiles) {
 	bot.commands.set(command.data.name, command);
 }
 
-//Don't get burned by testing development with global commands!
+// Don't get burned by testing development with global commands!
 //
-//Global commands are cached for one hour. New global commands will fan out
-//slowly across all guilds and will only be guaranteed to be updated after an
-//hour. Guild commands update instantly. As such, we recommend you use guild-based
-//commands during development and publish them to global commands when they're
-//ready for public use.
+// Global commands are cached for one hour. New global commands will fan out
+// slowly across all guilds and will only be guaranteed to be updated after an
+// hour. Guild commands update instantly. As such, we recommend you use guild-based
+// commands during development and publish them to global commands when they're
+// ready for public use.
 
-//TODO: dont forget to upgrade node to 14 and npm install, as well as adjust discord permissions for application commands
+// TODO: dont forget to upgrade node to 14 and npm install, as well as adjust discord permissions for application commands
 
 // When the client is ready, run this code (only once)
 
-//TODO: can a pinned embedded message with a select for WTS/WTB, server preference, etc to allow for easier command syntax and results?
+// TODO: can a pinned embedded message with a select for WTS/WTB, server preference, etc to allow for easier command syntax and results?
 bot.once('ready', () => {
 	console.log('Ready!');
 	// Registering the commands in the client
 	const CLIENT_ID = bot.user.id;
 	const rest = new REST({
-		version: '9'
+		version: '9',
 	}).setToken(TOKEN);
 	(async () => {
 		try {
 			await rest.put(
 				Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-					body: commands
+					body: commands,
 				},
 			);
 			console.log('Successfully registered guild application commands');
-		} catch (error) {
+		}
+ catch (error) {
 			if (error) console.error(JSON.stringify(error.rawError.errors));
 		}
 	})();
 });
 
 
-//command syntax as well as executors are defined in /commands directory
+// command syntax as well as executors are defined in /commands directory
 bot.on('interactionCreate', async interaction => {
-	//TODO: block stream channels, etc.
+	// TODO: block stream channels, etc.
 	if (!interaction.isCommand()) return;
-	
+
 	const command = bot.commands.get(interaction.commandName);
 	if (!command) return;
 
 	try {
 		await command.execute(interaction);
-	} catch (error) {
+	}
+ catch (error) {
 		console.error('catch block error', error);
 		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 	}
 });
+
+// bot.on('interactionCreate', interaction => {
+// 	if (!interaction.isButton()) return;
+// 	console.log(interaction);
+// 	switch (interaction.customId.toUpperCase()) {
+// 		case 'SNOOZE':
+// 			db.snooze('user', interaction.user.id)
+// 				.then()
+// 	}
+// });
+
+
 
 // bot.on('message', function(message) {
 // 	// ignore bots
@@ -291,7 +305,7 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 		.setAuthor('Watch Notification', url, wiki_url[item] ? `https://wiki.project1999.com${wiki_url[item]}` : null)
 		.setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
 		.addFields(fields)
-		.setFooter({text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`})
+		.setFooter({ text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}` })
 		.setTimestamp();
 	if (bot.users.cache.get(user.toString()) === undefined) {
 		bot.guilds.cache.get(GUILD).members.fetch(user.toString())
@@ -308,7 +322,7 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 function streamAuction(auction_user, auction_contents, server) {
 	const channelID = settings.servers[server].stream_channel;
 	const classicChannelID = settings.servers[server].stream_channel_classic;
-	const rawAuction = `\`\`\`\n${auction_user} auctions, \'${auction_contents}\'\`\`\``
+	const rawAuction = `\`\`\`\n${auction_user} auctions, \'${auction_contents}\'\`\`\``;
 
 	fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
 		bot.channels.fetch(channelID.toString())
@@ -320,11 +334,13 @@ function streamAuction(auction_user, auction_contents, server) {
 
 	bot.channels.fetch(classicChannelID.toString())
 		.then((channel) => {
-			channel.send(rawAuction)
+			channel.send(rawAuction);
 		})
 		.catch(console.error);
 }
 
+
 bot.login(TOKEN);
 
-module.exports = { pingUser, streamAuction };
+
+module.exports = { pingUser, streamAuction,  };

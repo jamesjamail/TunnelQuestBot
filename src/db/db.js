@@ -165,8 +165,8 @@ function endAllWatches(user) {
 		});
 }
 
-function showWatch(user, item, callback) {
-	findOrAddUser(user)
+async function showWatch(user, item) {
+	return await findOrAddUser(user)
 		.then((results) => {
 			const userId = results;
 			const pattern = '%'.concat(item).concat('%');
@@ -179,22 +179,16 @@ function showWatch(user, item, callback) {
             'LEFT JOIN snooze_by_watch ON snooze_by_watch.watch_id = watches.id ' +
             'WHERE watches.user_id = $1 AND items.name LIKE $2 AND watches.active = true';
 			'AND expiration IS NULL OR expiration > now() ORDER BY items.name ASC;';
-			connection.query(queryStr, [userId, pattern])
+			return connection.query(queryStr, [userId, pattern])
 				.then((res) => {
-					if (res.rowCount === 0) {
-						callback({ success: false });
-					}
-					else {
-						callback({ success: true, data: res.rows });
-					}
+					return Promise.resolve(res.rows)
 				});
 		})
 		.catch(console.error);
 }
 
-function showWatches(user, callback) {
-	console.log(user)
-	findOrAddUser(user)
+async function listWatches(user) {
+	return await findOrAddUser(user)
 		.then((userId) => {
 			const queryStr = '' +
                 'SELECT items.name, price, server, datetime, snooze_by_watch.expiration, CASE ' +
@@ -211,18 +205,13 @@ function showWatches(user, callback) {
                 'LEFT JOIN snooze_by_user ON snooze_by_user.user_id = watches.user_id ' +
                 'WHERE watches.user_id = $1 AND watches.active = TRUE ' +
                 'ORDER BY items.name;';
-			connection.query(queryStr, [userId])
+			return connection.query(queryStr, [userId])
 				.then((res) => {
-					if (res.rowCount === 0) {
-						callback({ success: false });
-					}
-					else {
-						callback({ success: true, msg: res.rows });
-					}
+					return Promise.resolve(res.rows);
 				});
 		})
 		.catch((err) => {
-			console.error(err);
+			Promise.reject(err);
 		});
 }
 
@@ -307,13 +296,13 @@ function showBlocks(user, callback) {
 		}).catch(console.error);
 }
 
-function snooze(type, id, hours = 6) {
+async function snooze(type, id, hours = 6) {
 	switch(type.toUpperCase()) {
 	case 'WATCH':
 		// insert into watch snoooze
-		(() => {
+		(async () => {
 			const queryStr = 'INSERT INTO snooze_by_watch (watch_id, expiration) VALUES ($1, now() + interval \'1 second\' * $2) ON CONFLICT (watch_id) DO UPDATE SET expiration = now() + interval \'1 second\' * $2;';
-			connection.query(queryStr, [id, hours * 60 * 60])
+			await connection.query(queryStr, [id, hours * 60 * 60])
 				.catch(console.error);
 		})();
 		break;
@@ -321,9 +310,9 @@ function snooze(type, id, hours = 6) {
 		findOrAddUser(id)
 			.then((userId) => {
 				// insert into account snooze
-				(() => {
+				(async () => {
 					const queryStr = 'INSERT INTO snooze_by_user (user_id, expiration) VALUES ($1, now() + interval \'1 hour\' * $2) ON CONFLICT (user_id) DO UPDATE SET expiration = now() + interval \'1 hour\' * $2;';
-					connection.query(queryStr, [userId, hours])
+					await connection.query(queryStr, [userId, hours])
 						.catch(console.error);
 				})();
 			}).catch(console.error);
@@ -427,4 +416,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatches, snooze, unsnooze, getWatches, postSuccessfulCommunication, blockSeller, unblockSeller, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, listWatches: listWatches, snooze, unsnooze, getWatches, postSuccessfulCommunication, blockSeller, unblockSeller, showBlocks, validateWatchNotification, upkeep };
