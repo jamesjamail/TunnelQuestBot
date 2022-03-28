@@ -1,6 +1,5 @@
-
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { list } = require('../executors')
+const { list } = require('../executors');
 const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers');
 
 module.exports = {
@@ -9,12 +8,12 @@ module.exports = {
 		.setDescription('Lists available commands'),
 	async execute(interaction) {
 		await list(interaction)
-			.then(async (res) => {
-				const btnRow = buttonBuilder('list')
-				await collectButtonInteractions(interaction)
-				interaction.reply({embeds: res, components: [btnRow]})
+			.then(async ({ embeds, metadata }) => {
+				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh', active: metadata.globalRefreshActive }]);
+				await collectButtonInteractions(interaction, metadata);
+				interaction.reply({ embeds: embeds, components: [btnRow] });
 			})
 			.catch(console.error);
-	
+
 	},
 };

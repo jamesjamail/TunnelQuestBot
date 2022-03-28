@@ -2,7 +2,7 @@
 const db = require('../db/db.js');
 const {
 	MessageActionRow,
-	MessageButton
+	MessageButton,
 } = require('discord.js');
 const { formatCapitalCase } = require('../utility/utils.js');
 const { fetchImageUrl } = require('../utility/wikiHandler.js');
@@ -183,122 +183,228 @@ function embedReactions(message, data, messageType) {
 	}
 }
 
-async function collectButtonInteractions(interaction) {
-	const filter = i => i.customId === 'snooze' || i.customId === 'end';
-	const collector = interaction.channel.createMessageComponentCollector({ filter, time: 30 * 60000 });
+async function collectButtonInteractions(interaction, metadata, message) {
+	// filter is redundant when using switch
+	const filter = () => true;
+	// if message is supplied, buttons are being used on a direct message
+	const collector = message ?
+	message.createMessageComponentCollector({ filter, time: 30 * 60000 })
+	: interaction.channel.createMessageComponentCollector({ filter, time: 30 * 60000 });
 	collector.on('collect', async i => {
-		if (i.customId === 'snooze') {
-			await i.update({ content: 'A button was clicked!' });
+		// TODO: check status of other buttons other than assuming inactive
+		switch (i.customId) {
+			case 'globalRefresh':
+				return await db.extendAllWatches(interaction.user.id)
+					.then(async (res) => {
+							const updatedMsg = buildListResponse(res);
+							const btnRow = buttonBuilder([{ type: 'globalSnooze', active: res[0].global_snooze }, { type: 'globalRefresh', active: true }]);
+							return await i.update({ content: 'All watches extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
+						})
+						.catch(async (err) => {
+							console.error(err);
+							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+						});
+			case 'globalSnooze':
+				// use listWatches to check global_snooze state (state may have changed since issuing command)
+				return await db.listWatches(interaction.user.id)
+						.then(async (res) => {
+							// let's consider refresh button "activated" if pressed within last minute
+							const created = moment(res[0].datetime).add(0, 'second');
+							const oneMinAgo = moment().subtract('1', 'minute');
+							const globalRefreshActive = created.isAfter(oneMinAgo);
+							// TODO: handle no watch edge case
+							if (res && res.length > 0 && res[0]['global_snooze']) {
+								// unsnooze if already snoozed
+								return await db.unsnooze('global', interaction.user.id)
+									.then(async (res) => {
+											const updatedMsg = buildListResponse(res);
+											const btnRow = buttonBuilder([{ type: 'globalSnooze' }, { type: 'globalRefresh', active: globalRefreshActive }]);
+											return await i.update({ content: 'All watches unsnoozed.', embeds: updatedMsg, components: [btnRow] });
+										})
+										.catch(async (err) => {
+											console.error(err);
+											return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+										});
+							}
+							return await db.snooze('global', interaction.user.id)
+								.then(async (res) => {
+										const updatedMsg = buildListResponse(res);
+										const btnRow = buttonBuilder([{ type: 'globalSnooze', active: true }, { type: 'globalRefresh', active: globalRefreshActive }]);
+										return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
+									})
+									.catch(async (err) => {
+										console.error(err);
+										return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+									});
+						});
+
+			case 'itemSnooze':
+				return await db.snooze('item', metadata.watch_id)
+					.then(async (res) => {
+							console.log(res);
+							const updatedMsg = buildListResponse(res);
+							const btnRow = buttonBuilder([{ type: 'globalSnooze', active: true }, { type: 'globalRefresh' }]);
+							return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
+						})
+						.catch(async (err) => {
+							console.error(err);
+							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+						});
+			case 'itemRefresh':
+				return await db.extendWatch(metadata.id)
+				.then(async (res) => {
+						console.log(res);
+						const updatedMsg = await watchBuilder(res);
+						console.log(updatedMsg);
+						const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'itemRefresh', active: true }]);
+						return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
+					})
+					.catch(async (err) => {
+						console.error(err);
+						return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+					});
+			case 'unwatch':
+				return;
+				// TODO: unwatch
+
+			default:
+				return null;
 		}
 	});
 }
 
-async function watchBuilder({ item, price, server, datetime }) {
-	// const urls = await Promise.all(res.data.map(async (item) => {
-	// 	return await fetchImageUrl(item.name.toUpperCase())
-	// }));
+function buildListResponse(data) {
+	if (data && data.length > 0) {
+		const globalSnooze = data[0].global_snooze;
+		const watches = [];
+		data.forEach(watch => {
+			const expiration = moment(watch.datetime).add(7, 'days');
+			const now = moment(new Date);
+			const diff = expiration.diff(now);
+			const diffDuration = moment.duration(diff);
+			const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+			watches.push({
+				name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
+				value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+				inline: false,
+			});
+		});
+		const embed = new Discord.MessageEmbed()
+			.setColor('#EFE357')
+			.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
+			.addFields(watches);
+		return [embed];
+	}
+	else {
+		return 'You don\'t have any watches.  Add some with /watch';
+	}
+}
 
-	const url = await fetchImageUrl(item).catch(console.error);
+async function watchBuilder(watchesToBuild) {
+	const urls = await Promise.all(watchesToBuild.map(async (item) => {
+		return await fetchImageUrl(item.name);
+	}));
 
+	const embeds = watchesToBuild.map((watch, index) => {
+		const watches = [];
+		const expiration = moment(watch.datetime).add(7, 'days');
+		const now = moment(new Date);
+		const diff = expiration.diff(now);
+		const diffDuration = moment.duration(diff);
+		const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
+		const snoozeDiff = snoozeExpiration.diff(now);
+		const snoozeDuration = moment.duration(snoozeDiff);
+		const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+		const item = formatCapitalCase(watch.name);
+		const server = `${formatCapitalCase(watch.server)} Server`;
+		// const url = await fetchImageUrl(item).catch(console.error);
+		// console.log('watches url = ', url, item)
 
-	// const urls = res.data.map((item) => {
-	// 	return await fetchImageUrl(item.name.toUpperCase())
-	// })
+		watches.push({
+			name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
+			value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+			inline: false,
+		});
 
-	const watches = [];
-	const expiration = moment(datetime).add(7, 'days');
-	const now = moment(new Date);
-	const diff = expiration.diff(now);
-	const diffDuration = moment.duration(diff);
-	const snoozeExpiration = moment(expiration).add(0, 'seconds');
-	const snoozeDiff = snoozeExpiration.diff(now);
-	const snoozeDuration = moment.duration(snoozeDiff);
-	const prettyPrice = price === null ? 'No Price Criteria' : price.toString().concat('pp');
-	const prettyItem = formatCapitalCase(item);
-	const prettyServer = `${formatCapitalCase(server)} Server`;
-	watches.push({
-		name: `${prettyItem} | ${prettyPrice} | ${formatCapitalCase(server)}`,
-		value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
-		inline: false,
-	});
+		if (watch.snoozed) {
+			watches.push({
+				name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
+				value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
+				inline: false,
+			});
+		}
 
-	// if (watch.snoozed) {
-	// 	watches.push({
-	// 		name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
-	// 		value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
-	// 		inline: false,
-	// 	});
-	// }
-
-	const matchingItemName = !!wiki_url[item.toUpperCase()];
-	const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[item.toUpperCase()]}` : null;
-	console.log('href1 = ', href);
-	console.log('url = ', url);
-
-	return Promise.resolve(new Discord.MessageEmbed()
-		.setColor(SERVER_COLOR[server])
-		.setAuthor({ name: `${prettyItem}`, url: href, iconURL: url })
-		.addFields(watches)
-		.setTitle(prettyItem)
-		.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' }),
+		const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
+		const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
+		return new Discord.MessageEmbed()
+			.setColor(SERVER_COLOR[watch.server])
+			.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
+			.addFields(watches)
+			.setTitle(watch.name)
+			.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
 		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
 		// .setImage(href)
 		// .setThumbnail(url)
 
-	);
+
+	});
+	return Promise.resolve(embeds);
 }
 
-//TODO: this should accept an array of button names with actinve/inactive bool
-function buttonBuilder(messageType) {
+function buttonBuilder(buttonTypes) {
 	const row = new MessageActionRow();
-	switch(messageType) {
-		case 'watch':
-			const watchBtn1 = new MessageButton()
-				.setCustomId('snooze')
-				.setLabel('💤')
-				.setStyle('PRIMARY');
+	const buttons = buttonTypes.map((button) => {
+		switch(button.type) {
+			case 'itemSnooze':
+				return new MessageButton()
+					.setCustomId('itemSnooze')
+					.setLabel('💤')
+					.setStyle(button.active ? 'PRIMARY' : 'SECONDARY');
+			case 'globalSnooze':
+				return new MessageButton()
+						.setCustomId('globalSnooze')
+						.setLabel('💤')
+						.setStyle(button.active ? 'PRIMARY' : 'SECONDARY');
+			case 'unwatch':
+				return new MessageButton()
+					.setCustomId('unwatch')
+					.setLabel('❌')
+					.setStyle(button.active ? 'DANGER' : 'SECONDARY');
 
-			const watchBtn2 = new MessageButton()
-						.setCustomId('end')
-						.setLabel('❌')
-						.setStyle('DANGER');
-
-
-			const watchBtn3 = new MessageButton()
-						.setCustomId('refresh')
-						.setLabel('♻️')
-						.setStyle('SUCCESS');
-			return row.addComponents([watchBtn1, watchBtn2, watchBtn3]);
-		case 'list':
-			const listBtn1 = new MessageButton()
-			.setCustomId('snooze')
-			.setLabel('💤')
-			.setStyle('PRIMARY');
-
-
-		const listBtn2 = new MessageButton()
-					.setCustomId('refresh')
+			case 'itemRefresh':
+				return new MessageButton()
+					.setCustomId('itemRefresh')
 					.setLabel('♻️')
-					.setStyle('SUCCESS');
-		return row.addComponents([listBtn1, listBtn2]);
-		default:
-			return;
+					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
 
-	}
-	return row;
-}
+			case 'globalRefresh':
+				return new MessageButton()
+					.setCustomId('globalRefresh')
+					.setLabel('♻️')
+					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
 
-async function sendMessagesToUser(client, userId, messages, components) {
-	const user = await client.users.fetch(userId)
-	messages.forEach((message, index) => {
-		if (components) {
-			return user.send({ embeds: [message], components: [components] })
+			default:
+				return null;
+
 		}
-		return user.send({ embeds: [message] })
-	})
+	});
+	return row.addComponents(buttons);
 }
 
 
+async function sendMessagesToUser(interaction, userId, messages, components, metadataItems) {
+	const user = await interaction.client.users.fetch(userId).catch(console.error);
+	if (!messages || messages.length < 1) return;
+
+	const postedMessages = await Promise.all(messages.map(async (message, index) => {
+		return await user.send({ embeds: [message], components: [components] })
+			.then(async (postedMessage) =>{
+				return await collectButtonInteractions(interaction, metadataItems[index], postedMessage);
+			});
+		}));
+
+	return postedMessages;
+}
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions };
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse };

@@ -93,7 +93,7 @@ async function watches(message, args) {
 					.then((message) => {
 						const data = {
 							item,
-							watchId: watch.id,
+							watch_id: watch.id,
 							server,
 						};
 						embedReactions(message, data, MessageType[0]);
@@ -227,7 +227,7 @@ function gnomeFact(message, args) {
 }
 
 function unrecognized(message, args) {
-    message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. Try ``!help`` for more info.');
+	message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. Try ``!help`` for more info.');
 }
 
 module.exports = {
@@ -243,5 +243,5 @@ module.exports = {
 	snooze,
 	unsnooze,
 	gnomeFact,
-    unrecognized,
+	unrecognized,
 };

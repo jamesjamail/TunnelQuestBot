@@ -5,8 +5,8 @@ const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js')
 const Discord = require('discord.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
-const sendMessagesToUser = require('./client')
-const { embedReactions, MessageType, watchBuilder } = require('./clientHelpers');
+const sendMessagesToUser = require('./client');
+const { embedReactions, MessageType, watchBuilder, buildListResponse } = require('./clientHelpers');
 function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
@@ -16,7 +16,6 @@ async function watch(interaction) {
 	if (args.length > 2 && args[2].value > 0) {
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, args[2].value)
 			.then(async (res) => {
-				console.log('res = ', res);
 				const msg = await watchBuilder({ item: args[0].value, server: args[1].value, price: args[2].value, datetime: Date.now() });
 				return Promise.resolve(msg);
 			})
@@ -105,7 +104,6 @@ async function watches(interaction) {
 
 					const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
 					const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
-					console.log('href = ', href);
 					return new Discord.MessageEmbed()
 						.setColor(SERVER_COLOR[watch.server])
 						.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
@@ -118,7 +116,7 @@ async function watches(interaction) {
 
 
 				});
-				return Promise.resolve(embeds);
+				return Promise.resolve({ embeds, metadata: res });
 			}
 
 			else if (args && args[0]) {
@@ -133,30 +131,18 @@ async function watches(interaction) {
 async function list(interaction) {
 	return await db.listWatches(interaction.user.id)
 		.then((res) => {
-			if (res) {
-				const globalSnooze = res[0].global_snooze;
-				const watches = [];
-				res.forEach(watch => {
-					const expiration = moment(watch.datetime).add(7, 'days');
-					const now = moment(new Date);
-					const diff = expiration.diff(now);
-					const diffDuration = moment.duration(diff);
-					const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
-					watches.push({
-						name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
-						value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
-						inline: false,
-					});
-				});
-				const embed = new Discord.MessageEmbed()
-					.setColor('#EFE357')
-					.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
-					.addFields(watches);
-				return Promise.resolve([embed]);
-			}
-			else {
-				return Promise.resolve('You don\'t have any watches.  Add some with /watch');
-			}
+			const embeds = buildListResponse(res);
+			// let's consider refresh button "activated" if pressed within last minute
+			const created = moment(res[0].datetime).add(0, 'second');
+			const oneMinAgo = moment().subtract('1', 'minute');
+			const globalRefreshActive = created.isAfter(oneMinAgo);
+			return Promise.resolve({
+				// only pass thru relevant data
+				embeds, metadata: { watch_id: res[0].id, globalSnooze: res[0].global_snooze, globalRefreshActive },
+			});
+		})
+		.catch((err) => {
+			return Promise.reject(err);
 		});
 }
 
