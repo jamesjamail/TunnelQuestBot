@@ -16,8 +16,11 @@ async function watch(interaction) {
 	if (args.length > 2 && args[2].value > 0) {
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, args[2].value)
 			.then(async (res) => {
-				const msg = await watchBuilder({ item: args[0].value, server: args[1].value, price: args[2].value, datetime: Date.now() });
-				return Promise.resolve(msg);
+				const metadata = {
+					id: res.id, itemSnooze: res.snoozed, globalRefreshActive: false,
+				};
+				const embeds = await watchBuilder([{ name: args[0].value, server: args[1].value, price:args[2].value, datetime: Date.now() }]).catch(console.error);
+				return Promise.resolve({ embeds, metadata });
 			})
 			.catch((err) => {
 				console.error(err);
@@ -29,8 +32,12 @@ async function watch(interaction) {
 		// if no price, set watch accordingly
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, -1)
 			.then(async (res) => {
-				const msg = await watchBuilder({ item: args[0].value, server: args[1].value, price: null, datetime: Date.now() }).catch(console.error);
-				return Promise.resolve(msg);
+				console.log('no price res = ', res);
+				const metadata = {
+					id: res.id, itemSnooze: res.snoozed, globalRefreshActive: false,
+				};
+				const embeds = await watchBuilder([{ name: args[0].value, server: args[1].value, price: -1, datetime: Date.now() }]).catch(console.error);
+				return Promise.resolve({ embeds, metadata });
 
 			})
 			.catch((err) => {
@@ -116,6 +123,7 @@ async function watches(interaction) {
 
 
 				});
+				console.log('res = ', res);
 				return Promise.resolve({ embeds, metadata: res });
 			}
 
@@ -131,6 +139,7 @@ async function watches(interaction) {
 async function list(interaction) {
 	return await db.listWatches(interaction.user.id)
 		.then((res) => {
+			console.log('list res ', res);
 			const embeds = buildListResponse(res);
 			// let's consider refresh button "activated" if pressed within last minute
 			const created = moment(res[0].datetime).add(0, 'second');
@@ -211,6 +220,7 @@ function blocks(message, args) {
 }
 
 function snooze(message, args) {
+	console.log('does thsi run');
 	// snooze all watches
 	if (args && args[0]) {
 		db.snooze('USER', message.author.id, args[0]);

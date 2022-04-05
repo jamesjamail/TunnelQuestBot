@@ -183,7 +183,9 @@ function embedReactions(message, data, messageType) {
 	}
 }
 
+//TODO: cases for each button id should be handled in separate files (cleanup)
 async function collectButtonInteractions(interaction, metadata, message) {
+	console.log('collection metadata ', metadata);
 	// filter is redundant when using switch
 	const filter = () => true;
 	// if message is supplied, buttons are being used on a direct message
@@ -208,10 +210,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
 				return await db.listWatches(interaction.user.id)
 						.then(async (res) => {
-							// let's consider refresh button "activated" if pressed within last minute
-							const created = moment(res[0].datetime).add(0, 'second');
-							const oneMinAgo = moment().subtract('1', 'minute');
-							const globalRefreshActive = created.isAfter(oneMinAgo);
+							const globalRefreshActive = IsRefreshActive(res[0].datetime);
 							// TODO: handle no watch edge case
 							if (res && res.length > 0 && res[0]['global_snooze']) {
 								// unsnooze if already snoozed
@@ -239,24 +238,44 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						});
 
 			case 'itemSnooze':
-				return await db.snooze('item', metadata.watch_id)
-					.then(async (res) => {
-							console.log(res);
-							const updatedMsg = buildListResponse(res);
-							const btnRow = buttonBuilder([{ type: 'globalSnooze', active: true }, { type: 'globalRefresh' }]);
-							return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
-						})
-						.catch(async (err) => {
-							console.error(err);
-							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
-						});
+				return await db.showWatchById(metadata.id)
+								.then(async (watch) => {
+									console.log('itemSnooze watch = ', watch)
+									// if already snoozed, unsnooze
+									if (watch.snoozed) { //careful, snoozed vs itemSnooze is ambiguously used
+										return await db.unsnooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
+										.then(async (res) => {
+												const updatedMsg = await watchBuilder([res]);
+												const itemRefreshActive = IsRefreshActive(res.datetime);
+												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch?.itemSnooze }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
+											})
+											.catch(async (err) => {
+												console.error(err);
+												return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+											});
+									}
+									// if not already snoozed, snooze
+									return await db.snooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
+										.then(async (res) => {
+												const updatedMsg = await watchBuilder([res]);
+												const itemRefreshActive = IsRefreshActive(res.datetime);
+												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: true }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
+											})
+											.catch(async (err) => {
+												console.error(err);
+												return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+											});
+								});
+
+
 			case 'itemRefresh':
 				return await db.extendWatch(metadata.id)
 				.then(async (res) => {
-						console.log(res);
-						const updatedMsg = await watchBuilder(res);
-						console.log(updatedMsg);
-						const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'itemRefresh', active: true }]);
+					console.log('itemRefresh res = ', res);
+						const updatedMsg = await watchBuilder([res]);
+						const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: true }]);
 						return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 					})
 					.catch(async (err) => {
@@ -264,13 +283,62 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						return await i.update({ content: 'Sorry, an error occurred.', components: [] });
 					});
 			case 'unwatch':
-				return;
-				// TODO: unwatch
+				//first get status to determine if unwatching or undoing an unwatch button command
+				return await db.showWatchById(metadata.id)
+					.then(async (watch) => {
+						console.log('watchg = ', watch)
+						//if watch is active, unwatch it
+						if (watch.active) {
+							console.log('HELLOOOO')
+							return await db.endWatch(null, null, null, metadata.id)
+							.then(async (res) => {
+								console.log('unwatch res = ', res);
+								const updatedMsg = await watchBuilder([res]);
+								const itemRefreshActive = IsRefreshActive(res.datetime);
+								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+								//snoozing an inactive watch is a confusing user experience, so let's disable the button
+								btnRow.components[0].setDisabled(true);
+								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
+
+							})
+							.catch(async (err) => {
+								console.error(err);
+								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+							});
+						}
+						console.log('hello')
+						//otherwise watch is inactive, meaning a user is undoing a previous unwatch cmd
+						return await db.extendWatch(metadata.id)
+							.then(async (res) => {
+								console.log('extendWatch res = ', res);
+								const updatedMsg = await watchBuilder([res]);
+								const itemRefreshActive = IsRefreshActive(res.datetime);
+								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
+
+							})
+							.catch(async (err) => {
+								console.error(err);
+								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+							});
+					})
+				
 
 			default:
 				return null;
 		}
 	});
+}
+
+//for updating refresh button state
+function IsRefreshActive(datetime) {
+	//TODO: it's a confusing user experience to create a watch, then snooze it and see the Refresh button becomes active
+	//		consider a brief animation instead
+
+	// let's consider refresh button "activated" if pressed within last minute
+	const created = moment(datetime).add(0, 'second');
+	const oneMinAgo = moment().subtract('1', 'minute');
+	return created.isAfter(oneMinAgo);
 }
 
 function buildListResponse(data) {
@@ -301,6 +369,7 @@ function buildListResponse(data) {
 }
 
 async function watchBuilder(watchesToBuild) {
+	console.log('watchesToBuild ', watchesToBuild);
 	const urls = await Promise.all(watchesToBuild.map(async (item) => {
 		return await fetchImageUrl(item.name);
 	}));
@@ -314,7 +383,7 @@ async function watchBuilder(watchesToBuild) {
 		const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
 		const snoozeDiff = snoozeExpiration.diff(now);
 		const snoozeDuration = moment.duration(snoozeDiff);
-		const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+		const price = watch.price == -1 || null ? 'No Price Criteria' : watch.price.toString().concat('pp');
 		const item = formatCapitalCase(watch.name);
 		const server = `${formatCapitalCase(watch.server)} Server`;
 		// const url = await fetchImageUrl(item).catch(console.error);
@@ -395,7 +464,7 @@ function buttonBuilder(buttonTypes) {
 async function sendMessagesToUser(interaction, userId, messages, components, metadataItems) {
 	const user = await interaction.client.users.fetch(userId).catch(console.error);
 	if (!messages || messages.length < 1) return;
-
+	console.log('metadataItems = ', metadataItems);
 	const postedMessages = await Promise.all(messages.map(async (message, index) => {
 		return await user.send({ embeds: [message], components: [components] })
 			.then(async (postedMessage) =>{
