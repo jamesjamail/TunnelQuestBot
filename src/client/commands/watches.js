@@ -7,7 +7,7 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('watches')
 		.addStringOption(option => option.setName('filter').setDescription('only show watches containing keyword(s)').setRequired(false))
-		.setDescription('Shows your watches'),
+		.setDescription('returns each watch as a direct message'),
 	async execute(interaction) {
 		// NOTE: /watches command responses differ from all other commands!
 		// Historically, !watches has returned an individual response for each watch.
@@ -15,6 +15,16 @@ module.exports = {
 		// set of buttons can be applied to the entire interaction response, removing
 		// much of the functionality offered by individual message responses
 		await watches(interaction).then(async ({ embeds, metadata }) => {
+			// handle no results
+			if (!embeds || embeds.length < 1) {
+				const args = interaction.options.data;
+				console.log('args = ', args);
+				const noResultsMsg = args.length < 1 ?
+					'You don\'t have any watches.  Add some with \`/watch\`.'
+					:
+					'You don\'t have any watches that contain `' + args[0].value + '`.';
+				return await interaction.reply(noResultsMsg);
+			}
 			console.log('watches metadata ', metadata);
 			// NOTE: metadata from watches() is an array of metadataItems
 

@@ -127,9 +127,16 @@ async function addWatch(user, item, server, price, watchId) {
 										return await showWatchById(res.rows[0].id);
 									});
 							}
-							return await showWatchById(results.rows[0].id);
+							// adding a watch should unsnooze it
+							return await unsnooze('item', results.rows[0].id)
+								.then(async (res) => {
+									console.log('unsnooze res = ', res);
+									return await showWatchById(results.rows[0].id);
+								});
 						})
-						.catch(console.error);
+						.catch((err) => {
+							Promise.reject(err);
+						});
 				});
 		});
 }
@@ -149,14 +156,28 @@ async function endWatch(user, item, server, watchId) {
 	}
 	else {
 		return await findOrAddUser(user)
-			.then(async (results) => {
-				const userId = results;
+			.then(async (userId) => {
 				await findOrAddItem(item)
-					.then(async (results) => {
-						const itemId = results;
-						const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';
-						// FROM watches INNER JOIN users on watches.user_id = users.id INNER JOIN items on watches.item_id = items.id WHERE users.name = $1 AND FROM items WHERE items.name = $2 AND server = $3;';
-						return await connection.query(queryStr, [userId, itemId, server]).catch(console.error);
+					.then(async (itemId) => {
+						if (server) {
+							const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';
+							return await connection.query(queryStr, [userId, itemId, server])
+								.then((res) => {
+									console.log('with server res ', res);
+									return Promise.resolve(res);
+								})
+								.catch(console.error);
+						}
+						// no server supplied, delete both watches
+						// TODO: could warn users if they have 2 watches under the same name, ambigious delete
+						const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2;';
+						return await connection.query(queryStr, [userId, itemId])
+							.then((res) => {
+								console.log('without server res ', res);
+
+								return Promise.resolve(res);
+							})
+							.catch(console.error);
 					});
 			})
 			.catch((err) => {
@@ -165,12 +186,11 @@ async function endWatch(user, item, server, watchId) {
 	}
 }
 
-function endAllWatches(user) {
-	findOrAddUser(user)
-		.then((results) => {
-			const userId = results;
+async function endAllWatches(user) {
+	return await findOrAddUser(user)
+		.then(async (userId) => {
 			const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1';
-			connection.query(queryStr, [userId]);
+			return await connection.query(queryStr, [userId]);
 		})
 		.catch((err) => {
 			console.error(err);
@@ -258,7 +278,6 @@ async function listWatches(user) {
                 'ORDER BY items.name;';
 			return await connection.query(queryStr, [userId])
 				.then((res) => {
-					console.log('herher', res);
 					return Promise.resolve(res.rows);
 				});
 		})
@@ -377,7 +396,8 @@ async function snooze(type, id, hours = 6) {
 					const queryStr = 'INSERT INTO snooze_by_user (user_id, expiration) VALUES ($1, now() + interval \'1 hour\' * $2) ON CONFLICT (user_id) DO UPDATE SET expiration = now() + interval \'1 hour\' * $2;';
 					return await connection.query(queryStr, [userId, hours])
 						.then(async (res) => {
-							return await listWatches(userId);
+							console.log('db global snooze = ', res);
+							return await listWatches(id);
 						})
 						.catch(console.error);
 				})();

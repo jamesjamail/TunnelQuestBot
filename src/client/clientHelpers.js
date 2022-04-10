@@ -185,9 +185,14 @@ function embedReactions(message, data, messageType) {
 
 //TODO: cases for each button id should be handled in separate files (cleanup)
 async function collectButtonInteractions(interaction, metadata, message) {
+	console.log(interaction.replied)
+	if (interaction.replied) {
+		return;
+	}
 	console.log('collection metadata ', metadata);
-	// filter is redundant when using switch
-	const filter = () => true;
+
+	//filter button interactions to the interaction they are attached to
+	const filter = input => input.message.interaction.id === interaction.id;
 	// if message is supplied, buttons are being used on a direct message
 	const collector = message ?
 	message.createMessageComponentCollector({ filter, time: 30 * 60000 })
@@ -207,6 +212,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
 						});
 			case 'globalSnooze':
+				console.log('BAMBAMBAM')
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
 				return await db.listWatches(interaction.user.id)
 						.then(async (res) => {
@@ -227,6 +233,8 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							}
 							return await db.snooze('global', interaction.user.id)
 								.then(async (res) => {
+										console.log('globalSnooze res = ', res)
+
 										const updatedMsg = buildListResponse(res);
 										const btnRow = buttonBuilder([{ type: 'globalSnooze', active: true }, { type: 'globalRefresh', active: globalRefreshActive }]);
 										return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });

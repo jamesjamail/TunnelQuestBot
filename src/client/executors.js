@@ -47,27 +47,23 @@ async function watch(interaction) {
 	}
 }
 
-function unwatch(user, args) {
-	if (args && args[0] === 'ALL') {
-		db.endAllWatches(user.id);
-		user.send('Succesfully ended all your watches.');
+async function unwatch(interaction) {
+	// does anything use this other than unwatch? careful because arguments are in a subcommand group
+	const args = interaction.options.data[0].options;
+	console.log(args);
+	if (args.length > 1) {
+		return await db.endWatch(interaction.user.id, args[0].value, args[1].value);
 	}
-	else if (args === undefined || args[0] === undefined || args[1] === undefined) {
-		user.send('Please specify both \`item\` and \`server\` to end a watch.');
-		// validate server
-	}
-	else if (args[0] === 'ALL') {
-		db.endAllWatches(user.id);
-		user.send('Succesfully ended all your watches.');
-	}
-	else if (args[1] !== 'GREEN' && args[1] !== 'BLUE') {
-		user.send(`Sorry, I don't recognize the server name ${args[1]}.  Please try \`green\` or \`blue\`.`);
-	}
-	else {
-		// end the watch
-		db.endWatch(user.id, args[0], args[1]);
-		user.send(`Got it! No longer watching auctions for \`${args[0]}\` on Project 1999 \`${args[1]} server\`.`);
-	}
+	// end the watch
+	return await db.endWatch(interaction.user.id, args[0].value);
+}
+
+async function unwatchAll(user) {
+	console.log('user = ', user);
+	return await db.endAllWatches(user.id)
+		.catch((err) => {
+			return Promise.reject(err);
+		});
 }
 
 async function watches(interaction) {
@@ -126,12 +122,8 @@ async function watches(interaction) {
 				console.log('res = ', res);
 				return Promise.resolve({ embeds, metadata: res });
 			}
-
-			else if (args && args[0]) {
-				return Promise.resolve(`You don\'t have any watches for \`\`${args[0].value}\`\`.`);
-			}
 			else {
-				return Promise.resolve('You don\'t have any watches.');
+				return Promise.resolve({ embeds: [] });
 			}
 		});
 }
@@ -139,6 +131,9 @@ async function watches(interaction) {
 async function list(interaction) {
 	return await db.listWatches(interaction.user.id)
 		.then((res) => {
+			if (!res || res.length < 1) {
+				return Promise.resolve({ embeds: [] });
+			}
 			console.log('list res ', res);
 			const embeds = buildListResponse(res);
 			// let's consider refresh button "activated" if pressed within last minute
@@ -249,6 +244,7 @@ module.exports = {
 	help,
 	watch,
 	unwatch,
+	unwatchAll,
 	watches,
 	list,
 	extend,

@@ -5,13 +5,17 @@ const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers')
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('list')
-		.setDescription('Lists available commands'),
+		.setDescription('list active watches in a concise message'),
 	async execute(interaction) {
 		await list(interaction)
 			.then(async ({ embeds, metadata }) => {
+				if (!embeds || embeds.length < 1) {
+					return await interaction.reply('You don\'t have any watches. Add some with `/watch`.');
+				}
+				console.log(interaction.isMessageComponent());
 				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh', active: metadata.globalRefreshActive }]);
 				await collectButtonInteractions(interaction, metadata);
-				interaction.reply({ embeds: embeds, components: [btnRow] });
+				return await interaction.reply({ embeds: embeds, components: [btnRow] });
 			})
 			.catch(console.error);
 
