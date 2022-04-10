@@ -210,7 +210,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
 				return await db.listWatches(interaction.user.id)
 						.then(async (res) => {
-							const globalRefreshActive = IsRefreshActive(res[0].datetime);
+							const globalRefreshActive = isRefreshActive(res[0].datetime);
 							// TODO: handle no watch edge case
 							if (res && res.length > 0 && res[0]['global_snooze']) {
 								// unsnooze if already snoozed
@@ -246,7 +246,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 										return await db.unsnooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
-												const itemRefreshActive = IsRefreshActive(res.datetime);
+												const itemRefreshActive = isRefreshActive(res.datetime);
 												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch?.itemSnooze }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
@@ -259,7 +259,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 									return await db.snooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
-												const itemRefreshActive = IsRefreshActive(res.datetime);
+												const itemRefreshActive = isRefreshActive(res.datetime);
 												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: true }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
@@ -275,7 +275,8 @@ async function collectButtonInteractions(interaction, metadata, message) {
 				.then(async (res) => {
 					console.log('itemRefresh res = ', res);
 						const updatedMsg = await watchBuilder([res]);
-						const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: true }]);
+						const itemRefreshActive = isRefreshActive(res.datetime);
+						const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
 						return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 					})
 					.catch(async (err) => {
@@ -294,7 +295,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							.then(async (res) => {
 								console.log('unwatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
-								const itemRefreshActive = IsRefreshActive(res.datetime);
+								const itemRefreshActive = isRefreshActive(res.datetime);
 								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
 								//snoozing an inactive watch is a confusing user experience, so let's disable the button
 								btnRow.components[0].setDisabled(true);
@@ -312,7 +313,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							.then(async (res) => {
 								console.log('extendWatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
-								const itemRefreshActive = IsRefreshActive(res.datetime);
+								const itemRefreshActive = isRefreshActive(res.datetime);
 								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
 								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 
@@ -331,14 +332,10 @@ async function collectButtonInteractions(interaction, metadata, message) {
 }
 
 //for updating refresh button state
-function IsRefreshActive(datetime) {
-	//TODO: it's a confusing user experience to create a watch, then snooze it and see the Refresh button becomes active
-	//		consider a brief animation instead
-
-	// let's consider refresh button "activated" if pressed within last minute
+function isRefreshActive(datetime) {
 	const created = moment(datetime).add(0, 'second');
-	const oneMinAgo = moment().subtract('1', 'minute');
-	return created.isAfter(oneMinAgo);
+	const twoSecsAgo = moment().subtract('2', 'seconds');
+	return created.isAfter(twoSecsAgo);
 }
 
 function buildListResponse(data) {
@@ -466,7 +463,7 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 	if (!messages || messages.length < 1) return;
 	console.log('metadataItems = ', metadataItems);
 	const postedMessages = await Promise.all(messages.map(async (message, index) => {
-		return await user.send({ embeds: [message], components: [components] })
+		return await user.send({ embeds: [message], components: [components[index]] })
 			.then(async (postedMessage) =>{
 				return await collectButtonInteractions(interaction, metadataItems[index], postedMessage);
 			});
@@ -476,4 +473,4 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse };
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive };

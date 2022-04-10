@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { buttonBuilder, sendMessagesToUser, collectButtonInteractions } = require('../clientHelpers');
+const { buttonBuilder, sendMessagesToUser } = require('../clientHelpers');
 const { watches } = require('../executors');
 
 
@@ -15,13 +15,18 @@ module.exports = {
 		// set of buttons can be applied to the entire interaction response, removing
 		// much of the functionality offered by individual message responses
 		await watches(interaction).then(async ({ embeds, metadata }) => {
+			console.log('watches metadata ', metadata);
 			// NOTE: metadata from watches() is an array of metadataItems
-			const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
+
+			const btnRows = metadata.map((individualMetadata) => {
+				// refresh should be inactive on watches response, otherwise it's confusing
+				return buttonBuilder([{ type: 'itemSnooze', active: individualMetadata.snoozed }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
+			});
+
 			// button interactions are collected from within function below
-			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRow, metadata)
+			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {
 					return await interaction.reply('Done! Please check your direct messages for results.');
-
 				})
 				// TODO: handle error in response
 				.catch(console.error);

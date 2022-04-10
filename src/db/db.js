@@ -271,9 +271,11 @@ async function extendWatch(watchId) {
 	const queryStr = 'UPDATE watches SET datetime = current_timestamp, active = TRUE WHERE watches.id = $1';
 	return await connection.query(queryStr, [watchId])
 		.then(async (res) => {
-			return await showWatchById(watchId);
-		})
-		.catch(console.error);
+			console.log('extendWatch res ', res);
+			// extending watches should unsnooze them
+			return await unsnooze('item', watchId)
+				.catch(console.error);
+		});
 }
 
 async function extendAllWatches(user) {
