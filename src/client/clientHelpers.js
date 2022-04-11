@@ -192,7 +192,13 @@ async function collectButtonInteractions(interaction, metadata, message) {
 	console.log('collection metadata ', metadata);
 
 	//filter button interactions to the interaction they are attached to
-	const filter = input => input.message.interaction.id === interaction.id;
+	const filter = input => {
+		console.log(input.message)
+		if (message) {
+			return input.message.id === message.id;
+		}
+		return input.message.interaction.id === interaction.id;
+	};
 	// if message is supplied, buttons are being used on a direct message
 	const collector = message ?
 	message.createMessageComponentCollector({ filter, time: 30 * 60000 })
@@ -303,8 +309,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							.then(async (res) => {
 								console.log('unwatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
-								const itemRefreshActive = isRefreshActive(res.datetime);
-								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh' }]);
 								//snoozing an inactive watch is a confusing user experience, so let's disable the button
 								btnRow.components[0].setDisabled(true);
 								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
@@ -322,7 +327,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								console.log('extendWatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
 								const itemRefreshActive = isRefreshActive(res.datetime);
-								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh' }]);
 								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 
 							})

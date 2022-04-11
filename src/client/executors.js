@@ -6,7 +6,7 @@ const Discord = require('discord.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
 const sendMessagesToUser = require('./client');
-const { embedReactions, MessageType, watchBuilder, buildListResponse } = require('./clientHelpers');
+const { embedReactions, MessageType, watchBuilder, buildListResponse, buttonBuilder } = require('./clientHelpers');
 function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
@@ -214,16 +214,36 @@ function blocks(message, args) {
 	});
 }
 
-function snooze(message, args) {
-	console.log('does thsi run');
-	// snooze all watches
-	if (args && args[0]) {
-		db.snooze('USER', message.author.id, args[0]);
-		message.author.send(`Sleep is good.  Pausing notifications on all watches for ${args[0]} hours.  Use \`\`!unsnooze\`\` to resume watch notifications.`);
-	}
-	else {
-		db.snooze('USER', message.author.id);
-		message.author.send('Sleep is good.  Pausing notifications on all watches for 6 hours.  Use ``!unsnooze`` to resume watch notifications.');
+async function snooze(interaction) {
+	const command = interaction.options.getSubcommand();
+	const item = interaction.options.getString('item');
+	// TODO: also get server if supplied
+	switch (command) {
+	case 'all':
+		// snooze all
+		return await db.snooze('global', interaction)
+			.then(async () => {
+				return { content: 'All your watches have been snoozed.' };
+			})
+			.catch(async (err) => {
+				Promise.reject(err);
+			});
+	case 'watch':
+		// snooze watch
+		return await db.snoozeByItemName(interaction.user.id, item)
+			.then(async ({ results, metadata }) => {
+				if (!results || results.length < 1) {
+					return { content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` };
+				}
+				console.log('snooze watch res = ', results);
+				const embeds = await watchBuilder([results]);
+				return { content: 'Your `' + item + '` watch has been snoozed.', embeds, metadata };
+			})
+			.catch((err) => {
+				Promise.reject(err);
+			});
+	default:
+		return;
 	}
 }
 

@@ -13,9 +13,9 @@ module.exports = {
 					return await interaction.reply('You don\'t have any watches. Add some with `/watch`.');
 				}
 				console.log(interaction.isMessageComponent());
-				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh', active: metadata.globalRefreshActive }]);
+				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh' }]);
 				await collectButtonInteractions(interaction, metadata);
-				return await interaction.reply({ embeds: embeds, components: [btnRow] });
+				return await interaction.reply({ embeds, components: [btnRow] });
 			})
 			.catch(console.error);
 

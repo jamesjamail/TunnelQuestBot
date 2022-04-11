@@ -48,33 +48,25 @@ function findOrAddUser(user) {
 	});
 }
 
-function findOrAddItem(item) {
-	return new Promise((resolve, reject) => {
-		// SELECT user ID based on ITEMNAME
-		const queryStr = 'SELECT id FROM items WHERE name = $1';
-		connection.query(queryStr, [item])
-			.then((results) => {
-				if (results.rows.length === 0) {
-					const queryStr = 'INSERT INTO items (name) VALUES ($1) RETURNING id';
-					connection.query(queryStr, [item], (err, results) => {
-
-						if (err) {
-							reject(err);
-						}
-						else {
-							resolve(results.rows[0].id);
-						}
+async function findOrAddItem(item) {
+	// SELECT user ID based on ITEMNAME
+	const queryStr = 'SELECT id FROM items WHERE name = $1';
+	return await connection.query(queryStr, [item.toUpperCase()])
+		.then(async (results) => {
+			if (results.rows.length === 0) {
+				const queryStr = 'INSERT INTO items (name) VALUES ($1) RETURNING id';
+				return await connection.query(queryStr, [item.toUpperCase()])
+					.then((res) => {
+						return Promise.resolve(res.rows[0].id);
 					});
-				}
-				else {
-					resolve(results.rows[0].id);
-				}
-			})
-			.catch((err) => {
-				console.error(err);
-			});
-
-	});
+			}
+			else {
+				return Promise.resolve(results.rows[0].id);
+			}
+		})
+		.catch((err) => {
+			return Promise.reject(err);
+		});
 }
 
 // TODO: this function should not return duplicate items, just the item once with lowest price
@@ -375,6 +367,62 @@ function showBlocks(user, callback) {
 		}).catch(console.error);
 }
 
+// async function snoozeByItemName(discordId, itemName, hours = 6) {
+// 	// find the watch based on item name
+// 	return await findOrAddUser(discordId)
+// 		.then(async (userId) => {
+// 			const query = 'SELECT watches.id FROM watches INNER JOIN items ON watches.item_id = items.id INNER JOIN users ON users.id = watches.user_id WHERE items.name = $1 AND users.id = $2;';
+// 			return await connection.query(query, [itemName.toUpperCase(), userId])
+// 				.then(async ({ rows }) => {
+// 					// getting wrong watchId from above
+// 					console.log('watchId = ', rows);
+// 					// const query = 'INSERT INTO snooze_by_watch (watch_id, expiration) VALUES($1, now() + interval \'1 second\' * $2) ON CONFLICT (watch_id) DO UPDATE SET expiration = now() + interval \'1 second\' * $2 WHERE snooze_by_watch.watch_id = $1 RETURNING snooze_by_watch.watch_id;';
+// 					const query = 'INSERT INTO snooze_by_watch (watch_id, expiration) VALUES($1, now() + interval \'1 second\' * $2)';
+// 					// not sure why this doesnt work
+// 					return await connection.query(query, [rows[0].id, hours * 60 * 60])
+// 						.then((res) => {
+// 							console.log('snooze insert res = ', res);
+// 							return Promise.resolve();
+// 						})
+// 						.catch((err) => {
+// 							return Promise.reject(err);
+// 						});
+// 				})
+// 				.catch((err) => {
+// 					return Promise.reject(err);
+// 				});
+
+// 		});
+
+// }
+
+
+async function snoozeByItemName(discordId, itemName, hours = 6) {
+	// find the watch based on item name
+	return await findOrAddUser(discordId)
+		.then(async (userId) => {
+			return await findOrAddItem(itemName)
+				.then(async (itemId) => {
+					const query = 'SELECT id FROM watches WHERE user_id = $1 AND item_id = $2 AND active = TRUE;';
+					return await connection.query(query, [userId, itemId])
+						.then(async ({ rows }) => {
+							if (!rows || rows.length < 1) {
+								return Promise.resolve(rows);
+							}
+							console.log('select snooze by item name res = ', rows);
+							return await snooze('item', rows[0].id, hours)
+								.then(async (results) => {
+									return Promise.resolve({ results, metadata: { watch_id: rows[0].id, itemSnooze: false, active: true } });
+								});
+						})
+						.catch((err) => {
+							return Promise.reject(err);
+						});
+				});
+		});
+
+}
+
 async function snooze(type, id, hours = 6) {
 	console.log('id = ', id);
 	switch(type.toUpperCase()) {
@@ -506,4 +554,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, unsnooze, getWatches, postSuccessfulCommunication, blockSeller, unblockSeller, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSeller, unblockSeller, showBlocks, validateWatchNotification, upkeep };

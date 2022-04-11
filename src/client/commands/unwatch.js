@@ -1,5 +1,4 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { Interaction } = require('discord.js');
 const { unwatch, unwatchAll } = require('../executors');
 
 module.exports = {
@@ -27,7 +26,6 @@ module.exports = {
 	async execute(interaction) {
 		const command = interaction.options.getSubcommand();
 		const item = interaction.options.getString('item');
-		const server = interaction.options.getString('server');
 		switch (command) {
 		case 'all':
 			// unwatch all
@@ -50,9 +48,5 @@ module.exports = {
 		default:
 			return;
 		}
-		// console.log('test = ', test);
-
-
-		// interaction.reply({ content: 'Done!  Please check your Direct Messages.' });
 	},
 };
