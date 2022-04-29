@@ -378,13 +378,13 @@ function buildListResponse(data) {
 	}
 }
 
-async function watchBuilder(watchesToBuild) {
-	console.log('watchesToBuild ', watchesToBuild);
-	const urls = await Promise.all(watchesToBuild.map(async (item) => {
+async function watchBuilder(blocksToBuild) {
+	console.log('blocksToBuild ', blocksToBuild);
+	const urls = await Promise.all(blocksToBuild.map(async (item) => {
 		return await fetchImageUrl(item.name);
 	}));
 
-	const embeds = watchesToBuild.map((watch, index) => {
+	const embeds = blocksToBuild.map((watch, index) => {
 		const watches = [];
 		const expiration = moment(watch.datetime).add(7, 'days');
 		const now = moment(new Date);
@@ -421,6 +421,50 @@ async function watchBuilder(watchesToBuild) {
 			.addFields(watches)
 			.setTitle(watch.name)
 			.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
+		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
+		// .setImage(href)
+		// .setThumbnail(url)
+
+
+	});
+	return Promise.resolve(embeds);
+}
+
+function blockBuilder(blocksToBuild) {
+	console.log('blocksToBuild ', blocksToBuild);
+
+	// const urls = await Promise.all(blocksToBuild.map(async (item) => {
+	// 	return await fetchImageUrl(item.name);
+	// }));
+
+	const embeds = blocksToBuild.map((watch, index) => {
+		const blocks = [];
+		const item = formatCapitalCase(watch.name);
+		const server = `${formatCapitalCase(watch.server)} Server`;
+
+
+		blocks.push({
+			name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
+			value: 'All Watches',
+			inline: false,
+		});
+
+		// TODO: support watch blocks
+		// return ({
+		// 	name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
+		// 	value: `\`${formatCapitalCase(block.name)}\` Watch`,
+		// 	inline: false,
+		// });
+
+
+		// const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
+		// const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
+		return new Discord.MessageEmbed()
+			.setColor(SERVER_COLOR[watch.server])
+			// .setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
+			.addFields(blocks)
+			.setTitle('Blocked Sellers')
+			.setFooter({ text: 'To remove this block, click ❌' });
 		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
 		// .setImage(href)
 		// .setThumbnail(url)

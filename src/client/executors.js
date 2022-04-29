@@ -51,6 +51,7 @@ async function unwatch(interaction) {
 	// does anything use this other than unwatch? careful because arguments are in a subcommand group
 	const args = interaction.options.data[0].options;
 	console.log(args);
+	// TODO: if 0 rows affected, inform user "You don't have any watches for..."
 	if (args.length > 1) {
 		return await db.endWatch(interaction.user.id, args[0].value, args[1].value);
 	}
@@ -178,39 +179,16 @@ function unblock(message, args) {
 	}
 }
 
-function blocks(message, args) {
-	db.showBlocks(message.author.id, (res) => {
-		const blocks = [];
-		if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
-			message.author.send('You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.');
-		}
-		else {
-			if (res.user_blocks.length > 0) {
-				res.user_blocks.forEach(block => {
-					blocks.push({
-						name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
-						value: 'All Watches',
-						inline: false,
-					});
-				});
+async function blocks(interaction) {
+	const args = interaction.options.data;
 
-			} if (res.watch_blocks.length > 0) {
-				res.watch_blocks.forEach(block => {
-					blocks.push({
-						name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
-						value: `\`${formatCapitalCase(block.name)}\` Watch`,
-						inline: false,
-					});
-				});
-			}
-			message.author.send(
-				new Discord.MessageEmbed()
-					.setColor('#EFE357')
-					.setTitle('__Blocks__')
-					.addFields(blocks),
-			)
-				.catch(console.error);
+	return await db.showBlocks(interaction.user.id).then((res) => {
+		console.log('showBlocsk res ', res);
+		if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
+			return ({ content: 'You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.' });
 		}
+		const embeds = blockBuilder(res.user_blocks.concat(res.watch_blocks));
+		return Promise.resolve({ embeds });
 	});
 }
 

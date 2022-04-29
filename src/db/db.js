@@ -69,6 +69,7 @@ async function findOrAddItem(item) {
 		});
 }
 
+//	getWatches delivers all watches to logParser
 // TODO: this function should not return duplicate items, just the item once with lowest price
 function getWatches(callback) {
 	const query =
@@ -155,7 +156,6 @@ async function endWatch(user, item, server, watchId) {
 							const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';
 							return await connection.query(queryStr, [userId, itemId, server])
 								.then((res) => {
-									console.log('with server res ', res);
 									return Promise.resolve(res);
 								})
 								.catch(console.error);
@@ -354,17 +354,29 @@ function unblockSeller(user, seller, server, watchId) {
 	}).catch(console.error);
 }
 
-function showBlocks(user, callback) {
-	return findOrAddUser(user)
-		.then((userId) => {
+async function showBlocks(user, seller) {
+	return await findOrAddUser(user)
+		.then(async (userId) => {
+			if (!seller) {
+				const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1';
+				return await connection.query(queryStr, [userId])
+					.then(async (user_blocks) => {
+						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
+						return await connection.query(queryStr, [userId]).then((watch_blocks) => {
+							return Promise.resolve({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
+						});
+					});
+			}
+			const pattern = '%'.concat(seller).concat('%');
 			const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1';
-			connection.query(queryStr, [userId]).then((user_blocks) => {
-				const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
-				connection.query(queryStr, [userId]).then((watch_blocks) => {
-					callback({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
+			return await connection.query(queryStr, [userId])
+				.then(async (user_blocks) => {
+					const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1 AND seller like $2';
+					return await connection.query(queryStr, [userId, pattern]).then((watch_blocks) => {
+						return Promise.resolve({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
+					});
 				});
-			});
-		}).catch(console.error);
+		}).catch((err) => Promise.reject(err));
 }
 
 // async function snoozeByItemName(discordId, itemName, hours = 6) {
