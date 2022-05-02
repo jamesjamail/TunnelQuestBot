@@ -6,7 +6,7 @@ const Discord = require('discord.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
 const sendMessagesToUser = require('./client');
-const { embedReactions, MessageType, watchBuilder, buildListResponse, buttonBuilder } = require('./clientHelpers');
+const { embedReactions, MessageType, watchBuilder, buildListResponse, buttonBuilder, blockBuilder } = require('./clientHelpers');
 function help(message) {
 	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
 }
@@ -157,14 +157,30 @@ function extend(message, args) {
 	message.author.send('All watches succesfully extended for another 7 days.');
 }
 
-function block(message, args) {
-	if (args && args[1] && args[1] === 'BLUE' || args[1] === 'GREEN') {
-		db.blockSeller(message.author.id, args[0], args[1], null);
-		message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on ${args[1]}.`);
+async function block(interaction) {
+	const args = interaction.options.data;
+	// if user specified a server, only block seller on that server
+	if (args && args.length > 1) {
+		return await db.blockSellerGlobally(interaction.user.id, args[0].value, args[1].value)
+			.then(() => {
+				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on ${args[1].value}.` });
+			})
+			.catch((err) => {
+				return Promise.reject(err);
+			});
 	}
+	// otherwise, block seller on both servers
 	else {
-		db.blockSeller(message.author.id, args[0], null, null);
-		message.author.send(`Lets cut down the noise.  No longer notifying you about auctions from ${args[0]} on both servers.  To only block this seller on one server, use \`\`!block ${args[0]}, server\`\``);
+		return await db.blockSellerGlobally(interaction.user.id, args[0].value)
+			.then((res) => {
+				const embeds = blockBuilder([{ seller: args[0].value, server: 'BOTH' }]);
+				// TODO: handle this more elegantly that searching for blocks based on user/seller
+				const metadata = res.user_blocks[0];
+				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on either server.`, embeds, metadata });
+			})
+			.catch((err) => {
+				return Promise.reject(err);
+			});
 	}
 }
 
@@ -180,6 +196,7 @@ function unblock(message, args) {
 }
 
 async function blocks(interaction) {
+	// TODO: add filter argument
 	const args = interaction.options.data;
 
 	return await db.showBlocks(interaction.user.id).then((res) => {
@@ -188,7 +205,8 @@ async function blocks(interaction) {
 			return ({ content: 'You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.' });
 		}
 		const embeds = blockBuilder(res.user_blocks.concat(res.watch_blocks));
-		return Promise.resolve({ embeds });
+		const metadata = res.user_blocks.concat(res.watch_blocks);
+		return Promise.resolve({ embeds, metadata });
 	});
 }
 

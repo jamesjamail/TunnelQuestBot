@@ -2,7 +2,7 @@ const { parsePrice } = require('../utility/utils');
 
 // Poll DB for new watches on a set interval:
 //                   s    ms
-const pullInterval = 10 * 1000;
+const pollInterval = 10 * 1000;
 const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 
@@ -29,7 +29,7 @@ if (require.main === module) {
 		db.getWatches((results) => {
 			itemList = results;
 		});
-	}, pullInterval);
+	}, pollInterval);
 }
 
 // remove any WTB sections from seller message

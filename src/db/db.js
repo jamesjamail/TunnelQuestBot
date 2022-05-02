@@ -302,63 +302,65 @@ async function extendAllWatches(user) {
 		.catch(console.error);
 }
 
-function blockSeller(user, seller, server, watchId) {
-	// no watchId, account based block
-	if (watchId === undefined || watchId === null) {
-		// add or find user
-		findOrAddUser(user).then((userId) => {
-			if (server) {
-				const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING';
-				connection.query(queryStr, [seller, userId, server]).catch(console.error);
-			}
-			else {
-				// no server, so add blocks for both servers
-				const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, \'GREEN\'), ($1, $2, \'BLUE\') ON CONFLICT DO NOTHING';
-				connection.query(queryStr, [seller, userId]).catch(console.error);
-			}
-		}).catch(console.error);
-	}
-	else {
-		// if watchId provided, block based on watch
-		const queryStr = 'INSERT INTO blocked_seller_by_watch (seller, watch_id) VALUES ($1, $2) ON CONFLICT DO NOTHING';
-		connection.query(queryStr, [seller.toUpperCase(), watchId]).catch(console.error);
-	}
+async function blockSellerByWatchId(watchId, seller) {
+	const queryStr = 'INSERT INTO blocked_seller_by_watch (seller, watch_id) VALUES ($1, $2) ON CONFLICT DO NOTHING';
+	return await connection.query(queryStr, [seller.toUpperCase(), watchId])
+		.catch((err) => {
+			Promise.reject(err);
+		});
 }
 
-function unblockSeller(user, seller, server, watchId) {
-	findOrAddUser(user).then((userId) => {
-		// if watchId provided, unblock based on watch
-		if (watchId !== undefined && watchId !== null) {
-			const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2;';
-			connection.query(queryStr, [seller, watchId]).catch(console.error);
+// TODO cast strings to uppercase before inserting
+async function blockSellerGlobally(user, seller, server) {
+	// add or find user
+	return await findOrAddUser(user).then(async (userId) => {
+		if (server) {
+			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING';
+			return await connection.query(queryStr, [seller, userId, server]);
 		}
 		else {
-			// otherwise, unblock account wide
-			if (server) {
-				const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2 AND server = $3;';
-				connection.query(queryStr, [seller, userId, server]).then(() => {
-					// also delete any instances of seller + server + user on watch based table
-					const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE watch_id IN (SELECT id FROM watches WHERE user_id = $1) AND seller = $2 AND server = $3';
-					connection.query(queryStr, [userId, seller, server]);
+			// no server, so add blocks for both servers
+			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, \'GREEN\'), ($1, $2, \'BLUE\') ON CONFLICT DO NOTHING;';
+			return await connection.query(queryStr, [seller, userId])
+				.then(async (res) => {
+					console.log('blocksellerglobally res = ', res);
+					return await showBlocks(user, seller);
 				});
-			}
-			else {
-				const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2;';
-				connection.query(queryStr, [seller, userId]).then(() => {
-					// also delete any instances of seller + user on watch based table
-					const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE watch_id IN (SELECT id FROM watches WHERE user_id = $1) AND seller = $2';
-					connection.query(queryStr, [userId, seller]);
-				});
-			}
 		}
-	}).catch(console.error);
+	}).catch((err) => {
+		return Promise.reject(err);
+	});
+}
+
+async function unblockSellerByWatchId(seller, watchId) {
+	// if watchId provided, unblock based on watch
+	const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2;';
+	return await connection.query(queryStr, [seller, watchId]).catch(console.error)
+		.catch((err) => {
+			return Promise.reject(err);
+		});
+}
+
+async function unblockSellerGlobally(user, seller, server) {
+	return await findOrAddUser(user).then(async (userId) => {
+		if (server) {
+			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2 AND server = $3;';
+			return await connection.query(queryStr, [seller, userId, server]);
+			// TODO: should this command also remove blocked_sellers_by_watch?
+			// will need to separate use cases with button interactions vs true commands
+		}
+		else {
+			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2;';
+			return await connection.query(queryStr, [seller, userId]);
+		}
+	}).catch((err) => Promise.reject(err));
 }
 
 async function showBlocks(user, seller) {
 	return await findOrAddUser(user)
 		.then(async (userId) => {
 			if (!seller) {
-				const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1';
+				const queryStr = 'SELECT name AS user_id, seller, server FROM blocked_seller_by_user INNER JOIN users ON users.id = blocked_seller_by_user.user_id WHERE user_id = $1';
 				return await connection.query(queryStr, [userId])
 					.then(async (user_blocks) => {
 						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
@@ -368,8 +370,8 @@ async function showBlocks(user, seller) {
 					});
 			}
 			const pattern = '%'.concat(seller).concat('%');
-			const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1';
-			return await connection.query(queryStr, [userId])
+			const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1 AND seller LIKE $2';
+			return await connection.query(queryStr, [userId, pattern])
 				.then(async (user_blocks) => {
 					const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1 AND seller like $2';
 					return await connection.query(queryStr, [userId, pattern]).then((watch_blocks) => {
@@ -566,4 +568,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSeller, unblockSeller, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, showBlocks, validateWatchNotification, upkeep };

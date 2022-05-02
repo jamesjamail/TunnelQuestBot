@@ -16,10 +16,10 @@ module.exports = {
 			.then(async ({ embeds, metadata }) => {
 				const btnRow = buttonBuilder([{ type: 'itemSnooze', active: metadata?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
 				await collectButtonInteractions(interaction, metadata);
-				interaction.reply({ embeds, components: [btnRow] });
+				await interaction.reply({ embeds, components: [btnRow] });
 			})
-			.catch((err) => {
-				interaction.reply(err.message);
+			.catch(async (err) => {
+				await interaction.reply(err.message);
 			});
 	},
 };

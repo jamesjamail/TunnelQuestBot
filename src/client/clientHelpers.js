@@ -13,7 +13,7 @@ sslRootCAs
 	.addFile(__dirname + '../../../Certificates/SectigoRSADomainValidationSecureServerCA.crt');
 const wiki_url = require('../utility/data/items.json');
 const Discord = require('discord.js');
-const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458' };
+const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458', BOTH: "#EFE357" };
 
 
 const MessageType = {
@@ -336,8 +336,20 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
 							});
 					})
-				
-
+					case 'globalUnblock':
+						//for watches we give the users the ability to undo an unwatch button press.
+						// this is useful for misclicks
+						// however because /blocks is used so rarely, and the fact that we don't have an active
+						// column in the table like we do for watches, let's just delete the message.
+						console.log('metadata = ', metadata)
+						return await db.unblockSellerGlobally(metadata.user_id, metadata.seller)
+							.then(async () => {
+								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed`, embeds: [], components: [] });
+							})
+							.catch(async (err) => {
+								console.error(err);
+								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+							});
 			default:
 				return null;
 		}
@@ -437,15 +449,14 @@ function blockBuilder(blocksToBuild) {
 	// 	return await fetchImageUrl(item.name);
 	// }));
 
-	const embeds = blocksToBuild.map((watch, index) => {
+	const embeds = blocksToBuild.map((block, index) => {
 		const blocks = [];
-		const item = formatCapitalCase(watch.name);
-		const server = `${formatCapitalCase(watch.server)} Server`;
+		const server = block.server === 'BOTH' ? `Both Servers` : `${formatCapitalCase(block.server)} Server` ;
 
 
 		blocks.push({
-			name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
-			value: 'All Watches',
+			name: `${formatCapitalCase(block.seller)}`,
+			value: `${formatCapitalCase(server)}`,
 			inline: false,
 		});
 
@@ -457,21 +468,15 @@ function blockBuilder(blocksToBuild) {
 		// });
 
 
-		// const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
-		// const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
 		return new Discord.MessageEmbed()
-			.setColor(SERVER_COLOR[watch.server])
-			// .setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
+			.setColor(SERVER_COLOR[block.server])
 			.addFields(blocks)
-			.setTitle('Blocked Sellers')
+			.setTitle('Block')
 			.setFooter({ text: 'To remove this block, click ❌' });
-		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
-		// .setImage(href)
-		// .setThumbnail(url)
 
 
 	});
-	return Promise.resolve(embeds);
+	return embeds;
 }
 
 function buttonBuilder(buttonTypes) {
@@ -505,7 +510,11 @@ function buttonBuilder(buttonTypes) {
 					.setCustomId('globalRefresh')
 					.setLabel('♻️')
 					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
-
+			case 'globalUnblock':
+				return new MessageButton()
+					.setCustomId('globalUnblock')
+					.setLabel('❌')
+					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
 			default:
 				return null;
 
@@ -530,4 +539,4 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive };
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive };

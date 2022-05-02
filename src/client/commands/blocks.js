@@ -21,12 +21,11 @@ module.exports = {
 					'You don\'t have any blocks for `' + args[0].value + '`.';
 				return await interaction.reply(noResultsMsg);
 			}
-			console.log('watches metadata ', metadata);
 			// NOTE: metadata from watches() is an array of metadataItems
 
-			const btnRows = metadata.map((individualMetadata) => {
+			const btnRows = metadata.map(() => {
 				// refresh should be inactive on watches response, otherwise it's confusing
-				return buttonBuilder([{ type: 'itemSnooze', active: individualMetadata.snoozed }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
+				return buttonBuilder([{ type: 'globalUnblock', active: false }]);
 			});
 
 			// button interactions are collected from within function below
