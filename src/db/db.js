@@ -18,34 +18,24 @@ connection.connect((err) => {
 	}
 });
 
-function findOrAddUser(user) {
+// verify thsi works now that its asnyc
+async function findOrAddUser(user) {
 	// TODO: make this better with INSERT...ON CONFLICT
-	return new Promise((resolve, reject) => {
-		// SELECT user ID based on USERNAME
-		const queryStr = 'SELECT id FROM users WHERE name = \'' + user + '\'';
-		connection.query(queryStr, (err, results) => {
-			if (err) {
-				reject(err);
-			}
-			else {
-				// IF USERNAME does not exist...
-				if (results.rows.length === 0) {
-					const queryStr = 'INSERT INTO users (name) VALUES ($1) RETURNING id';
-					connection.query(queryStr, [user], (err, results) => {
-						if (err) {
-							reject(err);
-						}
-						else {
-							resolve(results.rows[0].id);
-						}
-					});
-				}
-				else {
-					resolve(results.rows[0].id);
-				}
-			}
-		});
-	});
+	// SELECT user ID based on USERNAME
+	const queryStr = 'SELECT id FROM users WHERE name = $1';
+	return await connection.query(queryStr, [user]).then(async (results) => {
+		// IF USERNAME does not exist...
+		if (results.rows.length === 0) {
+			const queryStr = 'INSERT INTO users (name) VALUES ($1) RETURNING id';
+			return await connection.query(queryStr, [user]).then((results) => {
+				return Promise.resolve(results.rows[0].id);
+			});
+		}
+		else {
+			return Promise.resolve(results.rows[0].id);
+		}
+	})
+		.catch((err) => Promise.reject(err));
 }
 
 async function findOrAddItem(item) {
@@ -212,7 +202,8 @@ async function showWatch(user, item) {
 	return await findOrAddUser(user)
 		.then((results) => {
 			const userId = results;
-			const pattern = '%'.concat(item).concat('%');
+			const pattern = '%'.concat(item.toUpperCase()).concat('%');
+			console.log('pattenr = ', pattern);
 			const queryStr = '' +
             'SELECT watches.id, items.name, price, server, datetime, expiration, ' +
             'CASE WHEN expiration IS NULL OR expiration < now() THEN FALSE ' +
@@ -316,15 +307,14 @@ async function blockSellerGlobally(user, seller, server) {
 	return await findOrAddUser(user).then(async (userId) => {
 		if (server) {
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING';
-			return await connection.query(queryStr, [seller, userId, server]);
+			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()]);
 		}
 		else {
 			// no server, so add blocks for both servers
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, \'GREEN\'), ($1, $2, \'BLUE\') ON CONFLICT DO NOTHING;';
-			return await connection.query(queryStr, [seller, userId])
+			return await connection.query(queryStr, [seller.toUpperCase(), userId])
 				.then(async (res) => {
-					console.log('blocksellerglobally res = ', res);
-					return await showBlocks(user, seller);
+					return await showBlocks(user, seller.toUpperCase());
 				});
 		}
 	}).catch((err) => {
@@ -333,7 +323,6 @@ async function blockSellerGlobally(user, seller, server) {
 }
 
 async function unblockSellerByWatchId(seller, watchId) {
-	// if watchId provided, unblock based on watch
 	const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2;';
 	return await connection.query(queryStr, [seller, watchId]).catch(console.error)
 		.catch((err) => {
@@ -369,12 +358,12 @@ async function showBlocks(user, seller) {
 						});
 					});
 			}
-			const pattern = '%'.concat(seller).concat('%');
+			const pattern = '%'.concat(seller.toUpperCase()).concat('%');
 			const queryStr = 'SELECT seller, server FROM blocked_seller_by_user WHERE user_id = $1 AND seller LIKE $2';
 			return await connection.query(queryStr, [userId, pattern])
 				.then(async (user_blocks) => {
-					const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1 AND seller like $2';
-					return await connection.query(queryStr, [userId, pattern]).then((watch_blocks) => {
+					const queryStr = 'SELECT seller, server, items.name, watches.server as item_server, watches.id AS watch_id FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1 AND seller like $2';
+					return await connection.query(queryStr, [userId, pattern]).then(async (watch_blocks) => {
 						return Promise.resolve({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
 					});
 				});
@@ -568,4 +557,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };

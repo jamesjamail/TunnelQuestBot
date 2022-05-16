@@ -341,8 +341,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						// this is useful for misclicks
 						// however because /blocks is used so rarely, and the fact that we don't have an active
 						// column in the table like we do for watches, let's just delete the message.
-						console.log('metadata = ', metadata)
-						return await db.unblockSellerGlobally(metadata.user_id, metadata.seller)
+						return await db.unblockSellerGlobally(interaction.user.id, metadata.seller)
 							.then(async () => {
 								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed`, embeds: [], components: [] });
 							})
@@ -391,7 +390,7 @@ function buildListResponse(data) {
 }
 
 async function watchBuilder(blocksToBuild) {
-	console.log('blocksToBuild ', blocksToBuild);
+	console.log('watchesToBuild ', blocksToBuild);
 	const urls = await Promise.all(blocksToBuild.map(async (item) => {
 		return await fetchImageUrl(item.name);
 	}));

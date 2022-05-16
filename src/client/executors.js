@@ -161,9 +161,9 @@ async function block(interaction) {
 	const args = interaction.options.data;
 	// if user specified a server, only block seller on that server
 	if (args && args.length > 1) {
-		return await db.blockSellerGlobally(interaction.user.id, args[0].value, args[1].value)
+		return await db.blockSellerGlobally(interaction.user.id, args[0].value, args[1])
 			.then(() => {
-				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on ${args[1].value}.` });
+				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on ${formatCapitalCase(args[1].value)} Server.` });
 			})
 			.catch((err) => {
 				return Promise.reject(err);
@@ -173,10 +173,11 @@ async function block(interaction) {
 	else {
 		return await db.blockSellerGlobally(interaction.user.id, args[0].value)
 			.then((res) => {
+				console.log('blockSellerGlobally res = ', res);
 				const embeds = blockBuilder([{ seller: args[0].value, server: 'BOTH' }]);
 				// TODO: handle this more elegantly that searching for blocks based on user/seller
 				const metadata = res.user_blocks[0];
-				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on either server.`, embeds, metadata });
+				return Promise.resolve({ content: `No longer notifying you about auctions from ${formatCapitalCase(args[0].value)} on either server.`, embeds, metadata });
 			})
 			.catch((err) => {
 				return Promise.reject(err);

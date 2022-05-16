@@ -29,8 +29,8 @@ module.exports = {
 	async execute(interaction) {
 		await snooze(interaction)
 			.then(async ({ content, embeds, metadata }) => {
-				console.log('embeds = ', embeds);
-				console.log('metadata = ', metadata);
+				// console.log('embeds = ', embeds);
+				// console.log('metadata = ', metadata);
 
 				// only show buttons if embeds
 				if (embeds && embeds.length > 0) {
