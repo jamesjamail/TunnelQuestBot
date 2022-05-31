@@ -189,7 +189,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 	if (interaction.replied) {
 		return;
 	}
-	console.log('collection metadata ', metadata);
 
 	//filter button interactions to the interaction they are attached to
 	const filter = input => {
@@ -450,7 +449,8 @@ function blockBuilder(blocksToBuild) {
 
 	const embeds = blocksToBuild.map((block, index) => {
 		const blocks = [];
-		const server = block.server === 'BOTH' ? `Both Servers` : `${formatCapitalCase(block.server)} Server` ;
+		// eventaully this will need to be refactored in order to run more than 2 servers
+		const server = block.server.length > 1 ? `All Servers` : `${formatCapitalCase(block.server[0])} Server` ;
 
 
 		blocks.push({
@@ -522,6 +522,21 @@ function buttonBuilder(buttonTypes) {
 	return row.addComponents(buttons);
 }
 
+function dedupeBlockResults(blockResults) {
+	const blockMap = {};
+	blockResults.map((block) => {
+		if (blockMap[block.seller]) {
+			return blockMap[block.seller] = [...blockMap[block.seller], block.server]
+		}
+		return blockMap[block.seller] = [block.server];
+	})
+	return Object.keys(blockMap).map((dedupedBlock) => {
+		//just plucking the userId off the first result isn't great, but we'll
+		// user this command for multiple users
+		return {user_id: blockResults[0].user_id, seller: dedupedBlock, server: blockMap[dedupedBlock]}
+	})
+}
+
 
 async function sendMessagesToUser(interaction, userId, messages, components, metadataItems) {
 	const user = await interaction.client.users.fetch(userId).catch(console.error);
@@ -538,4 +553,4 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive };
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive, dedupeBlockResults };

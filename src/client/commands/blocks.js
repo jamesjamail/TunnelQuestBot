@@ -9,22 +9,21 @@ module.exports = {
 		.addStringOption(option => option.setName('filter').setDescription('only show watches containing keyword(s)').setRequired(false))
 		.setDescription('returns each block as a direct message'),
 	async execute(interaction) {
-		// NOTE: /blocks command responses differ is similar to /watches command
+		// NOTE: /blocks command responses is similar to /watches command
 		await blocks(interaction).then(async ({ embeds, metadata }) => {
 			// handle no results
 			if (!embeds || embeds.length < 1) {
 				const args = interaction.options.data;
-				console.log('args = ', args);
 				const noResultsMsg = args.length < 1 ?
-					'You don\'t have any blocks.  Add some with \`/watch\`.'
+					'You don\'t have any blocks.  Add some with \`/block\`.'
 					:
 					'You don\'t have any blocks for `' + args[0].value + '`.';
 				return await interaction.reply(noResultsMsg);
 			}
-			// NOTE: metadata from watches() is an array of metadataItems
 
+			// NOTE: metadata from blocks() is an array of metadataItems
 			const btnRows = metadata.map(() => {
-				// refresh should be inactive on watches response, otherwise it's confusing
+				// refresh should be inactive on blocks response, otherwise it's confusing
 				return buttonBuilder([{ type: 'globalUnblock', active: false }]);
 			});
 

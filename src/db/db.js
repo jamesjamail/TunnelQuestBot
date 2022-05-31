@@ -305,15 +305,26 @@ async function blockSellerByWatchId(watchId, seller) {
 async function blockSellerGlobally(user, seller, server) {
 	// add or find user
 	return await findOrAddUser(user).then(async (userId) => {
+		console.log('server = ', server);
 		if (server) {
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING';
-			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()]);
+			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()])
+				.then(async (res) => {
+					console.log('hello -= ', res);
+					return await showBlocks(user, seller.toUpperCase());
+				});
 		}
 		else {
+			console.log('userId, seller', userId, seller);
 			// no server, so add blocks for both servers
+			// it's possible this bot could need to run on more than 2 servers,
+			// which is why there is a slightly cumbersome process of adding blocks
+			// when a server isn't specified.
+			// TODO: had to change unique constraint to include server (unique user seller server) - see if that was done recently
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, \'GREEN\'), ($1, $2, \'BLUE\') ON CONFLICT DO NOTHING;';
 			return await connection.query(queryStr, [seller.toUpperCase(), userId])
 				.then(async (res) => {
+					console.log('hello -= ', res);
 					return await showBlocks(user, seller.toUpperCase());
 				});
 		}
