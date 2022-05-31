@@ -163,7 +163,7 @@ async function block(interaction) {
 	if (args && args.length > 1) {
 		return await db.blockSellerGlobally(interaction.user.id, args[0].value, args[1].value)
 			.then((res) => {
-				const embeds = blockBuilder([{ seller: args[0].value, server: args[1].value }]);
+				const embeds = blockBuilder([{ seller: args[0].value, server: [args[1].value] }]);
 				const metadata = res.user_blocks[0];
 				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on ${formatCapitalCase(args[1].value)} Server.`, embeds, metadata });
 			})
@@ -187,15 +187,20 @@ async function block(interaction) {
 	}
 }
 
-function unblock(message, args) {
-	if (args && args[1] && args[1] === 'BLUE' || args[1] === 'GREEN') {
-		db.unblockSeller(message.author.id, args[0], args[1], null);
-		message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on ${formatCapitalCase(args[1])} server.`);
+async function unblock(interaction) {
+	const args = interaction.options.data;
+	console.log('args = ', args);
+	// if user specified a server, only unblock seller on that server
+	if (args && args.length > 1) {
+		return await db.unblockSellerGlobally(interaction.user.id, args[0].value, args[1].value).then((res) => {
+			return Promise.resolve({ content: `People change.  No longer blocking ${formatCapitalCase(args[0].value)} on ${formatCapitalCase(args[1].value)} server.` });
+		});
+
 	}
-	else {
-		db.unblockSeller(message.author.id, args[0], null, null);
-		message.author.send(`People change.  No longer blocking ${formatCapitalCase(args[0])} on either server.`);
-	}
+	// unblock on all servers
+	return await db.unblockSellerGlobally(interaction.user.id, args[0].value).then((res) => {
+		return Promise.resolve({ content: `People change.  No longer blocking ${formatCapitalCase(args[0].value)} on either server.` });
+	});
 }
 
 async function blocks(interaction) {

@@ -345,13 +345,13 @@ async function unblockSellerGlobally(user, seller, server) {
 	return await findOrAddUser(user).then(async (userId) => {
 		if (server) {
 			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2 AND server = $3;';
-			return await connection.query(queryStr, [seller, userId, server]);
+			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()]);
 			// TODO: should this command also remove blocked_sellers_by_watch?
 			// will need to separate use cases with button interactions vs true commands
 		}
 		else {
 			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2;';
-			return await connection.query(queryStr, [seller, userId]);
+			return await connection.query(queryStr, [seller.toUpperCase(), userId]);
 		}
 	}).catch((err) => Promise.reject(err));
 }
