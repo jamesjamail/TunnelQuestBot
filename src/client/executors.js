@@ -30,7 +30,7 @@ async function watch(interaction) {
 	}
 	else {
 		// if no price, set watch accordingly
-		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, -1)
+		return await db.addWatch(interaction.user.id, args[0].value, args[1].value)
 			.then(async (res) => {
 				console.log('no price res = ', res);
 				const metadata = {
@@ -59,9 +59,8 @@ async function unwatch(interaction) {
 	return await db.endWatch(interaction.user.id, args[0].value);
 }
 
-async function unwatchAll(user) {
-	console.log('user = ', user);
-	return await db.endAllWatches(user.id)
+async function unwatchAll(interaction) {
+	return await db.endAllWatches(interaction.user.id)
 		.catch((err) => {
 			return Promise.reject(err);
 		});
@@ -256,9 +255,37 @@ async function snooze(interaction) {
 	}
 }
 
-function unsnooze(message, args) {
-	db.unsnooze('USER', message.author.id);
-	message.author.send('Rise and grind.  Let\'s get that Loaf of Bread.');
+async function unsnooze(interaction) {
+	const command = interaction.options.getSubcommand();
+	const item = interaction.options.getString('item');
+	// TODO: accept server argument
+	switch (command) {
+	case 'watches':
+		// unsnooze all
+		return await db.unsnooze('GLOBAL', interaction.user.id)
+			.then(() => {
+				return Promise.resolve({ content: 'All watches unsnoozed - rise and grind!' });
+			})
+			.catch((err) => {
+				Promise.reject(err);
+			});
+	case 'watch':
+		// snooze watch
+		return await db.unsnoozeByItemName(interaction.user.id, item)
+			.then(async ({ results, metadata }) => {
+				console.log('results = ', results);
+				if (!results || results.length < 1) {
+					return Promise.resolve({ content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` });
+				}
+				const embeds = await watchBuilder([results]);
+				return Promise.resolve({ content: 'Your `' + item + '` watch has been un	snoozed.', embeds, metadata });
+			})
+			.catch((err) => {
+				Promise.reject(err);
+			});
+	default:
+		return;
+	}
 }
 
 function gnomeFact(message, args) {

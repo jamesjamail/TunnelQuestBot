@@ -185,10 +185,12 @@ function embedReactions(message, data, messageType) {
 
 //TODO: cases for each button id should be handled in separate files (cleanup)
 async function collectButtonInteractions(interaction, metadata, message) {
-	console.log(interaction.replied)
-	if (interaction.replied) {
+	// some messages aren't interactions
+	if (interaction && interaction.replied) {
 		return;
 	}
+	
+	console.log('metadata = ', metadata)
 
 	//filter button interactions to the interaction they are attached to
 	const filter = input => {
@@ -260,7 +262,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
 												const itemRefreshActive = isRefreshActive(res.datetime);
-												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch?.itemSnooze }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh', active: itemRefreshActive }]);
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
@@ -273,7 +275,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
 												const itemRefreshActive = isRefreshActive(res.datetime);
-												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: true }, { type: 'unwatch', active: metadata.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: true }, { type: 'unwatch', }, { type: 'itemRefresh', active: itemRefreshActive }]);
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
@@ -388,13 +390,13 @@ function buildListResponse(data) {
 	}
 }
 
-async function watchBuilder(blocksToBuild) {
-	console.log('watchesToBuild ', blocksToBuild);
-	const urls = await Promise.all(blocksToBuild.map(async (item) => {
+async function watchBuilder(watchesToBuild) {
+	console.log('watchesToBuild ', watchesToBuild);
+	const urls = await Promise.all(watchesToBuild.map(async (item) => {
 		return await fetchImageUrl(item.name);
 	}));
 
-	const embeds = blocksToBuild.map((watch, index) => {
+	const embeds = watchesToBuild.map((watch, index) => {
 		const watches = [];
 		const expiration = moment(watch.datetime).add(7, 'days');
 		const now = moment(new Date);

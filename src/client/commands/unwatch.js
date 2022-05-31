@@ -26,8 +26,9 @@ module.exports = {
 	async execute(interaction) {
 		const command = interaction.options.getSubcommand();
 		const item = interaction.options.getString('item');
+		console.log('command = ', command);
 		switch (command) {
-		case 'all':
+		case 'watches':
 			// unwatch all
 			return await unwatchAll(interaction)
 				.then(async () => {

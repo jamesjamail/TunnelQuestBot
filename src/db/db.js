@@ -420,12 +420,14 @@ async function snoozeByItemName(discordId, itemName, hours = 6) {
 					const query = 'SELECT id FROM watches WHERE user_id = $1 AND item_id = $2 AND active = TRUE;';
 					return await connection.query(query, [userId, itemId])
 						.then(async ({ rows }) => {
+							// not sure what this is...
 							if (!rows || rows.length < 1) {
 								return Promise.resolve(rows);
 							}
 							console.log('select snooze by item name res = ', rows);
 							return await snooze('item', rows[0].id, hours)
 								.then(async (results) => {
+									// might need to use is instead of watch_id key below
 									return Promise.resolve({ results, metadata: { watch_id: rows[0].id, itemSnooze: false, active: true } });
 								});
 						})
@@ -434,7 +436,28 @@ async function snoozeByItemName(discordId, itemName, hours = 6) {
 						});
 				});
 		});
+}
 
+async function unsnoozeByItemName(discordId, itemName) {
+	// find the watch based on item name
+	return await findOrAddUser(discordId)
+		.then(async (userId) => {
+			return await findOrAddItem(itemName)
+				.then(async (itemId) => {
+					console.log('itemId = ', itemId);
+					// TODO: instead of limiting 1 below, handle edge case of the same item watched under both servers
+					const queryStr = 'SELECT id FROM watches WHERE watches.user_id = $1 AND watches.item_id = $2 AND active = TRUE LIMIT 1';
+					return await connection.query(queryStr, [userId, itemId]).then(async ({ rows }) => {
+						if (!rows || rows.length < 1) {
+							return Promise.resolve({ rows });
+						}
+						return await unsnooze('ITEM', rows[0].id).then((results) => {
+							return Promise.resolve({ results, metadata: { id: rows[0].id, itemSnooze: false, active: true } });
+						});
+					});
+
+				});
+		});
 }
 
 async function snooze(type, id, hours = 6) {
@@ -475,6 +498,7 @@ async function unsnooze(type, id) {
 			const queryStr = 'DELETE FROM snooze_by_watch WHERE watch_id = $1;';
 			return await connection.query(queryStr, [id])
 				.then(async (res) => {
+					console.log('unsnooze res = ', res);
 					return await showWatchById(id);
 				})
 				.catch(console.error);
@@ -485,7 +509,10 @@ async function unsnooze(type, id) {
 				const queryStr = 'DELETE FROM snooze_by_user WHERE user_id = $1;';
 				return await connection.query(queryStr, [userId])
 					.then(async (res) => {
-						return await listWatches(id);
+						const queryStr = 'DELETE FROM snooze_by_watch USING watches WHERE snooze_by_watch.watch_id = watches.id AND watches.user_id = $1;';
+						return await connection.query(queryStr, [userId]).then(async () => {
+							return await listWatches(id);
+						});
 					})
 					.catch(console.error);
 			})();
@@ -568,4 +595,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, unsnoozeByItemName, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };
