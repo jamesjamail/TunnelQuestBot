@@ -1,6 +1,8 @@
 const { Client } = require('pg');
 const settings = require('../settings/settings.json');
 
+// This file should contain db functions only - nothing discord related should be here
+
 const connection = new Client({
 	host: settings.sql.host,
 	port: settings.sql.port,
@@ -86,7 +88,7 @@ async function addWatch(user, item, server, price, watchId) {
 	// convert price from 1k to 1000pp
 	// -1 denotes no price filter
 	// this also prevents user from entering a maximum price of 0
-	const convertedPrice = !price ? -1 : Number(price) * 1000;
+	const convertedPrice = !price ? -1 : Number(price);
 
 	return findOrAddUser(user)
 		.then((results) => {

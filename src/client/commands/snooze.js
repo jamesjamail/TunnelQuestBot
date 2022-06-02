@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { snooze } = require('../executors');
-const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers');
+const { buttonBuilder, collectButtonInteractions, gracefulError } = require('../clientHelpers');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -23,8 +23,8 @@ module.exports = {
 				.addStringOption(option => option.setName('item').setDescription('item name').setRequired(true))
 				.addStringOption(option => option.setName('server').setDescription('optionally specify a server - defaults to both servers').addChoices([['blue server', 'BLUE'], ['green server', 'GREEN']])),
 		),
-	// TODO: accept hours as an optional argument
 
+	// TODO: accept hours as an optional argument
 
 	async execute(interaction) {
 		await snooze(interaction)
@@ -43,8 +43,8 @@ module.exports = {
 
 			})
 			.catch(async (err) => {
-				return await interaction.reply(err.message);
-			})
-		;
+				return await gracefulError(interaction, err);
+			});
+
 	},
 };

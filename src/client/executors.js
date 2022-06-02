@@ -7,9 +7,9 @@ const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
 const sendMessagesToUser = require('./client');
 const { embedReactions, MessageType, watchBuilder, buildListResponse, buttonBuilder, blockBuilder, dedupeBlockResults } = require('./clientHelpers');
-function help(message) {
-	message.author.send('Thanks for using TunnelQuestBot! ' + helpMsg);
-}
+
+//	the purpose of this file is to do the heavy lifting of the command execution.
+// 	this file combines discord and db commands
 
 async function watch(interaction) {
 	const args = interaction.options.data;
@@ -150,12 +150,6 @@ async function list(interaction) {
 		});
 }
 
-
-function extend(message, args) {
-	db.extendAllWatches(message.author.id);
-	message.author.send('All watches succesfully extended for another 7 days.');
-}
-
 async function block(interaction) {
 	const args = interaction.options.data;
 	// if user specified a server, only block seller on that server
@@ -192,12 +186,19 @@ async function unblock(interaction) {
 	// if user specified a server, only unblock seller on that server
 	if (args && args.length > 1) {
 		return await db.unblockSellerGlobally(interaction.user.id, args[0].value, args[1].value).then((res) => {
+			// no rows effected means they didn't have a watch
+			if (res.rowCount === 0) {
+				return Promise.resolve({ content: `You don't have any blocks for ${formatCapitalCase(args[0].value)} on ${formatCapitalCase(args[1].value)} server.` });
+			}
 			return Promise.resolve({ content: `People change.  No longer blocking ${formatCapitalCase(args[0].value)} on ${formatCapitalCase(args[1].value)} server.` });
 		});
 
 	}
 	// unblock on all servers
 	return await db.unblockSellerGlobally(interaction.user.id, args[0].value).then((res) => {
+		if (res.rowCount === 0) {
+			return Promise.resolve({ content: `You don't have any blocks for ${formatCapitalCase(args[0].value)}.` });
+		}
 		return Promise.resolve({ content: `People change.  No longer blocking ${formatCapitalCase(args[0].value)} on either server.` });
 	});
 }
@@ -226,10 +227,11 @@ async function snooze(interaction) {
 	const command = interaction.options.getSubcommand();
 	const item = interaction.options.getString('item');
 	// TODO: also get server if supplied
+	console.log('command = ', command);
 	switch (command) {
-	case 'all':
+	case 'watches':
 		// snooze all
-		return await db.snooze('global', interaction)
+		return await db.snooze('global', interaction.user.id)
 			.then(async () => {
 				return { content: 'All your watches have been snoozed.' };
 			})
@@ -288,27 +290,20 @@ async function unsnooze(interaction) {
 	}
 }
 
-function gnomeFact(message, args) {
-	// TODO: return a random gnome fact
-}
-
-function unrecognized(message, args) {
-	message.author.send('Sorry, I didn\'t recognized that command.  Please check your syntax and try again. Try ``!help`` for more info.');
+async function gnomeFact(interaction) {
+	// TODO: return a random gnome fact to be called daily by bot
 }
 
 module.exports = {
-	help,
 	watch,
 	unwatch,
 	unwatchAll,
 	watches,
 	list,
-	extend,
 	block,
 	unblock,
 	blocks,
 	snooze,
 	unsnooze,
 	gnomeFact,
-	unrecognized,
 };

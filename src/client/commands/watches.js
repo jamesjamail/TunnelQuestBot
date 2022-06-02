@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { buttonBuilder, sendMessagesToUser } = require('../clientHelpers');
+const { buttonBuilder, sendMessagesToUser, gracefulError } = require('../clientHelpers');
 const { watches } = require('../executors');
 
 
@@ -41,6 +41,8 @@ module.exports = {
 				// TODO: handle error in response
 				.catch(console.error);
 
-		}).catch(console.error);
+		}).catch(async (err) => {
+			return await gracefulError(interaction, err);
+		});
 	},
 };

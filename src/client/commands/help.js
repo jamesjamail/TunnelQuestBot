@@ -1,12 +1,15 @@
-
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { helpMsg } = require('../../content/messages');
+const { gracefulError } = require('../clientHelpers');
 
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('help')
 		.setDescription('Lists available commands'),
 	async execute(interaction) {
-		interaction.reply({ content: helpMsg })
-	}
+		return await interaction.reply({ content: helpMsg })
+			.catch(async (err) => {
+				return await gracefulError(interaction, err);
+			});
+	},
 };

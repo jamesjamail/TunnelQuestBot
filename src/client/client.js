@@ -19,7 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const commandDir = path.join(__dirname, 'commands');
 const standardCommands = require('./executors.js');
-const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.js') && !file.includes('example'));
 const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing, SERVER_COLOR } = require('../utility/wikiHandler');
 const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js');
 const moment = require('moment');
@@ -33,7 +33,7 @@ logger.add(new logger.transports.Console, {
 logger.level = 'debug';
 
 // Initialize Discord Client
-const bot = new Client({ intents: [Intents.FLAGS.GUILDS] });
+const bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_MESSAGES] });
 const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
@@ -45,16 +45,8 @@ bot.on('ready', () => {
 	logger.info(`Logged in as ${bot.user.tag}!`);
 });
 
-// server greeting for users who join
-bot.on('guildMemberAdd', (member) => {
-	const memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-	bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
-});
-
 bot.commands = new Collection();
-
 const commands = [];
-
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	commands.push(command.data.toJSON());
@@ -113,6 +105,32 @@ bot.on('interactionCreate', async interaction => {
 		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 	}
 });
+
+// TODO: repurpose the code below to provide a generic "I use slash commands response" to direct messages
+
+bot.on('messageCreate', async message => {
+	//	filter out auction spam from general chat
+
+	if (!message.author.bot && message.channelId === GENERAL_CHANNEL) {
+		const content = message.content.toUpperCase();
+		if (content.includes('WTS') || content.includes('WTB') || content.includes('WTT')) {
+			await bot.users.cache.get(message.author.id).send(`Hi <@${message.author.id}>, I'm trying to keep #general_chat free of auction listings.  Please use either <#${GREEN_TRADING_CHANNEL}> or <#${BLUE_TRADING_CHANNEL}>. Thanks!`).catch(console.error);
+			await message.delete().catch(console.error);
+		}
+	}
+	// inform user about slash commands if DM or public command space message
+	else if (!message.author.bot && message.channelId === COMMAND_CHANNEL || message.channel.type === 'dm') {
+		message.reply('I respond to slash commmands.  Type `/` to get started.').catch(console.error);
+	}
+});
+
+
+// server greeting for users who join
+bot.on('guildMemberAdd', (member) => {
+	const memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
+	bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
+});
+
 
 async function pingUser(watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
 	// query db for communication history and blocked sellers - abort if not valid

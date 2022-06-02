@@ -14,7 +14,7 @@ sslRootCAs
 const wiki_url = require('../utility/data/items.json');
 const Discord = require('discord.js');
 const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458', BOTH: "#EFE357" };
-
+const settings = require('../settings/settings.json');
 
 const MessageType = {
 	0: 'WATCH',
@@ -373,15 +373,16 @@ function buildListResponse(data) {
 			const diff = expiration.diff(now);
 			const diffDuration = moment.duration(diff);
 			const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
+			console.log('price = ', watch.price)
 			watches.push({
-				name: `\`${watch.watch_snooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
+				name: `\`${watch.watch_snooze || globalSnooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
 				value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
 				inline: false,
 			});
 		});
 		const embed = new Discord.MessageEmbed()
 			.setColor('#EFE357')
-			.setTitle(globalSnooze ? '__Active Watches (Snoozed)__' : '__Active Watches__')
+			.setTitle(globalSnooze ? '__Active Watches (Global Snooze Active)__' : '__Active Watches__')
 			.addFields(watches);
 		return [embed];
 	}
@@ -412,7 +413,7 @@ async function watchBuilder(watchesToBuild) {
 		// console.log('watches url = ', url, item)
 
 		watches.push({
-			name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
+			name: `${price}   |   ${formatCapitalCase(watch.server)} Server`,
 			value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
 			inline: false,
 		});
@@ -429,9 +430,9 @@ async function watchBuilder(watchesToBuild) {
 		const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
 		return new Discord.MessageEmbed()
 			.setColor(SERVER_COLOR[watch.server])
-			.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
+			.setAuthor({ name: `Auction Watch`, url: href, iconURL: urls[index] })
 			.addFields(watches)
-			.setTitle(watch.name)
+			.setTitle(formatCapitalCase(watch.name))
 			.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
 		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
 		// .setImage(href)
@@ -539,6 +540,20 @@ function dedupeBlockResults(blockResults) {
 	})
 }
 
+//	to be used to handle errors at the top level in command files.
+// 	there is one last try catch block outside the command files as a fail safe
+// 	ideally executors and clientHelpers should not catch any errors so they bubble up
+const gracefulError = async (interaction, err) => {
+	// log to console as a safety
+	console.error(err.message)
+	// inform user an error occured
+	await interaction.reply("Sorry, an error occured.  Please try again.")
+	// pass thru to error log channel
+	const channelId = settings.discord.logs;
+	const logsChannel = await interaction.client.channels.fetch(channelId)
+	logsChannel.send(`${interaction.user.username} threw the following error:\n\n${err.message}`)
+}
+
 
 async function sendMessagesToUser(interaction, userId, messages, components, metadataItems) {
 	const user = await interaction.client.users.fetch(userId).catch(console.error);
@@ -555,4 +570,4 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive, dedupeBlockResults };
+module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive, dedupeBlockResults, gracefulError };

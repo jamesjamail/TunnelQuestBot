@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { unsnooze } = require('../executors');
-const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers');
+const { buttonBuilder, collectButtonInteractions, gracefulError } = require('../clientHelpers');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -39,8 +39,8 @@ module.exports = {
 
 			})
 			.catch(async (err) => {
-				return await interaction.reply(err.message);
-			})
-		;
+				return await gracefulError(interaction, err);
+			});
+
 	},
 };

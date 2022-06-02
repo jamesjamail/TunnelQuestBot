@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers');
+const { buttonBuilder, collectButtonInteraction, gracefulError } = require('../clientHelpers');
 const { unblock } = require('../executors');
 
 
@@ -14,7 +14,7 @@ module.exports = {
 			await interaction.reply({ content });
 
 		}).catch(async (err) => {
-			await interaction.reply(err.message);
+			return await gracefulError(interaction, err);
 		});
 	},
 };

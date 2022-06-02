@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { buttonBuilder, sendMessagesToUser } = require('../clientHelpers');
+const { buttonBuilder, sendMessagesToUser, gracefulError } = require('../clientHelpers');
 const { blocks } = require('../executors');
 
 
@@ -31,10 +31,9 @@ module.exports = {
 			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {
 					return await interaction.reply('Done! Please check your direct messages for results.');
-				})
-				// TODO: handle error in response
-				.catch(console.error);
-
-		}).catch(console.error);
+				});
+		}).catch(async (err) => {
+			return gracefulError(interaction, err);
+		});
 	},
 };
