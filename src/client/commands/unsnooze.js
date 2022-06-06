@@ -28,7 +28,6 @@ module.exports = {
 	async execute(interaction) {
 		await unsnooze(interaction)
 			.then(async ({ content, embeds, metadata }) => {
-				console.log('content, embeds, metadata', content, embeds, metadata);
 				if (embeds && embeds.length > 0) {
 					const components =
                         [buttonBuilder([{ type: 'itemSnooze', active: false }, { type: 'unwatch', active: false }, { type: 'itemRefresh' }])];

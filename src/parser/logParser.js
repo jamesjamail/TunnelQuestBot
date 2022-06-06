@@ -72,15 +72,15 @@ function parseLog(text, itemList, logServer, client) {
 	sendDiscordMessages(client, outgoing);
 }
 
-function sendDiscordMessages(client, outgoing) {
-	outgoing.forEach(msg => {
-		client.pingUser(
+async function sendDiscordMessages(client, outgoing) {
+	outgoing.forEach(async msg => {
+		await client.pingUser(
 			msg.watchId,
 			msg.userName,
 			msg.userId,
 			msg.seller,
 			msg.itemName,
-			msg.sellingPrice,
+			msg.sellingPrice || null,
 			msg.server,
 			msg.fullAuction,
 			msg.timestamp);

@@ -12,7 +12,7 @@ module.exports = {
 		.addStringOption(option => option.setName('item').setDescription('Enter item name').setRequired(true))
 		.addStringOption(option => option.setName('server').setDescription('Select a server').addChoices([['blue server', 'BLUE'], ['green server', 'GREEN']]).setRequired(true))
 		.addNumberOption(option => option.setName('price').setDescription('Enter optional maximum price')),
-	// logic is shipped to executors file, which does the heavy lifting client side
+	// logic is shipped to executors file, which does the heavy lifting with discord client
     // as well as interfaces with the db
         async execute(interaction) {
 		await watch(interaction)

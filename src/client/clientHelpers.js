@@ -4,8 +4,8 @@ const {
 	MessageActionRow,
 	MessageButton,
 } = require('discord.js');
-const { formatCapitalCase } = require('../utility/utils.js');
-const { fetchImageUrl } = require('../utility/wikiHandler.js');
+const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js');
+const { fetchImageUrl, fetchWikiPricing } = require('../utility/wikiHandler.js');
 const moment = require('moment');
 const sslRootCAs = require('ssl-root-cas');
 sslRootCAs
@@ -13,175 +13,15 @@ sslRootCAs
 	.addFile(__dirname + '../../../Certificates/SectigoRSADomainValidationSecureServerCA.crt');
 const wiki_url = require('../utility/data/items.json');
 const Discord = require('discord.js');
-const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458', BOTH: "#EFE357" };
+const SERVER_COLOR = { BLUE: '#1C58B8', GREEN: '#249458', BOTH: "#000" };
 const settings = require('../settings/settings.json');
+
 
 const MessageType = {
 	0: 'WATCH',
 	1: 'LIST',
     2: 'NOTIFICATION',
 };
-
-function embedReactions(message, data, messageType) {
-	switch (messageType) {
-	case MessageType[0]:
-		message
-			.react('💤') // for "snooze watch"
-			.then(() => message.react('❌')) // for "delete watch"
-			.then(() => message.react('♻')) // for "extend watch"
-			.then(() => {
-				const react_filter = (reaction, user) => {
-					if (user.bot) {
-						return;
-					}
-					return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '♻';
-				};
-				const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24, dispose: true });
-				collector.on('collect', (reaction, user) => {
-					switch (reaction.emoji.name) {
-					case '💤':
-						// Snooze this watch for 6 hours
-						db.snooze('watch', data.watchId);
-						user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${data.item}\`\` watch on \`\`${data.server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
-						break;
-					case '❌':
-						// Delete this watch
-						db.endWatch(null, null, null, data.watchId);
-						user.send(`Very well, no longer watching for auctions of \`\`${data.item}\`\`\ on \`\`${data.server}\`\`.`);
-						break;
-					case '♻': // extend watch
-						db.extendWatch(data.watchId);
-						user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${data.item}\`\` watch on \`\`${data.server}\`\`.`);
-						break;
-					default:
-						break;
-					}
-				});
-				collector.on('remove', (reaction, user) => {
-					switch (reaction.emoji.name) {
-					case '💤':
-						// unsnooze watch
-						db.unsnooze('watch', data.watchId);
-						user.send(`Rise and grind.  No longer snoozing on your \`\`${data.item}\`\` watch on \`\`${data.server}\`\`.`).catch(console.error);
-						break;
-					case '❌':
-						// Renew watch
-						db.addWatch(null, null, null, null, data.watchId);
-						user.send(`Ok, watching for auctions of \`\`${data.item}\`\` on P1999 \`\`${data.server}\`\` again.`);
-						break;
-					default:
-						break;
-					}
-				});
-			});
-		break;
-	case MessageType[1]:
-		message
-			.react('💤') // for "snooze (all)"
-			.then(() => message.react('♻')) // for "extend (all)"
-			.then(() => {
-				const react_filter = (reaction, user) => {
-					if (user.bot) {
-						return;
-					}
-					return reaction.emoji.name === '💤' || reaction.emoji.name === '♻';
-				};
-				const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24, dispose: true });
-				collector.on('collect', (reaction, user) => {
-					if (user.bot) return;
-					switch (reaction.emoji.name) {
-					case '💤':
-						// Snooze account for 6 hours
-						db.snooze('user', user.id);
-						user.send('Sleep is good.  Pausing notifications for the next 6 hours on all watches.  Click 💤 again to unsnooze.  To snooze an individual watch, use `!watches` and react with the `💤` emoji.')
-							.catch(console.error);
-						break;
-					case '♻': // extend watch
-						db.extendAllWatches(user.id);
-						user.send('Good things come to those who wait.  I extended all your watches another 7 days.');
-						break;
-					default:
-						break;
-					}
-				});
-				collector.on('remove', (reaction, user) => {
-					if (user.bot) return;
-					switch (reaction.emoji.name) {
-					case '💤':
-						// unsnooze all watches
-						db.unsnooze('user', user.id);
-						user.send('Rise and grind.  Your account is no longer snoozed.').catch(console.error);
-						break;
-					default:
-						break;
-					}
-				});
-			});
-		break;
-    case MessageType[2]:
-        message
-        .react('💤') // for "snooze watch"
-        .then(() => message.react('❌')) // for "delete watch"
-        .then(() => message.react('🔕')) // for "silence seller"
-        .then(() => message.react('♻')) // for "extend watch"
-        .then(() => {
-            const react_filter = (reaction, user) => {
-                return reaction.emoji.name === '💤' || reaction.emoji.name === '❌' || reaction.emoji.name === '🔕' || reaction.emoji.name === '♻';
-            };
-            const collector = message.createReactionCollector(react_filter, { time: 1000 * 60 * 60 * 24, dispose: true });
-            collector.on('collect', (reaction, user) => {
-                if (user.bot) return;
-                switch (reaction.emoji.name) {
-                case '💤':
-                    // Snooze this watch for 6 hours
-                    db.snooze('watch', data.watchId);
-                    user.send(`Sleep is good.  Pausing notifications for the next 6 hours on your \`\`${data.item}\`\` watch on \`\`${data.server}\`\`.  Click 💤 again to unsnooze.  To snooze all watches, use \`\`!snooze\`\``).catch(console.error);
-                    break;
-                case '❌':
-                    // Delete this watch
-                    db.endWatch(user.id, data.item, data.server);
-                    user.send(`Got it! No longer watching auctions for ${data.item} on P1999 ${data.server} data.server.`);
-                    break;
-                case '🔕':
-                    // Ignore this seller's auctions for this watch
-                    db.blockSeller(user.id, data.seller, null, data.watchId);
-                    user.send(`Let's cut out the noise!  No longer notifying you about auctions from ${data.seller} with regard to this watch.\n  To block ${data.seller} on all watches, use \`\`!block ${data.seller}\`\``);
-                    break;
-                case '♻': // extend watch
-                    db.extendWatch(data.watchId);
-                    user.send(`Good things come to those who wait.  I added another 7 days to your \`\`${data.item}\`\` watch.`);
-                    break;
-                default:
-                    break;
-                }
-            });
-            collector.on('remove', (reaction, user) => {
-                if (user.bot) return;
-                switch (reaction.emoji.name) {
-                case '💤':
-                    // unsnooze watch
-                    db.unsnooze('watch', data.watchId);
-                    user.send(`Rise and grind.  No longer snoozing on your \`\`${data.item}\`\` watch on \`\`${data.server}\`\`.`).catch(console.error);
-                    break;
-                case '❌':
-                    // renew this watch
-                    db.addWatch(user.id, null, null, null, data.watchId);
-                    user.send(`Got it! Once again watching auctions for ${data.item} on P1999 ${data.server} data.server.`);
-                    break;
-                case '🔕':
-                    // unblock the seller for this auction
-                    db.unblockSeller(user.id, data.seller, null, data.watchId);
-                    user.send(`People change.  No longer blocking ${formatCapitalCase(data.seller)} with regard to this watch.`);
-                    break;
-                default:
-                    break;
-                }
-            });
-        });
-        break;
-	default: break;
-	}
-}
 
 //TODO: cases for each button id should be handled in separate files (cleanup)
 async function collectButtonInteractions(interaction, metadata, message) {
@@ -190,11 +30,8 @@ async function collectButtonInteractions(interaction, metadata, message) {
 		return;
 	}
 	
-	console.log('metadata = ', metadata)
-
 	//filter button interactions to the interaction they are attached to
 	const filter = input => {
-		console.log(input.message)
 		if (message) {
 			return input.message.id === message.id;
 		}
@@ -219,7 +56,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
 						});
 			case 'globalSnooze':
-				console.log('BAMBAMBAM')
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
 				return await db.listWatches(interaction.user.id)
 						.then(async (res) => {
@@ -240,8 +76,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							}
 							return await db.snooze('global', interaction.user.id)
 								.then(async (res) => {
-										console.log('globalSnooze res = ', res)
-
 										const updatedMsg = buildListResponse(res);
 										const btnRow = buttonBuilder([{ type: 'globalSnooze', active: true }, { type: 'globalRefresh', active: globalRefreshActive }]);
 										return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
@@ -255,7 +89,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 			case 'itemSnooze':
 				return await db.showWatchById(metadata.id)
 								.then(async (watch) => {
-									console.log('itemSnooze watch = ', watch)
 									// if already snoozed, unsnooze
 									if (watch.snoozed) { //careful, snoozed vs itemSnooze is ambiguously used
 										return await db.unsnooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
@@ -288,7 +121,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 			case 'itemRefresh':
 				return await db.extendWatch(metadata.id)
 				.then(async (res) => {
-					console.log('itemRefresh res = ', res);
 						const updatedMsg = await watchBuilder([res]);
 						const itemRefreshActive = isRefreshActive(res.datetime);
 						const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh', active: itemRefreshActive }]);
@@ -302,13 +134,10 @@ async function collectButtonInteractions(interaction, metadata, message) {
 				//first get status to determine if unwatching or undoing an unwatch button command
 				return await db.showWatchById(metadata.id)
 					.then(async (watch) => {
-						console.log('watchg = ', watch)
 						//if watch is active, unwatch it
 						if (watch.active) {
-							console.log('HELLOOOO')
 							return await db.endWatch(null, null, null, metadata.id)
 							.then(async (res) => {
-								console.log('unwatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
 								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh' }]);
 								//snoozing an inactive watch is a confusing user experience, so let's disable the button
@@ -321,11 +150,9 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
 							});
 						}
-						console.log('hello')
 						//otherwise watch is inactive, meaning a user is undoing a previous unwatch cmd
 						return await db.extendWatch(metadata.id)
 							.then(async (res) => {
-								console.log('extendWatch res = ', res);
 								const updatedMsg = await watchBuilder([res]);
 								const itemRefreshActive = isRefreshActive(res.datetime);
 								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh' }]);
@@ -345,6 +172,15 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						return await db.unblockSellerGlobally(interaction.user.id, metadata.seller)
 							.then(async () => {
 								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed`, embeds: [], components: [] });
+							})
+							.catch(async (err) => {
+								console.error(err);
+								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+							});
+					case 'sellerBlock':
+						return await db.blockSellerByWatchId(metadata.id, metadata.player)
+							.then(async () => {
+								return await i.update({ content: `Auctions from \`${formatCapitalCase(metadata.seller)}\` have been blocked for this watch.` });
 							})
 							.catch(async (err) => {
 								console.error(err);
@@ -373,15 +209,13 @@ function buildListResponse(data) {
 			const diff = expiration.diff(now);
 			const diffDuration = moment.duration(diff);
 			const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
-			console.log('price = ', watch.price)
 			watches.push({
-				name: `\`${watch.watch_snooze || globalSnooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | ${watch.price === -1 ? '' : ` \`${price}\` | `}\`${formatCapitalCase(watch.server)}\``,
+				name: `\`${watch.watch_snooze || globalSnooze ? '💤 ' : ''}${formatCapitalCase(watch.name)}\` | \`${price}\` | \`${formatCapitalCase(watch.server)}\``,
 				value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
 				inline: false,
 			});
 		});
 		const embed = new Discord.MessageEmbed()
-			.setColor('#EFE357')
 			.setTitle(globalSnooze ? '__Active Watches (Global Snooze Active)__' : '__Active Watches__')
 			.addFields(watches);
 		return [embed];
@@ -392,7 +226,6 @@ function buildListResponse(data) {
 }
 
 async function watchBuilder(watchesToBuild) {
-	console.log('watchesToBuild ', watchesToBuild);
 	const urls = await Promise.all(watchesToBuild.map(async (item) => {
 		return await fetchImageUrl(item.name);
 	}));
@@ -406,14 +239,13 @@ async function watchBuilder(watchesToBuild) {
 		const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
 		const snoozeDiff = snoozeExpiration.diff(now);
 		const snoozeDuration = moment.duration(snoozeDiff);
-		const price = watch.price == -1 || null ? 'No Price Criteria' : watch.price.toString().concat('pp');
+		const price = watch.price == -1 || watch.price == null ? 'No Price Criteria' : watch.price.toString().concat('pp');
 		const item = formatCapitalCase(watch.name);
 		const server = `${formatCapitalCase(watch.server)} Server`;
 		// const url = await fetchImageUrl(item).catch(console.error);
-		// console.log('watches url = ', url, item)
 
 		watches.push({
-			name: `${price}   |   ${formatCapitalCase(watch.server)} Server`,
+			name: `${price}   |   ${server}`,
 			value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
 			inline: false,
 		});
@@ -429,23 +261,52 @@ async function watchBuilder(watchesToBuild) {
 		const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
 		const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
 		return new Discord.MessageEmbed()
-			.setColor(SERVER_COLOR[watch.server])
+		.setColor(SERVER_COLOR[watch.server])
 			.setAuthor({ name: `Auction Watch`, url: href, iconURL: urls[index] })
 			.addFields(watches)
 			.setTitle(formatCapitalCase(watch.name))
-			.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
-		// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
-		// .setImage(href)
-		// .setThumbnail(url)
+			.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' })
 
 
 	});
 	return Promise.resolve(embeds);
 }
 
-function blockBuilder(blocksToBuild) {
-	console.log('blocksToBuild ', blocksToBuild);
+async function watchNotificationBuilder({item, price, server, seller, fullAuction, timestamp}) {
+	const url = await fetchImageUrl(item).catch(console.error);
+	const formattedPrice = price ? `${price}pp` : 'No Price Listed';
+	const historical_pricing = await fetchWikiPricing(item, server);
 
+	const fields = [];
+
+	fields.push({
+		name: formattedPrice || 'No Price Listed',
+		value: `${formatCapitalCase(item)}`,
+		inline: false,
+	});
+
+	if (historical_pricing) {
+		fields.push({
+			name: 'Historical Pricing Data',
+			value: historical_pricing,
+			inline: false,
+		});
+	}
+
+	const msg = new Discord.MessageEmbed()
+		.setColor(SERVER_COLOR[server])
+		.setImage(url === 'https://i.imgur.com/wXJsk7Y.png' ? null : url)
+		.setTitle(`${formatCapitalCase(item)}`)
+		.setAuthor('Watch Notification', url, wiki_url[item] ? `https://wiki.project1999.com${wiki_url[item]}` : null)
+		.setDescription(`**${seller}** is currently selling **${formatCapitalCase(item)}** ${price ? 'for **' + price + 'pp**' : ''} on Project 1999 **${formatCapitalCase(server)}** server. \n\n\`\`${removeLogTimestamp(fullAuction)}\`\``)
+		.addFields(fields)
+		.setFooter(`To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(timestamp).add(7, 'days').fromNow()}`)
+		.setTimestamp();
+
+	return Promise.resolve([msg]);
+}
+
+function blockBuilder(blocksToBuild) {
 	// const urls = await Promise.all(blocksToBuild.map(async (item) => {
 	// 	return await fetchImageUrl(item.name);
 	// }));
@@ -517,6 +378,11 @@ function buttonBuilder(buttonTypes) {
 					.setCustomId('globalUnblock')
 					.setLabel('❌')
 					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
+			case 'sellerBlock':
+				return new MessageButton()
+					.setCustomId('sellerBlock')
+					.setLabel('🔕')
+					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
 			default:
 				return null;
 
@@ -558,7 +424,6 @@ const gracefulError = async (interaction, err) => {
 async function sendMessagesToUser(interaction, userId, messages, components, metadataItems) {
 	const user = await interaction.client.users.fetch(userId).catch(console.error);
 	if (!messages || messages.length < 1) return;
-	console.log('metadataItems = ', metadataItems);
 	const postedMessages = await Promise.all(messages.map(async (message, index) => {
 		return await user.send({ embeds: [message], components: [components[index]] })
 			.then(async (postedMessage) =>{
@@ -570,4 +435,4 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 }
 
 
-module.exports = { MessageType, embedReactions, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive, dedupeBlockResults, gracefulError };
+module.exports = { MessageType, watchBuilder, buttonBuilder, blockBuilder, sendMessagesToUser, collectButtonInteractions, buildListResponse, isRefreshActive, dedupeBlockResults, gracefulError, watchNotificationBuilder };

@@ -4,6 +4,8 @@ tokens.js
 auth.json
 # New auth data and other settings (plus any variation of settings.test.json etc)
 settings.*json
+# But allow example file
+!example.settings.json
 
 # DS_Store
 DS_Store

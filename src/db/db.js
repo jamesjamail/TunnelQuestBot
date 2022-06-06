@@ -115,7 +115,6 @@ async function addWatch(user, item, server, price, watchId) {
 							// adding a watch should unsnooze it
 							return await unsnooze('item', results.rows[0].id)
 								.then(async (res) => {
-									console.log('unsnooze res = ', res);
 									return await showWatchById(results.rows[0].id);
 								});
 						})
@@ -131,7 +130,6 @@ async function endWatch(user, item, server, watchId) {
 		const queryStr = 'UPDATE watches SET active = false WHERE id = $1;';
 		return await connection.query(queryStr, [watchId])
 			.then(async (res) => {
-				console.log('endwatch res', res);
 				return await showWatchById(watchId);
 			})
 			.catch((err) => {
@@ -157,8 +155,6 @@ async function endWatch(user, item, server, watchId) {
 						const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2;';
 						return await connection.query(queryStr, [userId, itemId])
 							.then((res) => {
-								console.log('without server res ', res);
-
 								return Promise.resolve(res);
 							})
 							.catch(console.error);
@@ -205,7 +201,6 @@ async function showWatch(user, item) {
 		.then((results) => {
 			const userId = results;
 			const pattern = '%'.concat(item.toUpperCase()).concat('%');
-			console.log('pattenr = ', pattern);
 			const queryStr = '' +
             'SELECT watches.id, items.name, price, server, datetime, expiration, ' +
             'CASE WHEN expiration IS NULL OR expiration < now() THEN FALSE ' +
@@ -242,10 +237,8 @@ async function showWatchById(id) {
 
 
 async function listWatches(user) {
-	console.log('listWatches user ', user);
 	return await findOrAddUser(user)
 		.then(async (userId) => {
-			console.log('uerId', userId);
 			const queryStr = '' +
                 'SELECT watches.id, items.name, price, server, datetime, snooze_by_watch.expiration, CASE ' +
                 'WHEN snooze_by_watch.expiration IS NULL OR snooze_by_watch.expiration < now() THEN FALSE ' +
@@ -275,7 +268,6 @@ async function extendWatch(watchId) {
 	const queryStr = 'UPDATE watches SET datetime = current_timestamp, active = TRUE WHERE watches.id = $1';
 	return await connection.query(queryStr, [watchId])
 		.then(async (res) => {
-			console.log('extendWatch res ', res);
 			// extending watches should unsnooze them
 			return await unsnooze('item', watchId)
 				.catch(console.error);
@@ -307,17 +299,14 @@ async function blockSellerByWatchId(watchId, seller) {
 async function blockSellerGlobally(user, seller, server) {
 	// add or find user
 	return await findOrAddUser(user).then(async (userId) => {
-		console.log('server = ', server);
 		if (server) {
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING';
 			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()])
 				.then(async (res) => {
-					console.log('hello -= ', res);
 					return await showBlocks(user, seller.toUpperCase());
 				});
 		}
 		else {
-			console.log('userId, seller', userId, seller);
 			// no server, so add blocks for both servers
 			// it's possible this bot could need to run on more than 2 servers,
 			// which is why there is a slightly cumbersome process of adding blocks
@@ -326,7 +315,6 @@ async function blockSellerGlobally(user, seller, server) {
 			const queryStr = 'INSERT INTO blocked_seller_by_user (seller, user_id, server) VALUES ($1, $2, \'GREEN\'), ($1, $2, \'BLUE\') ON CONFLICT DO NOTHING;';
 			return await connection.query(queryStr, [seller.toUpperCase(), userId])
 				.then(async (res) => {
-					console.log('hello -= ', res);
 					return await showBlocks(user, seller.toUpperCase());
 				});
 		}
@@ -383,36 +371,6 @@ async function showBlocks(user, seller) {
 		}).catch((err) => Promise.reject(err));
 }
 
-// async function snoozeByItemName(discordId, itemName, hours = 6) {
-// 	// find the watch based on item name
-// 	return await findOrAddUser(discordId)
-// 		.then(async (userId) => {
-// 			const query = 'SELECT watches.id FROM watches INNER JOIN items ON watches.item_id = items.id INNER JOIN users ON users.id = watches.user_id WHERE items.name = $1 AND users.id = $2;';
-// 			return await connection.query(query, [itemName.toUpperCase(), userId])
-// 				.then(async ({ rows }) => {
-// 					// getting wrong watchId from above
-// 					console.log('watchId = ', rows);
-// 					// const query = 'INSERT INTO snooze_by_watch (watch_id, expiration) VALUES($1, now() + interval \'1 second\' * $2) ON CONFLICT (watch_id) DO UPDATE SET expiration = now() + interval \'1 second\' * $2 WHERE snooze_by_watch.watch_id = $1 RETURNING snooze_by_watch.watch_id;';
-// 					const query = 'INSERT INTO snooze_by_watch (watch_id, expiration) VALUES($1, now() + interval \'1 second\' * $2)';
-// 					// not sure why this doesnt work
-// 					return await connection.query(query, [rows[0].id, hours * 60 * 60])
-// 						.then((res) => {
-// 							console.log('snooze insert res = ', res);
-// 							return Promise.resolve();
-// 						})
-// 						.catch((err) => {
-// 							return Promise.reject(err);
-// 						});
-// 				})
-// 				.catch((err) => {
-// 					return Promise.reject(err);
-// 				});
-
-// 		});
-
-// }
-
-
 async function snoozeByItemName(discordId, itemName, hours = 6) {
 	// find the watch based on item name
 	return await findOrAddUser(discordId)
@@ -422,11 +380,9 @@ async function snoozeByItemName(discordId, itemName, hours = 6) {
 					const query = 'SELECT id FROM watches WHERE user_id = $1 AND item_id = $2 AND active = TRUE;';
 					return await connection.query(query, [userId, itemId])
 						.then(async ({ rows }) => {
-							// not sure what this is...
 							if (!rows || rows.length < 1) {
 								return Promise.resolve(rows);
 							}
-							console.log('select snooze by item name res = ', rows);
 							return await snooze('item', rows[0].id, hours)
 								.then(async (results) => {
 									// might need to use is instead of watch_id key below
@@ -446,7 +402,6 @@ async function unsnoozeByItemName(discordId, itemName) {
 		.then(async (userId) => {
 			return await findOrAddItem(itemName)
 				.then(async (itemId) => {
-					console.log('itemId = ', itemId);
 					// TODO: instead of limiting 1 below, handle edge case of the same item watched under both servers
 					const queryStr = 'SELECT id FROM watches WHERE watches.user_id = $1 AND watches.item_id = $2 AND active = TRUE LIMIT 1';
 					return await connection.query(queryStr, [userId, itemId]).then(async ({ rows }) => {
@@ -463,7 +418,6 @@ async function unsnoozeByItemName(discordId, itemName) {
 }
 
 async function snooze(type, id, hours = 6) {
-	console.log('id = ', id);
 	switch(type.toUpperCase()) {
 	case 'ITEM':
 		// insert into watch snoooze
@@ -483,7 +437,6 @@ async function snooze(type, id, hours = 6) {
 					const queryStr = 'INSERT INTO snooze_by_user (user_id, expiration) VALUES ($1, now() + interval \'1 hour\' * $2) ON CONFLICT (user_id) DO UPDATE SET expiration = now() + interval \'1 hour\' * $2;';
 					return await connection.query(queryStr, [userId, hours])
 						.then(async (res) => {
-							console.log('db global snooze = ', res);
 							return await listWatches(id);
 						})
 						.catch(console.error);
@@ -500,7 +453,6 @@ async function unsnooze(type, id) {
 			const queryStr = 'DELETE FROM snooze_by_watch WHERE watch_id = $1;';
 			return await connection.query(queryStr, [id])
 				.then(async (res) => {
-					console.log('unsnooze res = ', res);
 					return await showWatchById(id);
 				})
 				.catch(console.error);
@@ -592,7 +544,7 @@ function upkeep() {
 	connection.query(query)
 		.then((res) => {
 			// TODO: pipe this to a private health_status channel on discord on devs have access to - write a log for every watch notification, command entry, etc.
-			// console.log('Upkeep completed. Removed ', res.rowCount, ' old watches.')
+			// 'Upkeep completed. Removed ', res.rowCount, ' old watches.'
 		})
 		.catch(console.error);
 }

@@ -28,10 +28,10 @@ cache.on('error', function(error) {
 	console.error(error);
 });
 
-//2/1/22 - p99 wiki appears to have invalid cert - causing errors. Below is a temporary solution until they fix it upstream.
+// 2/1/22 - p99 wiki appears to have invalid cert - causing errors. Below is a temporary solution until they fix it upstream.
 const httpsAgent = new https.Agent({
 	rejectUnauthorized: false,
-  });
+});
 
 async function fetchAndFormatAuctionData(auction_user, auction_contents, server) {
 	const auction_wts = [...auction_contents.matchAll(WTS_REGEX)];
@@ -64,7 +64,7 @@ async function fetchAndFormatAuctionData(auction_user, auction_contents, server)
 		.setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
 		.setDescription(`\`\`\`${auction_contents}\`\`\``)
 		.addFields(fields)
-		.setFooter({text: `Project 1999 ${utils.formatCapitalCase(server)}`})
+		.setFooter({ text: `Project 1999 ${utils.formatCapitalCase(server)}` })
 		.setTimestamp();
 }
 
@@ -145,7 +145,7 @@ async function getWikiPricing(item_url, server) {
 			}
 			else {
 				// otherwise fetch new data
-				return fetch(item_url, {agent: httpsAgent})
+				return fetch(item_url, { agent: httpsAgent })
 					.then(response => response.text())
 					.then(text => {
 						const priceData = parsePage(text, server);
@@ -216,8 +216,7 @@ async function fetchImageUrl(itemName) {
 					return response.text()
 						.then((body) => {
 							const url = parseResponse(body);
-							console.log('parsebody = ', url)
-							return Promise.resolve(url)
+							return Promise.resolve(url);
 						});
 				}
 				else {

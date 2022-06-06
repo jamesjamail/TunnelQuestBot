@@ -18,14 +18,12 @@ module.exports = {
 			// handle no results
 			if (!embeds || embeds.length < 1) {
 				const args = interaction.options.data;
-				console.log('args = ', args);
 				const noResultsMsg = args.length < 1 ?
 					'You don\'t have any watches.  Add some with \`/watch\`.'
 					:
 					'You don\'t have any watches that contain `' + args[0].value + '`.';
 				return await interaction.reply(noResultsMsg);
 			}
-			console.log('watches metadata ', metadata);
 			// NOTE: metadata from watches() is an array of metadataItems
 
 			const btnRows = metadata.map((individualMetadata) => {

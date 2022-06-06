@@ -32,7 +32,6 @@ async function watch(interaction) {
 		// if no price, set watch accordingly
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value)
 			.then(async (res) => {
-				console.log('no price res = ', res);
 				const metadata = {
 					id: res.id, itemSnooze: res.snoozed, globalRefreshActive: false,
 				};
@@ -50,7 +49,6 @@ async function watch(interaction) {
 async function unwatch(interaction) {
 	// does anything use this other than unwatch? careful because arguments are in a subcommand group
 	const args = interaction.options.data[0].options;
-	console.log(args);
 	// TODO: if 0 rows affected, inform user "You don't have any watches for..."
 	if (args.length > 1) {
 		return await db.endWatch(interaction.user.id, args[0].value, args[1].value);
@@ -72,54 +70,7 @@ async function watches(interaction) {
 	return await db.showWatch(interaction.user.id, args && args.length > 0 ? args[0].value : '')
 		.then(async (res) => {
 			if (res.length > 0) {
-				const urls = await Promise.all(res.map(async (item) => {
-					return await fetchImageUrl(item.name);
-				}));
-
-				const embeds = res.map((watch, index) => {
-					const watches = [];
-					const expiration = moment(watch.datetime).add(7, 'days');
-					const now = moment(new Date);
-					const diff = expiration.diff(now);
-					const diffDuration = moment.duration(diff);
-					const snoozeExpiration = moment(watch.expiration).add(0, 'seconds');
-					const snoozeDiff = snoozeExpiration.diff(now);
-					const snoozeDuration = moment.duration(snoozeDiff);
-					const price = watch.price == -1 ? 'No Price Criteria' : watch.price.toString().concat('pp');
-					const item = formatCapitalCase(watch.name);
-					const server = `${formatCapitalCase(watch.server)} Server`;
-					// const url = await fetchImageUrl(item).catch(console.error);
-					// console.log('watches url = ', url, item)
-
-					watches.push({
-						name: `${formatCapitalCase(watch.name)} | ${price} | ${formatCapitalCase(watch.server)}`,
-						value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
-						inline: false,
-					});
-
-					if (watch.snoozed) {
-						watches.push({
-							name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
-							value: `Snoozed for another ${snoozeDuration.hours()} hours and ${snoozeDuration.minutes()} minutes`,
-							inline: false,
-						});
-					}
-
-					const matchingItemName = !!wiki_url[watch.name.toUpperCase()];
-					const href = matchingItemName ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null;
-					return new Discord.MessageEmbed()
-						.setColor(SERVER_COLOR[watch.server])
-						.setAuthor({ name: `${formatCapitalCase(watch.name)}`, url: href, iconURL: urls[index] })
-						.addFields(watches)
-						.setTitle(watch.name)
-						.setFooter({ text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻' });
-					// .setThumbnail(wiki_url[watch.name.toUpperCase()] ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}` : null)
-					// .setImage(href)
-					// .setThumbnail(url)
-
-
-				});
-				console.log('res = ', res);
+				const embeds = await watchBuilder(res);
 				return Promise.resolve({ embeds, metadata: res });
 			}
 			else {
@@ -134,7 +85,6 @@ async function list(interaction) {
 			if (!res || res.length < 1) {
 				return Promise.resolve({ embeds: [] });
 			}
-			console.log('list res ', res);
 			const embeds = buildListResponse(res);
 			// let's consider refresh button "activated" if pressed within last minute
 			const created = moment(res[0].datetime).add(0, 'second');
@@ -168,7 +118,6 @@ async function block(interaction) {
 	else {
 		return await db.blockSellerGlobally(interaction.user.id, args[0].value)
 			.then((res) => {
-				console.log('blockSellerGlobally res = ', res);
 				const embeds = blockBuilder([{ seller: args[0].value, server: ['GREEN', 'BLUE'] }]);
 				// TODO: handle this more elegantly that searching for blocks based on user/seller
 				const metadata = res.user_blocks[0];
@@ -182,7 +131,6 @@ async function block(interaction) {
 
 async function unblock(interaction) {
 	const args = interaction.options.data;
-	console.log('args = ', args);
 	// if user specified a server, only unblock seller on that server
 	if (args && args.length > 1) {
 		return await db.unblockSellerGlobally(interaction.user.id, args[0].value, args[1].value).then((res) => {
@@ -204,15 +152,13 @@ async function unblock(interaction) {
 }
 
 async function blocks(interaction) {
-// reduce those blocks to be green / blue / both
-// build block messages and pass along metadata
-
-
-	// TODO: add filter argument
 	const args = interaction.options.data;
+	let filter = null;
+	if (args.length > 0) {
+		filter = args[0].value;
+	}
 	// get blocks from db
-	return await db.showBlocks(interaction.user.id).then((res) => {
-		console.log('showBlocsk res ', res);
+	return await db.showBlocks(interaction.user.id, filter).then((res) => {
 		if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
 			return ({ content: 'You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.' });
 		}
@@ -227,7 +173,6 @@ async function snooze(interaction) {
 	const command = interaction.options.getSubcommand();
 	const item = interaction.options.getString('item');
 	// TODO: also get server if supplied
-	console.log('command = ', command);
 	switch (command) {
 	case 'watches':
 		// snooze all
@@ -245,7 +190,6 @@ async function snooze(interaction) {
 				if (!results || results.length < 1) {
 					return { content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` };
 				}
-				console.log('snooze watch res = ', results);
 				const embeds = await watchBuilder([results]);
 				return { content: 'Your `' + item + '` watch has been snoozed.', embeds, metadata };
 			})
@@ -275,7 +219,6 @@ async function unsnooze(interaction) {
 		// snooze watch
 		return await db.unsnoozeByItemName(interaction.user.id, item)
 			.then(async ({ results, metadata }) => {
-				console.log('results = ', results);
 				if (!results || results.length < 1) {
 					return Promise.resolve({ content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` });
 				}

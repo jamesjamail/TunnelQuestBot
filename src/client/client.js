@@ -24,7 +24,7 @@ const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing, SERVER_COLOR
 const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js');
 const moment = require('moment');
 const wiki_url = require('../utility/data/items.json');
-const { embedReactions, MessageType, watchBuilder, sendMessagesToUser, collectButtonInteractions } = require('./clientHelpers');
+const { embedReactions, MessageType, watchBuilder, sendMessagesToUser, collectButtonInteractions, watchNotificationBuilder, buttonBuilder } = require('./clientHelpers');
 const { helpMsg, welcomeMsg } = require('../content/messages');
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
@@ -91,7 +91,6 @@ bot.once('ready', () => {
 
 // command syntax as well as executors are defined in /commands directory
 bot.on('interactionCreate', async interaction => {
-	// TODO: block stream channels, etc.
 	if (!interaction.isCommand()) return;
 
 	const command = bot.commands.get(interaction.commandName);
@@ -106,11 +105,9 @@ bot.on('interactionCreate', async interaction => {
 	}
 });
 
-// TODO: repurpose the code below to provide a generic "I use slash commands response" to direct messages
 
 bot.on('messageCreate', async message => {
 	//	filter out auction spam from general chat
-
 	if (!message.author.bot && message.channelId === GENERAL_CHANNEL) {
 		const content = message.content.toUpperCase();
 		if (content.includes('WTS') || content.includes('WTB') || content.includes('WTT')) {
@@ -120,55 +117,60 @@ bot.on('messageCreate', async message => {
 	}
 	// inform user about slash commands if DM or public command space message
 	else if (!message.author.bot && message.channelId === COMMAND_CHANNEL || message.channel.type === 'dm') {
-		message.reply('I respond to slash commmands.  Type `/` to get started.').catch(console.error);
+		await message.reply('I respond to slash commmands.  Type `/` to get started.').catch(console.error);
 	}
 });
 
 
 // server greeting for users who join
-bot.on('guildMemberAdd', (member) => {
+bot.on('guildMemberAdd', async (member) => {
 	const memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-	bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
+	await bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
 });
 
 
 async function pingUser(watchId, user, userId, seller, item, price, server, fullAuction, timestamp) {
 	// query db for communication history and blocked sellers - abort if not valid
 	const validity = await db.validateWatchNotification(userId, watchId, seller);
-	// console.log(now, 'user = ', user, 'seller = ', seller, 'item = ', item, 'validity = ', validity)
 	if (!validity) return;
 	await db.postSuccessfulCommunication(watchId, seller);
 
 	// TODO: watch notifications have different fields from watch results
-	const msg = watchBuilder([{
-		datetime: timestamp,
-		expiration: null, // not snoozed
-		name: item,
+	const embed = await watchNotificationBuilder({
+		item,
 		server,
 		price,
-	}]);
+		seller: seller || null,
+		fullAuction,
+		timestamp,
+	});
 
 	const directMessageChannel = await bot.users.createDM(user);
-	await collectButtonInteractions(null, { id: watchId }, directMessageChannel.id);
-	directMessageChannel.send(msg).catch(console.error);
+	// TODO: add block player button
+	const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'sellerBlock' }, { type: 'itemRefresh' }]);
+	console.log(embed);
+	directMessageChannel.send({ embeds: embed, components: [btnRow] })
+	.then(async (message) => {
+		console.log(message);
+		await collectButtonInteractions(null, { id: watchId, player: seller }, message);
+	})
+	.catch(console.error);
 }
 
-function streamAuction(auction_user, auction_contents, server) {
-	const channelID = settings.servers[server].stream_channel;
-	const classicChannelID = settings.servers[server].stream_channel_classic;
+async function streamAuction(auction_user, auction_contents, server) {
+	const channelId = settings.servers[server].stream_channel;
+	const classicChannelId = settings.servers[server].stream_channel_classic;
 	const rawAuction = `\`\`\`\n${auction_user} auctions, \'${auction_contents}\'\`\`\``;
 
-	fetchAndFormatAuctionData(auction_user, auction_contents, server).then(formattedAuctionMessage => {
-		bot.channels.fetch(channelID.toString())
-			.then((channel) => {
-				channel.send(formattedAuctionMessage);
-			})
-			.catch(console.error);
+	await fetchAndFormatAuctionData(auction_user, auction_contents, server).then(async formattedAuctionMessage => {
+		const streamChannel = await bot.channels.fetch(channelId);
+		streamChannel.send({ embeds: [formattedAuctionMessage] });
+		await bot.channels.fetch(channelId.toString());
 	}).catch(console.error);
 
-	bot.channels.fetch(classicChannelID.toString())
-		.then((channel) => {
-			channel.send(rawAuction);
+	await bot.channels.fetch(classicChannelId.toString())
+		.then(async (channel) => {
+			await channel.send(rawAuction);
 		})
 		.catch(console.error);
 }
