@@ -52,8 +52,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await i.update({ content: 'All watches extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 						})
 						.catch(async (err) => {
-							console.error(err);
-							return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+							return await gracefulError(i, err)
 						});
 			case 'globalSnooze':
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
@@ -70,8 +69,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 											return await i.update({ content: 'All watches unsnoozed.', embeds: updatedMsg, components: [btnRow] });
 										})
 										.catch(async (err) => {
-											console.error(err);
-											return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+											return await gracefulError(i, err)
 										});
 							}
 							return await db.snooze('global', interaction.user.id)
@@ -81,8 +79,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 										return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 									})
 									.catch(async (err) => {
-										console.error(err);
-										return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+										return await gracefulError(i, err)
 									});
 						});
 
@@ -99,9 +96,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
-												console.error(err);
-												return await i.update({ content: 'Sorry, an error occurred.', components: [] });
-											});
+												return await gracefulError(i, err)						});
 									}
 									// if not already snoozed, snooze
 									return await db.snooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
@@ -112,9 +107,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
-												console.error(err);
-												return await i.update({ content: 'Sorry, an error occurred.', components: [] });
-											});
+												return await gracefulError(i, err)						});
 								});
 
 
@@ -127,8 +120,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 					})
 					.catch(async (err) => {
-						console.error(err);
-						return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+						return await gracefulError(i, err)
 					});
 			case 'unwatch':
 				//first get status to determine if unwatching or undoing an unwatch button command
@@ -146,22 +138,19 @@ async function collectButtonInteractions(interaction, metadata, message) {
 
 							})
 							.catch(async (err) => {
-								console.error(err);
-								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
-							});
+								return await gracefulError(i, err);
+						});
 						}
 						//otherwise watch is inactive, meaning a user is undoing a previous unwatch cmd
 						return await db.extendWatch(metadata.id)
 							.then(async (res) => {
 								const updatedMsg = await watchBuilder([res]);
-								const itemRefreshActive = isRefreshActive(res.datetime);
 								const btnRow = buttonBuilder([{ type: 'itemSnooze', active: res.snoozed }, { type: 'unwatch', active: !res.active }, { type: 'itemRefresh' }]);
 								return await i.update({ content: 'This watch has been extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 
 							})
 							.catch(async (err) => {
-								console.error(err);
-								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+								return await gracefulError(i, err);
 							});
 					})
 					case 'globalUnblock':
@@ -174,8 +163,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed`, embeds: [], components: [] });
 							})
 							.catch(async (err) => {
-								console.error(err);
-								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+								return await gracefulError(i, err);
 							});
 					case 'sellerBlock':
 						return await db.blockSellerByWatchId(metadata.id, metadata.player)
@@ -183,8 +171,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await i.update({ content: `Auctions from \`${formatCapitalCase(metadata.seller)}\` have been blocked for this watch.` });
 							})
 							.catch(async (err) => {
-								console.error(err);
-								return await i.update({ content: 'Sorry, an error occurred.', components: [] });
+								return await gracefulError(i, err);
 							});
 			default:
 				return null;

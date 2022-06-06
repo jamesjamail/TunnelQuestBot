@@ -549,4 +549,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, unsnoozeByItemName, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, unsnoozeByItemName, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, blockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };
