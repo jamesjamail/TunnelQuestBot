@@ -26,9 +26,9 @@ const MessageType = {
 //TODO: cases for each button id should be handled in separate files (cleanup)
 async function collectButtonInteractions(interaction, metadata, message) {
 	// some messages aren't interactions
-	if (interaction && interaction.replied) {
-		return;
-	}
+	// if (interaction && interaction.replied) {
+	// 	return;
+	// }
 	
 	//filter button interactions to the interaction they are attached to
 	const filter = input => {
@@ -52,7 +52,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await i.update({ content: 'All watches extended another 7 days!', embeds: updatedMsg, components: [btnRow] });
 						})
 						.catch(async (err) => {
-							return await gracefulError(i, err)
+							return await gracefulError(i, err);
 						});
 			case 'globalSnooze':
 				// use listWatches to check global_snooze state (state may have changed since issuing command)
@@ -92,22 +92,36 @@ async function collectButtonInteractions(interaction, metadata, message) {
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
 												const itemRefreshActive = isRefreshActive(res.datetime);
-												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												const buttonConfig = metadata.seller ? //if there is a seller property, it's a watch notification and not watch result
+													// include block seller button for watch notifications
+													[{ type: 'itemSnooze', active: watch.itemSnooze }, { type: 'unwatch', }, {type: 'watchBlock'}, { type: 'itemRefresh' }]
+													:
+													[{ type: 'itemSnooze', active: watch.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]
+
+												const btnRow = buttonBuilder();
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
-												return await gracefulError(i, err)						});
+												return await gracefulError(i, err)
+											});
 									}
 									// if not already snoozed, snooze
 									return await db.snooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
 										.then(async (res) => {
 												const updatedMsg = await watchBuilder([res]);
 												const itemRefreshActive = isRefreshActive(res.datetime);
-												const btnRow = buttonBuilder([{ type: 'itemSnooze', active: true }, { type: 'unwatch', }, { type: 'itemRefresh', active: itemRefreshActive }]);
+												const buttonConfig = metadata.seller ? //if there is a seller property, it's a watch notification and not watch result
+													// include block seller button for watch notifications
+													[{ type: 'itemSnooze', active: true }, { type: 'unwatch', }, {type: 'watchBlock'},{ type: 'itemRefresh', active: itemRefreshActive }]
+													:
+													[{ type: 'itemSnooze', active: true }, { type: 'unwatch', }, { type: 'itemRefresh', active: itemRefreshActive }]
+
+												const btnRow = buttonBuilder(buttonConfig);
 												return await i.update({ content: 'All watches snoozed for 6 hours.', embeds: updatedMsg, components: [btnRow] });
 											})
 											.catch(async (err) => {
-												return await gracefulError(i, err)						});
+												return await gracefulError(i, err)
+											});
 								});
 
 
@@ -160,19 +174,59 @@ async function collectButtonInteractions(interaction, metadata, message) {
 						// column in the table like we do for watches, let's just delete the message.
 						return await db.unblockSellerGlobally(interaction.user.id, metadata.seller)
 							.then(async () => {
-								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed`, embeds: [], components: [] });
+								return await i.update({ content: `The block on \`${metadata.seller}\` has been removed.`, embeds: [], components: [] });
 							})
 							.catch(async (err) => {
 								return await gracefulError(i, err);
 							});
-					case 'sellerBlock':
-						return await db.blockSellerByWatchId(metadata.id, metadata.player)
-							.then(async () => {
-								return await i.update({ content: `Auctions from \`${formatCapitalCase(metadata.seller)}\` have been blocked for this watch.` });
+					case 'watchUnblock':
+						console.log('watchUnblock', metadata)
+						return await db.unblockSellerByWatchId(metadata.id)
+						.then(async () => {
+							return await i.update({ content: `The block on \`${metadata.seller}\` for this watch has been removed.` });
+						})
+						.catch(async (err) => {
+							return await gracefulError(i, err);
+						});
+					case 'watchBlock':
+						// TODO: should be able to unblock a seller
+						return await db.showBlocks(interaction.user.id, metadata.seller)
+							.then((blocks) => {
+								if (blocks.watch_blocks.length > 0) {
+									blocks.watch_blocks.forEach(async (block) => {
+										if (block.watch_id === metadata.id) {
+											//player is currently blocked
+											return await db.unblockSellerByWatchId(metadata.id, metadata.seller)
+											.then(async () => {
+												return await db.showWatchById(metadata.id)
+													.then(async (watch) => {
+														const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch.snoozed }, { type: 'unwatch', active: watch.active }, {type: 'watchBlock'}, { type: 'itemRefresh' }]);
+														return await i.update({ content: `Auctions from \`${formatCapitalCase(metadata.seller)}\` have been blocked for this watch.` , components: [btnRow]});
+													})
+
+											})
+											.catch(async (err) => {
+												return await gracefulError(i, err);
+											});
+										} else {
+											return await db.blockSellerByWatchId(metadata.id, metadata.seller)
+											.then(async () => {
+												return await db.showWatchById(metadata.id)
+													.then(async (watch) => {
+														// TODO: check snooze and unwatch status - don't assume
+														const btnRow = buttonBuilder([{ type: 'itemSnooze', active: watch.snoozed }, { type: 'unwatch', active: watch.active }, {type: 'watchBlock', active: true}, { type: 'itemRefresh' }]);
+														return await i.update({ content: `Auctions from \`${formatCapitalCase(metadata.seller)}\` have been blocked for this watch.` , components: [btnRow]});
+													})
+
+											})
+											.catch(async (err) => {
+												return await gracefulError(i, err);
+											});
+										}
+									})
+								}
 							})
-							.catch(async (err) => {
-								return await gracefulError(i, err);
-							});
+						
 			default:
 				return null;
 		}
@@ -294,34 +348,31 @@ async function watchNotificationBuilder({item, price, server, seller, fullAuctio
 }
 
 function blockBuilder(blocksToBuild) {
-	// const urls = await Promise.all(blocksToBuild.map(async (item) => {
-	// 	return await fetchImageUrl(item.name);
-	// }));
-
+	console.log('blocksToBuild = ', blocksToBuild)
 	const embeds = blocksToBuild.map((block, index) => {
 		const blocks = [];
 		// eventaully this will need to be refactored in order to run more than 2 servers
 		const server = block.server.length > 1 ? `All Servers` : `${formatCapitalCase(block.server[0])} Server` ;
 
-
-		blocks.push({
-			name: `${formatCapitalCase(block.seller)}`,
-			value: `${formatCapitalCase(server)}`,
-			inline: false,
-		});
-
-		// TODO: support watch blocks
-		// return ({
-		// 	name: `${formatCapitalCase(block.seller)} (${formatCapitalCase(block.server)})`,
-		// 	value: `\`${formatCapitalCase(block.name)}\` Watch`,
-		// 	inline: false,
-		// });
-
+		//name is item name - meaning it's a watch block
+		if (block.name) {
+			blocks.push({
+				name: `${formatCapitalCase(block.seller)}`,
+				value: `${formatCapitalCase(block.name)} | ` +` ${formatCapitalCase(block.server)} Server`,
+				inline: false,
+			});	
+		} else {
+			blocks.push({
+				name: `${formatCapitalCase(block.seller)}`,
+				value: `${formatCapitalCase(server)}`,
+				inline: false,
+			});
+		}
 
 		return new Discord.MessageEmbed()
 			.setColor(SERVER_COLOR[block.server])
 			.addFields(blocks)
-			.setTitle('Block')
+			.setTitle(block.name ? 'Watch Block' : 'Global Block')
 			.setFooter({ text: 'To remove this block, click ❌' });
 
 
@@ -365,10 +416,15 @@ function buttonBuilder(buttonTypes) {
 					.setCustomId('globalUnblock')
 					.setLabel('❌')
 					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
-			case 'sellerBlock':
+			case 'watchBlock':
 				return new MessageButton()
-					.setCustomId('sellerBlock')
+					.setCustomId('watchBlock')
 					.setLabel('🔕')
+					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
+			case 'watchUnblock':
+				return new MessageButton()
+					.setCustomId('watchUnblock')
+					.setLabel('❌')
 					.setStyle(button.active ? 'SUCCESS' : 'SECONDARY');
 			default:
 				return null;
@@ -388,7 +444,7 @@ function dedupeBlockResults(blockResults) {
 	})
 	return Object.keys(blockMap).map((dedupedBlock) => {
 		//just plucking the userId off the first result isn't great, but we'll
-		// user this command for multiple users
+		// never use this command for multiple users
 		return {user_id: blockResults[0].user_id, seller: dedupedBlock, server: blockMap[dedupedBlock]}
 	})
 }
@@ -414,9 +470,14 @@ async function sendMessagesToUser(interaction, userId, messages, components, met
 	const postedMessages = await Promise.all(messages.map(async (message, index) => {
 		return await user.send({ embeds: [message], components: [components[index]] })
 			.then(async (postedMessage) =>{
+				console.log('postedMessage ', postedMessage)
+				console.log('metadataItems[index] ', metadataItems[index])
+
 				return await collectButtonInteractions(interaction, metadataItems[index], postedMessage);
 			});
 		}));
+
+	console.log('postedMessages = ', postedMessages)
 
 	return postedMessages;
 }

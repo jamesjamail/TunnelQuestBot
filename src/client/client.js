@@ -4,7 +4,6 @@ const {
 	Client,
 	Intents,
 	Collection,
-	MessageEmbed,
 } = require('discord.js');
 const {
 	Routes,
@@ -18,14 +17,10 @@ const db = require('../db/db.js');
 const fs = require('fs');
 const path = require('path');
 const commandDir = path.join(__dirname, 'commands');
-const standardCommands = require('./executors.js');
 const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.js') && !file.includes('example'));
-const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing, SERVER_COLOR } = require('../utility/wikiHandler');
-const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js');
-const moment = require('moment');
-const wiki_url = require('../utility/data/items.json');
-const { embedReactions, MessageType, watchBuilder, sendMessagesToUser, collectButtonInteractions, watchNotificationBuilder, buttonBuilder } = require('./clientHelpers');
-const { helpMsg, welcomeMsg } = require('../content/messages');
+const { fetchAndFormatAuctionData } = require('../utility/wikiHandler');
+const { collectButtonInteractions, watchNotificationBuilder, buttonBuilder } = require('./clientHelpers');
+const { welcomeMsg } = require('../content/messages');
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
 	colorize: true,
@@ -146,13 +141,12 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 	});
 
 	const directMessageChannel = await bot.users.createDM(user);
-	// TODO: add block player button
-	const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'sellerBlock' }, { type: 'itemRefresh' }]);
+	const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'watchBlock' }, { type: 'itemRefresh' }]);
 	console.log(embed);
 	directMessageChannel.send({ embeds: embed, components: [btnRow] })
 	.then(async (message) => {
 		console.log(message);
-		await collectButtonInteractions(null, { id: watchId, player: seller }, message);
+		await collectButtonInteractions(null, { id: watchId, seller }, message);
 	})
 	.catch(console.error);
 }

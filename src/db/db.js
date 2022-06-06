@@ -353,7 +353,7 @@ async function showBlocks(user, seller) {
 				const queryStr = 'SELECT name AS user_id, seller, server FROM blocked_seller_by_user INNER JOIN users ON users.id = blocked_seller_by_user.user_id WHERE user_id = $1';
 				return await connection.query(queryStr, [userId])
 					.then(async (user_blocks) => {
-						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
+						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server, watches.id AS watch_id FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
 						return await connection.query(queryStr, [userId]).then((watch_blocks) => {
 							return Promise.resolve({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
 						});

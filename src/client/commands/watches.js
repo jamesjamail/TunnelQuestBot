@@ -31,10 +31,12 @@ module.exports = {
 				return buttonBuilder([{ type: 'itemSnooze', active: individualMetadata.snoozed }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
 			});
 
+			// after 3 seconds, slash commands cannot be replied to.  Workaround, reply before starting work, then edit the message on completion.
+			await interaction.reply('Working on it...')
 			// button interactions are collected from within function below
 			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {
-					return await interaction.reply('Done! Please check your direct messages for results.');
+					return await interaction.editReply('Done! Please check your direct messages for results.');
 				})
 				// TODO: handle error in response
 				.catch(console.error);

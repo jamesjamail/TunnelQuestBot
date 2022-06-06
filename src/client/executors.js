@@ -1,12 +1,6 @@
-const { helpMsg } = require('../content/messages');
 const db = require('../db/db.js');
-const { fetchAndFormatAuctionData, fetchImageUrl, fetchWikiPricing, SERVER_COLOR } = require('../utility/wikiHandler');
-const { formatCapitalCase, removeLogTimestamp } = require('../utility/utils.js');
-const Discord = require('discord.js');
 const moment = require('moment');
-const wiki_url = require('../utility/data/items.json');
-const sendMessagesToUser = require('./client');
-const { embedReactions, MessageType, watchBuilder, buildListResponse, buttonBuilder, blockBuilder, dedupeBlockResults } = require('./clientHelpers');
+const { watchBuilder, buildListResponse, blockBuilder, dedupeBlockResults } = require('./clientHelpers');
 
 //	the purpose of this file is to do the heavy lifting of the command execution.
 // 	this file combines discord and db commands
@@ -152,6 +146,7 @@ async function unblock(interaction) {
 }
 
 async function blocks(interaction) {
+	console.log('helloooo')
 	const args = interaction.options.data;
 	let filter = null;
 	if (args.length > 0) {
@@ -159,6 +154,7 @@ async function blocks(interaction) {
 	}
 	// get blocks from db
 	return await db.showBlocks(interaction.user.id, filter).then((res) => {
+		console.log('watch_blocks = ', res.watch_blocks)
 		if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
 			return ({ content: 'You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.' });
 		}

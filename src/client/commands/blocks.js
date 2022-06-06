@@ -11,6 +11,7 @@ module.exports = {
 	async execute(interaction) {
 		// NOTE: /blocks command responses is similar to /watches command
 		await blocks(interaction).then(async ({ embeds, metadata }) => {
+			console.log('blocks metadata = ', metadata)
 			// handle no results
 			if (!embeds || embeds.length < 1) {
 				const args = interaction.options.data;
@@ -21,19 +22,28 @@ module.exports = {
 				return await interaction.reply(noResultsMsg);
 			}
 
+			console.log('metadata = ', metadata)
 			// NOTE: metadata from blocks() is an array of metadataItems
-			const btnRows = metadata.map(() => {
-				// refresh should be inactive on blocks response, otherwise it's confusing
-				return buttonBuilder([{ type: 'globalUnblock', active: false }]);
+			const btnRows = metadata.map((singleMetadata) => {
+				// watch_id in metadata means its a watch block, not a global block
+				if (singleMetadata.watch_id) {
+					console.log('hello')
+					return buttonBuilder([{ type: 'watchUnblock', active: false }]);
+				} else {
+					return buttonBuilder([{ type: 'globalUnblock', active: false }]);
+				}
 			});
 
+			
+			// interaction can only be responded to within 3 seconds.  reply immediately and update once complete
+			await interaction.reply('Working on it...')
 			// button interactions are collected from within function below
 			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {
-					return await interaction.reply('Done! Please check your direct messages for results.');
+					return await interaction.editReply('Done! Please check your direct messages for results.');
 				});
 		}).catch(async (err) => {
-			return gracefulError(interaction, err);
+			return await gracefulError(interaction, err);
 		});
 	},
 };
