@@ -142,7 +142,6 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 
 	const directMessageChannel = await bot.users.createDM(user);
 	const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'watchBlock' }, { type: 'itemRefresh' }]);
-	console.log(embed);
 	directMessageChannel.send({ embeds: embed, components: [btnRow] })
 	.then(async (message) => {
 		console.log(message);

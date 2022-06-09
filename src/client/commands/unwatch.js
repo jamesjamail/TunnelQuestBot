@@ -27,6 +27,7 @@ module.exports = {
 	async execute(interaction) {
 		const command = interaction.options.getSubcommand();
 		const item = interaction.options.getString('item');
+		const server = interaction.options.getString('server');
 		// TODO: this switch should be moved to executors
 		switch (command) {
 		case 'watches':
@@ -41,8 +42,17 @@ module.exports = {
 		case 'item':
 			// unwatch item
 			return await unwatch(interaction)
-				.then(() => {
-					return interaction.reply('Your `' + item + '` watch has been removed.');
+				.then((res) => {
+					// handle to results
+					if (res.rowCount === 0) {
+						//message depends on if server argument specified
+						const args = interaction.options.data[0].options;
+						if (args.length > 1) {
+							return interaction.reply(`You don't have a watch for \`${item.toUpperCase()}\` on \`${server}\` server.`);
+						}
+						return interaction.reply(`You don't have a watch for \`${item.toUpperCase()}\`.`);
+					}
+					return interaction.reply('Your `' + item.toUpperCase() + '` watch has been removed.');
 				})
 				.catch(async (err) => {
 					return await gracefulError(interaction, err);

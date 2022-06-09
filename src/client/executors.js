@@ -1,6 +1,8 @@
 const db = require('../db/db.js');
 const moment = require('moment');
 const { watchBuilder, buildListResponse, blockBuilder, dedupeBlockResults } = require('./clientHelpers');
+const { formatCapitalCase } = require('../utility/utils.js');
+
 
 //	the purpose of this file is to do the heavy lifting of the command execution.
 // 	this file combines discord and db commands
@@ -43,7 +45,6 @@ async function watch(interaction) {
 async function unwatch(interaction) {
 	// does anything use this other than unwatch? careful because arguments are in a subcommand group
 	const args = interaction.options.data[0].options;
-	// TODO: if 0 rows affected, inform user "You don't have any watches for..."
 	if (args.length > 1) {
 		return await db.endWatch(interaction.user.id, args[0].value, args[1].value);
 	}
@@ -102,7 +103,7 @@ async function block(interaction) {
 			.then((res) => {
 				const embeds = blockBuilder([{ seller: args[0].value, server: [args[1].value] }]);
 				const metadata = res.user_blocks[0];
-				return Promise.resolve({ content: `No longer notifying you about auctions from ${args[0].value} on ${formatCapitalCase(args[1].value)} Server.`, embeds, metadata });
+				return Promise.resolve({ content: `No longer notifying you about auctions from \`${args[0].value}\` on \`${formatCapitalCase(args[1].value)}\` Server.`, embeds, metadata });
 			})
 			.catch((err) => {
 				return Promise.reject(err);
@@ -115,7 +116,7 @@ async function block(interaction) {
 				const embeds = blockBuilder([{ seller: args[0].value, server: ['GREEN', 'BLUE'] }]);
 				// TODO: handle this more elegantly that searching for blocks based on user/seller
 				const metadata = res.user_blocks[0];
-				return Promise.resolve({ content: `No longer notifying you about auctions from ${formatCapitalCase(args[0].value)} on either server.`, embeds, metadata });
+				return Promise.resolve({ content: `No longer notifying you about auctions from \`${formatCapitalCase(args[0].value)}\` on either server.`, embeds, metadata });
 			})
 			.catch((err) => {
 				return Promise.reject(err);
@@ -146,7 +147,6 @@ async function unblock(interaction) {
 }
 
 async function blocks(interaction) {
-	console.log('helloooo')
 	const args = interaction.options.data;
 	let filter = null;
 	if (args.length > 0) {
@@ -154,7 +154,6 @@ async function blocks(interaction) {
 	}
 	// get blocks from db
 	return await db.showBlocks(interaction.user.id, filter).then((res) => {
-		console.log('watch_blocks = ', res.watch_blocks)
 		if (res.user_blocks.length === 0 && res.watch_blocks.length === 0) {
 			return ({ content: 'You haven\'t blocked any sellers.  Use `!block seller, server` to block a seller on all watches, or react with the `🔕` emoji on a watch notification to block a seller only for a certain item.' });
 		}
@@ -215,11 +214,13 @@ async function unsnooze(interaction) {
 		// snooze watch
 		return await db.unsnoozeByItemName(interaction.user.id, item)
 			.then(async ({ results, metadata }) => {
+				// TODO: it's possible a user could have items on both servers - handle this edge case more gracefully
 				if (!results || results.length < 1) {
 					return Promise.resolve({ content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` });
 				}
 				const embeds = await watchBuilder([results]);
-				return Promise.resolve({ content: 'Your `' + item + '` watch has been un	snoozed.', embeds, metadata });
+				// TODO: inform user if their watch wasn't snoozed to begin with and still respond with watch embed
+				return Promise.resolve({ content: 'Your `' + item + '` watch has been unsnoozed.', embeds, metadata });
 			})
 			.catch((err) => {
 				Promise.reject(err);

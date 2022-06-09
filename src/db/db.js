@@ -140,7 +140,7 @@ async function endWatch(user, item, server, watchId) {
 	else {
 		return await findOrAddUser(user)
 			.then(async (userId) => {
-				await findOrAddItem(item)
+				return await findOrAddItem(item)
 					.then(async (itemId) => {
 						if (server) {
 							const queryStr = 'UPDATE watches SET active = false WHERE user_id = $1 AND item_id = $2 AND server = $3;';

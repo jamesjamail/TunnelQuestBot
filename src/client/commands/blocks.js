@@ -11,7 +11,6 @@ module.exports = {
 	async execute(interaction) {
 		// NOTE: /blocks command responses is similar to /watches command
 		await blocks(interaction).then(async ({ embeds, metadata }) => {
-			console.log('blocks metadata = ', metadata)
 			// handle no results
 			if (!embeds || embeds.length < 1) {
 				const args = interaction.options.data;
@@ -22,12 +21,10 @@ module.exports = {
 				return await interaction.reply(noResultsMsg);
 			}
 
-			console.log('metadata = ', metadata)
 			// NOTE: metadata from blocks() is an array of metadataItems
 			const btnRows = metadata.map((singleMetadata) => {
 				// watch_id in metadata means its a watch block, not a global block
 				if (singleMetadata.watch_id) {
-					console.log('hello')
 					return buttonBuilder([{ type: 'watchUnblock', active: false }]);
 				} else {
 					return buttonBuilder([{ type: 'globalUnblock', active: false }]);

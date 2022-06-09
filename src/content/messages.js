@@ -18,9 +18,9 @@ const helpMsg = '\n\n' +
     '**/watches `search filter`**\n' +
     '> Returns every watch as an individual message. An optional search term can be specified.  For example:\n `/watches belt of` returns all watches containing \"belt of\".\n\n' +
     '**/list**\n' +
-    '> Lists details for all watches, account-wide blocks and snoozes in a concise message.\n\n' +
+    '> Lists details for all watches in a concise message.\n\n' +
     '**/block `seller` `server`**\n' +
-    '>  Blocks a seller from triggering any watch notifications.  `server` is optional- if omitted the seller will be blocked on both servers.\n\n' +
+    '>  Blocks a seller from triggering any watch notifications.  `server` is optional; if omitted, the seller will be blocked on both servers.\n\n' +
     '**/blocks `search filter`**\n' +
     '> Returns every block as an individual message. An optional search term can be specified for the player name.\n\n' +
     '**/unblock `seller` `server`**\n' +
