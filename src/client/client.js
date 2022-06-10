@@ -40,14 +40,6 @@ bot.on('ready', () => {
 	logger.info(`Logged in as ${bot.user.tag}!`);
 });
 
-bot.commands = new Collection();
-const commands = [];
-for (const file of commandFiles) {
-	const command = require(`./commands/${file}`);
-	commands.push(command.data.toJSON());
-	bot.commands.set(command.data.name, command);
-}
-
 // Don't get burned by testing development with global commands!
 //
 // Global commands are cached for one hour. New global commands will fan out
@@ -55,12 +47,23 @@ for (const file of commandFiles) {
 // hour. Guild commands update instantly. As such, we recommend you use guild-based
 // commands during development and publish them to global commands when they're
 // ready for public use.
+bot.commands = new Collection();
+const commands = [];
+for (const file of commandFiles) {
+	const command = require(`./commands/${file}`);
+	commands.push(command.data.toJSON());
+	bot.commands.set(command.data.name, command);
+	//	if running in production, register commands globally as well
+	if (process.env.NODE_ENV === 'production') {
+		bot.application.commands.set(command.data.name, command);
+	}
+}
+
+
 
 // TODO: dont forget to upgrade node to 14 and npm install, as well as adjust discord permissions for application commands
 
 // When the client is ready, run this code (only once)
-
-// TODO: can a pinned embedded message with a select for WTS/WTB, server preference, etc to allow for easier command syntax and results?
 bot.once('ready', () => {
 	console.log('Ready!');
 	// Registering the commands in the client
