@@ -23,8 +23,6 @@ module.exports = {
 				.addStringOption(option => option.setName('item').setDescription('item name').setRequired(true))
 				.addStringOption(option => option.setName('server').setDescription('optionally specify a server - defaults to both servers').addChoices([['blue server', 'BLUE'], ['green server', 'GREEN']])),
 		),
-	// TODO: accept hours as an optional argument
-
 	async execute(interaction) {
 		await unsnooze(interaction)
 			.then(async ({ content, embeds, metadata }) => {

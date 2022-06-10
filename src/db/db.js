@@ -325,7 +325,7 @@ async function blockSellerGlobally(user, seller, server) {
 
 async function unblockSellerByWatchId(seller, watchId) {
 	const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2;';
-	return await connection.query(queryStr, [seller, watchId]).catch(console.error)
+	return await connection.query(queryStr, [seller.toUpperCase(), watchId]).catch(console.error)
 		.catch((err) => {
 			return Promise.reject(err);
 		});
@@ -335,13 +335,43 @@ async function unblockSellerGlobally(user, seller, server) {
 	return await findOrAddUser(user).then(async (userId) => {
 		if (server) {
 			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2 AND server = $3;';
-			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()]);
-			// TODO: should this command also remove blocked_sellers_by_watch?
-			// will need to separate use cases with button interactions vs true commands
+			return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()])
+			// Also unblock any watch blocks for said user
+				.then(async (globalBlockRes) => {
+					const queryStr = 'DELETE FROM blocked_seller_by_watch INNER JOIN watches ON watches.id = blocked_seller_by_watch.watch_id WHERE seller = $1 AND watches.user_id = $2 AND watches.server = $3;';
+					return await connection.query(queryStr, [seller.toUpperCase(), userId, server.toUpperCase()]).catch(console.error)
+						.then((watchBlockRes) => {
+							//	if either globalBlock or watchBlock affected rows, return that rowCount
+							if (globalBlockRes.rowCount > 0) {
+								return Promise.resolve(globalBlockRes);
+							}
+							if (watchBlockRes.rowCount > 0) {
+								return Promise.resolve(watchBlockRes);
+							}
+							// if niether had any impact, return either one (currently res.rowCount is the only property that matters on the return)
+							return Promise.resolve(globalBlockRes);
+						});
+				});
 		}
 		else {
 			const queryStr = 'DELETE FROM blocked_seller_by_user WHERE seller = $1 AND user_id = $2;';
-			return await connection.query(queryStr, [seller.toUpperCase(), userId]);
+			return await connection.query(queryStr, [seller.toUpperCase(), userId])
+				// Also unblock any watch blocks for said user
+				.then(async (globalBlockRes) => {
+					const queryStr = 'DELETE FROM blocked_seller_by_watch INNER JOIN watches ON watches.id = blocked_seller_by_watch.watch_id WHERE seller = $1 AND watches.user_id = $2;';
+					return await connection.query(queryStr, [seller.toUpperCase(), userId]).catch(console.error)
+						.then((watchBlockRes) => {
+							//	if either globalBlock or watchBlock affected rows, return that rowCount
+							if (globalBlockRes.rowCount > 0) {
+								return Promise.resolve(globalBlockRes);
+							}
+							if (watchBlockRes.rowCount > 0) {
+								return Promise.resolve(watchBlockRes);
+							}
+							// if niether had any impact, return either one (currently res.rowCount is the only property that matters on the return)
+							return Promise.resolve(globalBlockRes);
+						});
+				});
 		}
 	}).catch((err) => Promise.reject(err));
 }
@@ -396,12 +426,24 @@ async function snoozeByItemName(discordId, itemName, hours = 6) {
 		});
 }
 
-async function unsnoozeByItemName(discordId, itemName) {
+async function unsnoozeByItemName(discordId, itemName, server) {
 	// find the watch based on item name
 	return await findOrAddUser(discordId)
 		.then(async (userId) => {
 			return await findOrAddItem(itemName)
 				.then(async (itemId) => {
+					if (server) {
+						// TODO: instead of limiting 1 below, handle edge case of the same item watched under both servers
+						const queryStr = 'SELECT id FROM watches WHERE watches.user_id = $1 AND watches.item_id = $2 AND watches.server = $3 AND active = TRUE LIMIT 1';
+						return await connection.query(queryStr, [userId, itemId, server.toUpperCase()]).then(async ({ rows }) => {
+							if (!rows || rows.length < 1) {
+								return Promise.resolve({ rows });
+							}
+							return await unsnooze('ITEM', rows[0].id).then((results) => {
+								return Promise.resolve({ results, metadata: { id: rows[0].id, itemSnooze: false, active: true } });
+							});
+						});
+					}
 					// TODO: instead of limiting 1 below, handle edge case of the same item watched under both servers
 					const queryStr = 'SELECT id FROM watches WHERE watches.user_id = $1 AND watches.item_id = $2 AND active = TRUE LIMIT 1';
 					return await connection.query(queryStr, [userId, itemId]).then(async ({ rows }) => {

@@ -129,7 +129,7 @@ async function unblock(interaction) {
 	// if user specified a server, only unblock seller on that server
 	if (args && args.length > 1) {
 		return await db.unblockSellerGlobally(interaction.user.id, args[0].value, args[1].value).then((res) => {
-			// no rows effected means they didn't have a watch
+			// no rows effected means they didn't have a block
 			if (res.rowCount === 0) {
 				return Promise.resolve({ content: `You don't have any blocks for ${formatCapitalCase(args[0].value)} on ${formatCapitalCase(args[1].value)} server.` });
 			}
@@ -167,7 +167,7 @@ async function blocks(interaction) {
 async function snooze(interaction) {
 	const command = interaction.options.getSubcommand();
 	const item = interaction.options.getString('item');
-	// TODO: also get server if supplied
+	const hours = interaction.options.getString('hours') || 6;
 	switch (command) {
 	case 'watches':
 		// snooze all
@@ -180,7 +180,7 @@ async function snooze(interaction) {
 			});
 	case 'watch':
 		// snooze watch
-		return await db.snoozeByItemName(interaction.user.id, item)
+		return await db.snoozeByItemName(interaction.user.id, item, hours)
 			.then(async ({ results, metadata }) => {
 				if (!results || results.length < 1) {
 					return { content: `You don't have any watches for ${item}. Confirm watches with \`/list.\`` };
@@ -199,6 +199,8 @@ async function snooze(interaction) {
 async function unsnooze(interaction) {
 	const command = interaction.options.getSubcommand();
 	const item = interaction.options.getString('item');
+	const server = interaction.options.getString('server');
+
 	// TODO: accept server argument
 	switch (command) {
 	case 'watches':
@@ -212,7 +214,7 @@ async function unsnooze(interaction) {
 			});
 	case 'watch':
 		// snooze watch
-		return await db.unsnoozeByItemName(interaction.user.id, item)
+		return await db.unsnoozeByItemName(interaction.user.id, item, server)
 			.then(async ({ results, metadata }) => {
 				// TODO: it's possible a user could have items on both servers - handle this edge case more gracefully
 				if (!results || results.length < 1) {

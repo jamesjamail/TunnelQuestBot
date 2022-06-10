@@ -162,7 +162,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							});
 					})
 					case 'globalUnblock':
-						//for watches we give the users the ability to undo an unwatch button press.
+						// for watches we give the users the ability to undo an unwatch button press.
 						// this is useful for misclicks
 						// however because /blocks is used so rarely, and the fact that we don't have an active
 						// column in the table like we do for watches, let's just delete the message.

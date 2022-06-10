@@ -21,11 +21,9 @@ module.exports = {
 				.setName('watch')
 				.setDescription('item you wish to snooze')
 				.addStringOption(option => option.setName('item').setDescription('item name').setRequired(true))
-				.addStringOption(option => option.setName('server').setDescription('optionally specify a server - defaults to both servers').addChoices([['blue server', 'BLUE'], ['green server', 'GREEN']])),
+				.addStringOption(option => option.setName('server').setDescription('optionally specify a server - defaults to both servers').addChoices([['blue server', 'BLUE'], ['green server', 'GREEN']]))
+				.addNumberOption(option => option.setName('hours').setDescription('optionally specify hours to snooze for - defaults to 6 hours')),
 		),
-
-	// TODO: accept hours as an optional argument
-
 	async execute(interaction) {
 		await snooze(interaction)
 			.then(async ({ content, embeds, metadata }) => {
