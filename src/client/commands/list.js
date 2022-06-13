@@ -13,8 +13,11 @@ module.exports = {
 					return await interaction.reply('You don\'t have any watches. Add some with `/watch`.');
 				}
 				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh' }]);
+				await interaction.reply({ embeds, components: [btnRow] })
+					.then((msg) => {
+						console.log('msg = ', msg)
+					})
 				await collectButtonInteractions(interaction, metadata);
-				return await interaction.reply({ embeds, components: [btnRow] });
 			})
 			.catch((err) => {
 				gracefulError(interaction, err);

@@ -19,8 +19,9 @@ module.exports = {
 			.then(async ({ embeds, metadata }) => {
                 // metadata is used for button state and registering listeners on buttons 
 				const btnRow = buttonBuilder([{ type: 'itemSnooze', active: metadata?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
-				await collectButtonInteractions(interaction, metadata);
 				await interaction.reply({ embeds, components: [btnRow] });
+				// make sure you reply before collecting button interactions
+				await collectButtonInteractions(interaction, metadata);
 			})
 			.catch(async (err) => {
 				await interaction.reply(err.message);

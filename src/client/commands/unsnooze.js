@@ -29,8 +29,8 @@ module.exports = {
 				if (embeds && embeds.length > 0) {
 					const components =
                         [buttonBuilder([{ type: 'itemSnooze', active: false }, { type: 'unwatch', active: false }, { type: 'itemRefresh' }])];
-					await collectButtonInteractions(interaction, metadata);
-					return await interaction.reply({ content, embeds, components });
+						await interaction.reply({ content, embeds, components });
+						return await collectButtonInteractions(interaction, metadata);
 				}
 				return await interaction.reply({ content });
 

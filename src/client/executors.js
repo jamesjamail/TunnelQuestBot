@@ -13,7 +13,7 @@ async function watch(interaction) {
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value, args[2].value)
 			.then(async (res) => {
 				const metadata = {
-					id: res.id, itemSnooze: res.snoozed, globalRefreshActive: false,
+					id: res.id, itemSnooze: res.snoozed,
 				};
 				const embeds = await watchBuilder([{ name: args[0].value, server: args[1].value, price:args[2].value, datetime: Date.now() }]).catch(console.error);
 				return Promise.resolve({ embeds, metadata });
@@ -29,7 +29,7 @@ async function watch(interaction) {
 		return await db.addWatch(interaction.user.id, args[0].value, args[1].value)
 			.then(async (res) => {
 				const metadata = {
-					id: res.id, itemSnooze: res.snoozed, globalRefreshActive: false,
+					id: res.id, itemSnooze: res.snoozed,
 				};
 				const embeds = await watchBuilder([{ name: args[0].value, server: args[1].value, price: -1, datetime: Date.now() }]).catch(console.error);
 				return Promise.resolve({ embeds, metadata });
@@ -81,13 +81,9 @@ async function list(interaction) {
 				return Promise.resolve({ embeds: [] });
 			}
 			const embeds = buildListResponse(res);
-			// let's consider refresh button "activated" if pressed within last minute
-			const created = moment(res[0].datetime).add(0, 'second');
-			const oneMinAgo = moment().subtract('1', 'minute');
-			const globalRefreshActive = created.isAfter(oneMinAgo);
 			return Promise.resolve({
 				// only pass thru relevant data
-				embeds, metadata: { watch_id: res[0].id, globalSnooze: res[0].global_snooze, globalRefreshActive },
+				embeds, metadata: { watch_id: res[0].id, globalSnooze: res[0].global_snooze },
 			});
 		})
 		.catch((err) => {

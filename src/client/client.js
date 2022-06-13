@@ -27,8 +27,8 @@ logger.add(new logger.transports.Console, {
 });
 logger.level = 'debug';
 
-// Initialize Discord Client
-const bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_MESSAGES] });
+// Initialize Discord Client - this "partials" array below is required for Direct Messages to trigger messageCreate events.  Not documented much in discordjs docs.
+const bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.GUILD_MESSAGES], partials: ["CHANNEL"]  });
 const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
 const COMMAND_CHANNEL = settings.discord.command_channel;
@@ -53,13 +53,7 @@ for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	commands.push(command.data.toJSON());
 	bot.commands.set(command.data.name, command);
-	//	if running in production, register commands globally as well
-	if (process.env.NODE_ENV === 'production') {
-		bot.application.commands.set(command.data.name, command);
-	}
 }
-
-
 
 // TODO: dont forget to upgrade node to 14 and npm install, as well as adjust discord permissions for application commands
 
@@ -73,12 +67,22 @@ bot.once('ready', () => {
 	}).setToken(TOKEN);
 	(async () => {
 		try {
-			await rest.put(
-				Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-					body: commands,
-				},
-			);
-			console.log('Successfully registered guild application commands');
+			// global commands have a delay before syncing - only use for production
+			if (process.env.NODE_ENV.trim() === 'production') {
+				await rest.put(
+					Routes.applicationCommands(CLIENT_ID), {
+						body: commands,
+					},
+				);
+				console.log('Successfully registered application commands');
+			} else {
+				await rest.put(
+					Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
+						body: commands,
+					},
+				);
+				console.log('Successfully registered guild commands');
+			}
 		}
  catch (error) {
 			if (error) console.error(JSON.stringify(error.rawError.errors));
@@ -114,7 +118,7 @@ bot.on('messageCreate', async message => {
 		}
 	}
 	// inform user about slash commands if DM or public command space message
-	else if (!message.author.bot && message.channelId === COMMAND_CHANNEL || message.channel.type === 'dm') {
+	else if (!message.author.bot && (message.channelId === COMMAND_CHANNEL || message.channel.type === 'DM')) {
 		await message.reply('I respond to slash commmands.  Type `/` to get started.').catch(console.error);
 	}
 });
@@ -133,7 +137,7 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 	if (!validity) return;
 	await db.postSuccessfulCommunication(watchId, seller);
 
-	// TODO: watch notifications have different fields from watch results
+	// 	watch notifications have different fields from watch results
 	const embed = await watchNotificationBuilder({
 		item,
 		server,
@@ -144,11 +148,19 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 	});
 
 	const directMessageChannel = await bot.users.createDM(user);
-	const btnRow = buttonBuilder([{ type: 'itemSnooze' }, { type: 'unwatch' }, { type: 'watchBlock' }, { type: 'itemRefresh' }]);
+	const btnRow = buttonBuilder([{ type: 'watchNotificationSnooze' }, { type: 'watchNotificationUnwatch' }, { type: 'watchBlock' }, { type: 'watchNotificationWatchRefresh' }]);
 	directMessageChannel.send({ embeds: embed, components: [btnRow] })
 	.then(async (message) => {
-		console.log(message);
-		await collectButtonInteractions(null, { id: watchId, seller }, message);
+			// Sorry about this monstronsity...ideally there should be separate collectors for interactions and messages, however right now
+			// its a monolith in clientHelpers.  All we need is the userId and id from the interaction, so let's just fake it for now
+		// console.log('msg', message, ' seller = ', seller)
+		const interaction = {
+			id: message.id,
+			user: {
+				id: user
+			}
+		}
+		await collectButtonInteractions(interaction, { id: watchId, seller }, message);
 	})
 	.catch(console.error);
 }
