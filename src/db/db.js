@@ -323,7 +323,7 @@ async function blockSellerGlobally(user, seller, server) {
 	});
 }
 
-async function unblockSellerByWatchId(seller, watchId) {
+async function unblockSellerByWatchId(watchId, seller) {
 	const queryStr = 'DELETE FROM blocked_seller_by_watch WHERE seller = $1 AND watch_id = $2;';
 	return await connection.query(queryStr, [seller.toUpperCase(), watchId]).catch(console.error)
 		.catch((err) => {
@@ -358,7 +358,7 @@ async function unblockSellerGlobally(user, seller, server) {
 			return await connection.query(queryStr, [seller.toUpperCase(), userId])
 				// Also unblock any watch blocks for said user
 				.then(async (globalBlockRes) => {
-					const queryStr = 'DELETE FROM blocked_seller_by_watch INNER JOIN watches ON watches.id = blocked_seller_by_watch.watch_id WHERE seller = $1 AND watches.user_id = $2;';
+					const queryStr = 'DELETE FROM blocked_seller_by_watch using watches WHERE watches.id = blocked_seller_by_watch.watch_id AND seller = $1 AND watches.user_id = $2;';
 					return await connection.query(queryStr, [seller.toUpperCase(), userId]).catch(console.error)
 						.then((watchBlockRes) => {
 							//	if either globalBlock or watchBlock affected rows, return that rowCount
@@ -383,7 +383,9 @@ async function showBlocks(user, seller) {
 				const queryStr = 'SELECT name AS user_id, seller, server FROM blocked_seller_by_user INNER JOIN users ON users.id = blocked_seller_by_user.user_id WHERE user_id = $1';
 				return await connection.query(queryStr, [userId])
 					.then(async (user_blocks) => {
-						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server, watches.id AS watch_id FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1';
+						// I'm not sure whether to only show watch blocks for active watches.  I think deleting watch blocks on /unwatch is bad because we allow users to "turn back on watches" after unwatching via button/
+						// Can show them all I suppose, but they might not be relevant to the user if the watch isn't active.
+						const queryStr = 'SELECT seller, server, items.name, watches.server as item_server, watches.id AS watch_id FROM blocked_seller_by_watch INNER JOIN watches ON blocked_seller_by_watch.watch_id = watches.id INNER JOIN items ON items.id = watches.item_id WHERE user_id = $1 AND watches.active = TRUE';
 						return await connection.query(queryStr, [userId]).then((watch_blocks) => {
 							return Promise.resolve({ user_blocks: user_blocks.rows, watch_blocks: watch_blocks.rows });
 						});
@@ -516,6 +518,18 @@ async function unsnooze(type, id) {
 	}
 }
 
+const isBlockedSellerActive = async (watchId, seller) => {
+	const queryStr = 'SELECT id FROM blocked_seller_by_watch WHERE watch_id = $1 AND seller = $2';
+	return await connection.query(queryStr, [watchId, seller.toUpperCase()])
+		.then((res) => {
+			if (res.rows.length > 0) {
+				return Promise.resolve(true);
+			}
+			return Promise.resolve(false);
+		})
+		.catch(console.error)
+}
+
 async function postSuccessfulCommunication(watchId, seller) {
 	const queryStr = 'INSERT INTO communication_history (watch_id, seller, timestamp) VALUES ($1, $2, now()) ON CONFLICT ON CONSTRAINT communication_history_watch_id_seller_key DO UPDATE SET timestamp = now();';
 	await connection.query(queryStr, [watchId, seller.toUpperCase()]).catch(console.error);
@@ -591,4 +605,4 @@ function upkeep() {
 		.catch(console.error);
 }
 
-module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, unsnoozeByItemName, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, blockSellerByWatchId, showBlocks, validateWatchNotification, upkeep };
+module.exports = { addWatch, endWatch, endAllWatches, extendWatch, extendAllWatches, showWatch, showWatchById, listWatches, snooze, snoozeByItemName, unsnooze, unsnoozeByItemName, getWatches, postSuccessfulCommunication, blockSellerGlobally, unblockSellerGlobally, unblockSellerByWatchId, blockSellerByWatchId, showBlocks, isBlockedSellerActive, validateWatchNotification, upkeep };
