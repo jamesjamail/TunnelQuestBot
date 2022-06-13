@@ -14,10 +14,7 @@ module.exports = {
 				}
 				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh' }]);
 				await interaction.reply({ embeds, components: [btnRow] })
-					.then((msg) => {
-						console.log('msg = ', msg)
-					})
-				await collectButtonInteractions(interaction, metadata);
+				return await collectButtonInteractions(interaction, metadata);
 			})
 			.catch((err) => {
 				gracefulError(interaction, err);

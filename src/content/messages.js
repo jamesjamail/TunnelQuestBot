@@ -37,17 +37,19 @@ const helpMsg = '\n\n' +
     ' • To report a problem or request a feature, talk to us in ' + `<#${FEEDBACK_AND_IDEAS}>`;
 
 
-const welcomeMsg = 'I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
-    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can enter the following command as a direct message to me, or in ' + `<#${COMMAND_CHANNEL}>:\n\n` +
-    '\`!watch rusty bastard sword, green\`\n\n' +
+const welcomeMsg = 'Hello! I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
+    'I watch EC auctions on both Blue and Green servers. If you\'re in the market for a new sword, you can set up a watch with the \`/watch\` command.\n\n' +
+    'Commands can be entered in' + `<#${COMMAND_CHANNEL}>:\n\n` + 'or as a Direct Message to me.\n\n' +
+    'Let\'s say you\'re in the market for a weapon upgrade.\n\n' +
+    '\`/watch\` \`rusty bastard sword\` \`green server\`\n\n' +
     'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
-    '\`!watch rusty bastard sword, green, 5pp\`\n\n' +
+    '\`/watch\` \`rusty bastard sword\` \`green server\` \`5\`\n\n' +
     'Whenever I find a match, I\'ll send you a direct message with all the pertinent info.\n\n' +
     'Watches last 7 days before they expire, and can be renewed at any time.\n\n' +
-    'Most of the commands needed interact with watches are available through emoji reactions.\n\n\n' +
+    'Most responses feature buttons which trigger useful commands.\n\n\n' +
     'You can also check out our Tunnel Stream channels.\n\n' +
     'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data courtesy of the P1999 wiki.\n\n\n' +
-    'For more information, try the \`!help\` command.\n\n\n' +
+    'For more information, try the \`/help\` command.\n\n\n' +
     '**Welcome to the server!**';
 
 module.exports = { helpMsg, welcomeMsg };

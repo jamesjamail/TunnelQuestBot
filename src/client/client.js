@@ -153,7 +153,6 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 	.then(async (message) => {
 			// Sorry about this monstronsity...ideally there should be separate collectors for interactions and messages, however right now
 			// its a monolith in clientHelpers.  All we need is the userId and id from the interaction, so let's just fake it for now
-		// console.log('msg', message, ' seller = ', seller)
 		const interaction = {
 			id: message.id,
 			user: {

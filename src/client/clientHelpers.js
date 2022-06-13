@@ -42,13 +42,9 @@ async function collectButtonInteractions(interaction, metadata, message) {
 		// One important difference to note with interaction collectors is that Discord expects a response to all interactions within 3 seconds -
 		// even ones that you don't want to collect. For this reason, you may wish to .deferUpdate() all interactions in your filter, or not use
 		// a filter at all and handle this behavior in the collect event.
-		console.log('i.user ', i.user)
 		if (!i.user.bot && i.user.id === interaction.user.id) {
-			console.log('customId = ', i.customId, ', i.id = ', i.id, ', interaction.id = ', interaction.id)
-			console.log(message ? 'created collector from message' : 'created collector from interaction.channel')
 			switch (i.customId) {
 				case 'globalRefresh':
-					console.log('globalRefresh')
 					return await db.extendAllWatches(interaction.user.id)
 						.then(async (res) => {
 								const updatedMsg = buildListResponse(res);
@@ -59,8 +55,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await gracefulError(i, err);
 							});
 				case 'globalSnooze':
-					console.log('globalSnooze')
-
 					// use listWatches to check global_snooze state (state may have changed since issuing command)
 					return await db.listWatches(interaction.user.id)
 							.then(async (res) => {
@@ -89,7 +83,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							});
 
 				case 'itemSnooze':
-					console.log('itemSnooze')
 					return await db.showWatchById(metadata.id)
 									.then(async (watch) => {
 										// if already snoozed, unsnooze
@@ -122,7 +115,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 												});
 									});
 				case 'itemRefresh':
-					console.log('itemRefresh')
 					return await db.extendWatch(metadata.id)
 					.then(async (res) => {
 							const updatedMsg = await watchBuilder([res]);
@@ -133,8 +125,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await gracefulError(i, err);
 						});
 				case 'unwatch':
-					console.log('unwatch')
-
 					// first get status to determine if unwatching or undoing an unwatch button command
 					return await db.showWatchById(metadata.id)
 						.then(async (watch) => {
@@ -166,8 +156,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								});
 						});
 						case 'globalUnblock':
-						console.log('globalUnblock')
-
 							// for watches we give the users the ability to undo an unwatch button press.
 							// this is useful for misclicks
 							// however because /blocks is used so rarely, and the fact that we don't have an active
@@ -180,8 +168,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 									return await gracefulError(i, err);
 								});
 						case 'watchUnblock':
-						console.log('watchUnblock')
-
 							return await db.unblockSellerByWatchId(metadata.watch_id, metadata.seller)
 							.then(async () => {
 								return await i.update({ content: `The block on \`${metadata.seller}\` for this watch has been removed.`, embeds: [] });
@@ -190,13 +176,9 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								return await gracefulError(i, err);
 							});
 						case 'watchBlock':
-						console.log('watchBlock')
-
 							// TODO: separate interaction and message collectors
-							console.log('watchBlock interaction', interaction);
 							return await db.showBlocks(interaction.user.id, metadata.seller)
 								.then(async (blocks) => {
-									console.log('blocks = ', blocks);
 									if (blocks.watch_blocks.length > 0) {
 										blocks.watch_blocks.forEach(async (block) => {
 											if (block.watch_id === metadata.id) {
@@ -231,17 +213,13 @@ async function collectButtonInteractions(interaction, metadata, message) {
 									}
 								});
 							case 'watchNotificationSnooze':
-								console.log('watchNotificationSnooze')
-
 								return await db.showWatchById(metadata.id)
 												.then(async (watch) => {
-													console.log('calling sellerblockactive fucnt', metadata)
 													const sellerBlockActive = await db.isBlockedSellerActive(metadata.id, metadata.seller);
 													// if already snoozed, unsnooze
 													if (watch.snoozed) { // careful, snoozed vs itemSnooze is ambiguously used
 														return await db.unsnooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
 														.then(async (res) => {
-															console.log('already snoozed res =  ', res);
 																// include block seller button for watch notifications
 																const buttonConfig = [{ type: 'watchNotificationSnooze' }, { type: 'watchNotificationUnwatch' }, { type: 'watchBlock', active: sellerBlockActive }, { type: 'watchNotificationWatchRefresh' }];
 																const btnRow = buttonBuilder(buttonConfig);
@@ -254,7 +232,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 													// if not already snoozed, snooze
 													return await db.snooze('item', metadata.id) // TODO: ensure db snoozes always return id and not watch_id/user_id
 														.then(async (res) => {
-															console.log('res =  ', res);
 															// include block seller button for watch notifications
 															const buttonConfig = [{ type: 'watchNotificationSnooze', active: true }, { type: 'watchNotificationUnwatch' }, { type: 'watchBlock', active: sellerBlockActive }, { type: 'watchNotificationWatchRefresh' }];
 																const btnRow = buttonBuilder(buttonConfig);
@@ -267,8 +244,6 @@ async function collectButtonInteractions(interaction, metadata, message) {
 												});
 
 				case 'watchNotificationUnwatch':
-					console.log('watchNotificationUnwatch')
-
 					// first get status to determine if unwatching or undoing an unwatch button command
 					return await db.showWatchById(metadata.id)
 						.then(async (watch) => {
@@ -301,13 +276,9 @@ async function collectButtonInteractions(interaction, metadata, message) {
 								});
 						});
 				case 'watchNotificationWatchRefresh':
-					console.log('watchNotificationWatchRefresh')
-
 					return await db.extendWatch(metadata.id)
 					.then(async (res) => {
-							console.log('metadata = ', metadata)
 							const sellerBlockActive = await db.isBlockedSellerActive(metadata.id, metadata.seller);
-							console.log('sellerBlockActive = ', sellerBlockActive)
 							const btnRow = buttonBuilder([{ type: 'watchNotificationSnooze', active: res.snoozed }, { type: 'watchNotificationUnwatch', active: !res.active }, { type: 'watchBlock', active: sellerBlockActive}, { type: 'watchNotificationWatchRefresh', active: true }]);
 							return await i.update({ content: 'This watch has been extended another 7 days!', components: [btnRow] });
 						})
@@ -315,12 +286,10 @@ async function collectButtonInteractions(interaction, metadata, message) {
 							return await gracefulError(i, err);
 						});
 				default:
-					console.log('default')
 					return null;
 			}
 		}
  else {
-	 console.log('wtf is this', i)
 			i.reply({ content: 'These buttons aren\'t for you!', ephemeral: true });
 		}
 	});
