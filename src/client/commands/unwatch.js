@@ -34,7 +34,7 @@ module.exports = {
 			// unwatch all
 			return await unwatchAll(interaction)
 				.then(async () => {
-					return await interaction.reply('All your watches have been removed.');
+					return await interaction.reply({content: 'All your watches have been removed.', ephemeral: true });
 				})
 				.catch(async (err) => {
 					return await gracefulError(interaction, err);
@@ -48,11 +48,11 @@ module.exports = {
 						//message depends on if server argument specified
 						const args = interaction.options.data[0].options;
 						if (args.length > 1) {
-							return interaction.reply(`You don't have a watch for \`${item.toUpperCase()}\` on \`${server}\` server.`);
+							return interaction.reply({content: `You don't have a watch for \`${item.toUpperCase()}\` on \`${server}\` server.`, ephemeral: true });
 						}
-						return interaction.reply(`You don't have a watch for \`${item.toUpperCase()}\`.`);
+						return interaction.reply({content: `You don't have a watch for \`${item.toUpperCase()}\`.`, ephemeral: true });
 					}
-					return interaction.reply('Your `' + item.toUpperCase() + '` watch has been removed.');
+					return interaction.reply({content: 'Your `' + item.toUpperCase() + '` watch has been removed.', ephemeral: true });
 				})
 				.catch(async (err) => {
 					return await gracefulError(interaction, err);

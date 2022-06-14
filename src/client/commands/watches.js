@@ -22,7 +22,7 @@ module.exports = {
 					'You don\'t have any watches.  Add some with \`/watch\`.'
 					:
 					'You don\'t have any watches that contain `' + args[0].value + '`.';
-				return await interaction.reply(noResultsMsg);
+				return await interaction.reply({content: noResultsMsg, ephemeral: true });
 			}
 			// NOTE: metadata from watches() is an array of metadataItems
 
@@ -32,7 +32,7 @@ module.exports = {
 			});
 
 			// after 3 seconds, slash commands cannot be replied to.  Workaround, reply before starting work, then edit the message on completion.
-			await interaction.reply('Working on it...')
+			await interaction.reply({content: 'Working on it...'})
 			// button interactions are collected from within function below
 			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { watch } = require('../executors');
-const { buttonBuilder, collectButtonInteractions } = require('../clientHelpers');
+const { buttonBuilder, collectButtonInteractions, gracefulError } = require('../clientHelpers');
 
 // This is an example command file for reference - filenames containing "example" are omitted during fs sync
 
@@ -18,13 +18,13 @@ module.exports = {
 		await watch(interaction)
 			.then(async ({ embeds, metadata }) => {
                 // metadata is used for button state and registering listeners on buttons 
-				const btnRow = buttonBuilder([{ type: 'itemSnooze', active: metadata?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
-				await interaction.reply({ embeds, components: [btnRow] });
+				const btnRow = buttonBuilder([{ type: 'itemSnooze', active: metadata.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
+				await interaction.reply({ embeds, components: [btnRow], ephemeral: true  });
 				// make sure you reply before collecting button interactions
 				await collectButtonInteractions(interaction, metadata);
 			})
 			.catch(async (err) => {
-				await interaction.reply(err.message);
+				await gracefulError(interaction, err)
 			});
 	},
 };

@@ -7,7 +7,7 @@ module.exports = {
 		.setName('help')
 		.setDescription('Lists available commands'),
 	async execute(interaction) {
-		return await interaction.reply({ content: helpMsg })
+		return await interaction.reply({ content: helpMsg, ephemeral: true })
 			.catch(async (err) => {
 				return await gracefulError(interaction, err);
 			});

@@ -18,7 +18,7 @@ module.exports = {
 					'You don\'t have any blocks.  Add some with \`/block\`.'
 					:
 					'You don\'t have any blocks for `' + args[0].value + '`.';
-				return await interaction.reply(noResultsMsg);
+				return await interaction.reply({content: noResultsMsg, ephemeral: true });
 			}
 
 			// NOTE: metadata from blocks() is an array of metadataItems
@@ -33,7 +33,7 @@ module.exports = {
 
 			
 			// interaction can only be responded to within 3 seconds.  reply immediately and update once complete
-			await interaction.reply('Working on it...')
+			await interaction.reply({content: 'Working on it...', ephemeral: true })
 			// button interactions are collected from within function below
 			return await sendMessagesToUser(interaction, interaction.user.id, embeds, btnRows, metadata)
 				.then(async (res) => {

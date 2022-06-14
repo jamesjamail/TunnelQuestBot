@@ -10,10 +10,10 @@ module.exports = {
 		await list(interaction)
 			.then(async ({ embeds, metadata }) => {
 				if (!embeds || embeds.length < 1) {
-					return await interaction.reply('You don\'t have any watches. Add some with `/watch`.');
+					return await interaction.reply({content: 'You don\'t have any watches. Add some with `/watch`.', ephemeral: true });
 				}
 				const btnRow = buttonBuilder([{ type: 'globalSnooze', active: metadata.globalSnooze }, { type: 'globalRefresh' }]);
-				await interaction.reply({ embeds, components: [btnRow] })
+				await interaction.reply({ embeds, components: [btnRow], ephemeral: true })
 				return await collectButtonInteractions(interaction, metadata);
 			})
 			.catch((err) => {

@@ -11,7 +11,7 @@ module.exports = {
 		.setDescription('Removes a block on a player'),
 	async execute(interaction) {
 		await unblock(interaction).then(async ({ content, embeds, metadata }) => {
-			await interaction.reply({ content });
+			await interaction.reply({ content, ephemeral: true  });
 
 		}).catch(async (err) => {
 			return await gracefulError(interaction, err);

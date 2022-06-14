@@ -527,7 +527,7 @@ const gracefulError = async (interaction, err) => {
 	// log to console as a safety
 	console.error(err.message);
 	// inform user an error occured
-	await interaction.reply('Sorry, an error occured.  Please try again.');
+	await interaction.reply({content: 'Sorry, an error occured.  Please try again.', ephemeral: true });
 	// pass thru to error log channel
 	const channelId = settings.discord.logs;
 	const logsChannel = await interaction.client.channels.fetch(channelId);

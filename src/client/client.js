@@ -119,7 +119,7 @@ bot.on('messageCreate', async message => {
 	}
 	// inform user about slash commands if DM or public command space message
 	else if (!message.author.bot && (message.channelId === COMMAND_CHANNEL || message.channel.type === 'DM')) {
-		await message.reply('I respond to slash commmands.  Type `/` to get started.').catch(console.error);
+		await message.reply({content: 'I respond to slash commmands.  Type `/` to get started.', ephemeral: true }).catch(console.error);
 	}
 });
 

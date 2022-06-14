@@ -13,7 +13,7 @@ module.exports = {
 		// NOTE: /blocks command responses differ is similar to /watches command
 		await block(interaction).then(async ({ content, embeds, metadata }) => {
 			const btnRow = buttonBuilder([{ type: 'globalUnblock' }]);
-			await interaction.reply({ content, embeds, components: [btnRow] });
+			await interaction.reply({ content, embeds, components: [btnRow], ephemeral: true  });
 			return await collectButtonInteractions(interaction, metadata);
 
 		}).catch(async (err) => {

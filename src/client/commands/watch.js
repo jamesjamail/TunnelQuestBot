@@ -15,7 +15,7 @@ module.exports = {
 		await watch(interaction)
 			.then(async ({ embeds, metadata }) => {
 				const btnRow = buttonBuilder([{ type: 'itemSnooze', active: metadata?.itemSnooze }, { type: 'unwatch' }, { type: 'itemRefresh' }]);
-				await interaction.reply({ embeds, components: [btnRow] });
+				await interaction.reply({ embeds, components: [btnRow], ephemeral: true  });
 				return await collectButtonInteractions(interaction, metadata);
 			})
 			.catch(async (err) => {
