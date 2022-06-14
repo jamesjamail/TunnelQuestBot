@@ -19,7 +19,7 @@ const helpMsg =
   "**/unwatch all watches**\n" +
   "> Ends all currently running watches.\n\n" +
   "**/watches `search filter`**\n" +
-  '> Returns every watch as an individual message. An optional search term can be specified.  For example:\n `/watches belt of` returns all watches containing "belt of".\n\n' +
+  '> Returns every watch as an individual message. An optional search term can be specified.  For example: `/watches belt of` returns all watches containing "belt of".\n\n' +
   "**/list**\n" +
   "> Lists details for all watches in a concise message.\n\n" +
   "**/block `seller` `server`**\n" +
@@ -32,8 +32,10 @@ const helpMsg =
   "> Pauses notifications on a specific watch.  `hours` is optional; if omitted, watch is snoozed for 6 hours.\n\n" +
   "**/snooze all watches `hours`**\n" +
   "> Pauses notifications on all watches.  `hours` is optional; if omitted, watches are snoozed for 6 hours.\n\n" +
-  "**/unsnooze**\n" +
-  "> Resumes notifications on all watches.\n\n" +
+  "**/unsnooze \`watch\`**\n" +
+  "> Unsnooze a specific watch.\n\n" +
+  "**/unsnooze all watches**\n" +
+  "> Unsnooze all watches.\n\n" +
   "__***TIPS***__\n" +
   " • You can use `/watch` to update an existing watch if you wish to modify the price requirement.\n" +
   " • Most responses have buttons that trigger useful commands.\n" +
