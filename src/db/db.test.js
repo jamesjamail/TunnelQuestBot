@@ -1,19 +1,19 @@
-jest.unmock('./db.js');
-jest.mock('pg');
-const pg = require('pg');
-const db = require('./db.js');
+jest.unmock("./db.js");
+jest.mock("pg");
+const pg = require("pg");
+const db = require("./db.js");
 
 // This is a pretty lame test, just setting up the framework
 const getWatchesTests = {
-	'getWatches causes a database query' : {},
+  "getWatches causes a database query": {},
 };
 
 // RUN TESTS
 for (const testCase in getWatchesTests) {
-	test(testCase, () => {
-		const callback = jest.fn();
-		const queryMock = pg.Client.prototype.query;
-		db.getWatches(callback);
-		expect(queryMock).toHaveBeenCalledTimes(1);
-	});
+  test(testCase, () => {
+    const callback = jest.fn();
+    const queryMock = pg.Client.prototype.query;
+    db.getWatches(callback);
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
 }

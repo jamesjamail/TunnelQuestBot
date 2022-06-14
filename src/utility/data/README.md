@@ -1,19 +1,16 @@
-Wiki Indexing Script
-====================
+# Wiki Indexing Script
 
 [Aho-Corasick](https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm)
 searching requires a database of all item names.
 This will scrape the P99 Wiki for a full database of item and spell names, and
 export that list along with relative wiki URLs to two JSON files.
 
-Usage
------
+## Usage
 
 Just run the script `generateIndexes.js` with the same version of Node that is
 installed for the main app.
 
-Notes
------
+## Notes
 
 Do not edit `items.json` or `spells.json` by hand. Additional files like
 `aliases.json` can be edited manually, but any changes to the first two will
