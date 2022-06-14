@@ -252,6 +252,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
               return await i.update({
                 content: `The block on \`${metadata.seller}\` for this watch has been removed.`,
                 embeds: [],
+                components: [],
               });
             })
             .catch(async (err) => {
