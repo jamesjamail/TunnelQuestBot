@@ -19,7 +19,7 @@ const path = require('path');
 const commandDir = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.js') && !file.includes('example'));
 const { fetchAndFormatAuctionData } = require('../utility/wikiHandler');
-const { collectButtonInteractions, watchNotificationBuilder, buttonBuilder } = require('./clientHelpers');
+const { collectButtonInteractions, watchNotificationBuilder, buttonBuilder, gracefulSystemError } = require('./clientHelpers');
 const { welcomeMsg } = require('../content/messages');
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console, {
@@ -55,8 +55,6 @@ for (const file of commandFiles) {
 	bot.commands.set(command.data.name, command);
 }
 
-// TODO: dont forget to upgrade node to 14 and npm install, as well as adjust discord permissions for application commands
-
 // When the client is ready, run this code (only once)
 bot.once('ready', () => {
 	console.log('Ready!');
@@ -85,13 +83,13 @@ bot.once('ready', () => {
 			}
 		}
  catch (error) {
-			if (error) console.error(JSON.stringify(error.rawError.errors));
+			return gracefulSystemError(bot, error)
 		}
 	})();
 });
 
 
-// command syntax as well as executors are defined in /commands directory
+// command syntax is defined in /commands directory
 bot.on('interactionCreate', async interaction => {
 	if (!interaction.isCommand()) return;
 
@@ -102,7 +100,8 @@ bot.on('interactionCreate', async interaction => {
 		await command.execute(interaction);
 	}
  catch (error) {
-		console.error('catch block error', error);
+		// errors from interactions are caught from within command files - this is a failsafe
+		gracefulSystemError(bot, error);
 		await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
 	}
 });
@@ -114,12 +113,16 @@ bot.on('messageCreate', async message => {
 		const content = message.content.toUpperCase();
 		if (content.includes('WTS') || content.includes('WTB') || content.includes('WTT')) {
 			await bot.users.cache.get(message.author.id).send(`Hi <@${message.author.id}>, I'm trying to keep #general_chat free of auction listings.  Please use either <#${GREEN_TRADING_CHANNEL}> or <#${BLUE_TRADING_CHANNEL}>. Thanks!`).catch(console.error);
-			await message.delete().catch(console.error);
+			await message.delete().catch(async (err) => {
+				return await gracefulSystemError(bot, err);
+			});
 		}
 	}
 	// inform user about slash commands if DM or public command space message
 	else if (!message.author.bot && (message.channelId === COMMAND_CHANNEL || message.channel.type === 'DM')) {
-		await message.reply({content: 'I respond to slash commmands.  Type `/` to get started.', ephemeral: true }).catch(console.error);
+		await message.reply({content: 'I respond to slash commmands.  Type `/` to get started.', ephemeral: true }).catch(async (err) => {
+			return await gracefulSystemError(bot, err);
+		});
 	}
 });
 
@@ -127,7 +130,9 @@ bot.on('messageCreate', async message => {
 // server greeting for users who join
 bot.on('guildMemberAdd', async (member) => {
 	const memberTag = member.user.tag; // GuildMembers don't have a tag property, read property user of guildmember to get the user object from it
-	await bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(console.error);
+	await bot.users.cache.get(member.user.id).send(`**Hi ${memberTag}!**\n\n` + welcomeMsg).catch(async (err) => {
+		return await gracefulSystemError(bot, err);
+	});
 });
 
 
@@ -161,7 +166,7 @@ async function pingUser(watchId, user, userId, seller, item, price, server, full
 		}
 		await collectButtonInteractions(interaction, { id: watchId, seller }, message);
 	})
-	.catch(console.error);
+	// don't catch so errors bubble up to command handlers
 }
 
 async function streamAuction(auction_user, auction_contents, server) {
@@ -172,14 +177,18 @@ async function streamAuction(auction_user, auction_contents, server) {
 	await fetchAndFormatAuctionData(auction_user, auction_contents, server).then(async formattedAuctionMessage => {
 		const streamChannel = await bot.channels.fetch(channelId);
 		streamChannel.send({ embeds: [formattedAuctionMessage] });
-		await bot.channels.fetch(channelId.toString());
-	}).catch(console.error);
+		await bot.channels.fetch(channelId);
+	}).catch(async (err) => {
+		return await gracefulSystemError(bot, err)
+	});
 
-	await bot.channels.fetch(classicChannelId.toString())
+	await bot.channels.fetch(classicChannelId)
 		.then(async (channel) => {
 			await channel.send(rawAuction);
 		})
-		.catch(console.error);
+		.catch(async (err) => {
+			return await gracefulSystemError(bot, err)
+		});
 }
 
 
