@@ -19,7 +19,7 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("server")
-        .setDescription("Select a server")
+        .setDescription("select a server")
         .addChoices([
           ["blue server", "BLUE"],
           ["green server", "GREEN"],

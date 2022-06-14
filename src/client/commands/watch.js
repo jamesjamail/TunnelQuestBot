@@ -11,14 +11,17 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("watch")
-    .setDescription("Add or modify a watch.")
+    .setDescription("add or modify a watch.")
     .addStringOption((option) =>
-      option.setName("item").setDescription("Enter item name").setRequired(true)
+      option
+        .setName("item")
+        .setDescription("the name of the item you want to watch")
+        .setRequired(true)
     )
     .addStringOption((option) =>
       option
         .setName("server")
-        .setDescription("Select a server")
+        .setDescription("select a server")
         .addChoices([
           ["blue server", "BLUE"],
           ["green server", "GREEN"],
@@ -26,7 +29,7 @@ module.exports = {
         .setRequired(true)
     )
     .addNumberOption((option) =>
-      option.setName("price").setDescription("Enter optional maximum price")
+      option.setName("price").setDescription("enter optional maximum price")
     ),
   async execute(interaction) {
     await watch(interaction)

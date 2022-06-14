@@ -20,7 +20,7 @@ module.exports = {
           ["green server", "GREEN"],
         ])
     )
-    .setDescription("Removes a block on a player"),
+    .setDescription("remove a block on a player"),
   async execute(interaction) {
     await unblock(interaction)
       .then(async ({ content, embeds, metadata }) => {

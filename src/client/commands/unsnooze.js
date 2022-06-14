@@ -21,7 +21,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("watch")
-        .setDescription("item you wish to unsnooze")
+        .setDescription("unsnooze a specific watch")
         .addStringOption((option) =>
           option.setName("item").setDescription("item name").setRequired(true)
         )

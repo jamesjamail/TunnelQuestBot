@@ -15,7 +15,7 @@ module.exports = {
         .setDescription("only show watches containing keyword(s)")
         .setRequired(false)
     )
-    .setDescription("returns each block as a direct message"),
+    .setDescription("return each block as a direct message"),
   async execute(interaction) {
     // NOTE: /blocks command responses is similar to /watches command
     await blocks(interaction)

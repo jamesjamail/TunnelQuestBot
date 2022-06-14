@@ -15,7 +15,7 @@ module.exports = {
         .setDescription("only show watches containing keyword(s)")
         .setRequired(false)
     )
-    .setDescription("returns each watch as a direct message"),
+    .setDescription("return each watch as a direct message"),
   async execute(interaction) {
     // NOTE: /watches command responses differ from all other commands!
     // Historically, !watches has returned an individual response for each watch.

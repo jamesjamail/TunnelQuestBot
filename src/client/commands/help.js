@@ -5,7 +5,7 @@ const { gracefulError } = require("../clientHelpers");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("Lists available commands"),
+    .setDescription("show command information"),
   async execute(interaction) {
     return await interaction
       .reply({ content: helpMsg, ephemeral: true })

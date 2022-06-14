@@ -21,7 +21,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName("watch")
-        .setDescription("item you wish to snooze")
+        .setDescription("snooze a specific watch")
         .addStringOption((option) =>
           option.setName("item").setDescription("item name").setRequired(true)
         )
@@ -62,7 +62,6 @@ module.exports = {
             components,
             ephemeral: true,
           });
-          console.log("metadata = ", metadata);
           return await collectButtonInteractions(interaction, metadata);
         }
         return await interaction.reply({ content, ephemeral: true });

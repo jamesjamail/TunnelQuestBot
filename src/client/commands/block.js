@@ -18,14 +18,14 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("server")
-        .setDescription("Select a server")
+        .setDescription("select a server")
         .addChoices([
           ["blue server", "BLUE"],
           ["green server", "GREEN"],
         ])
     )
     .setDescription(
-      "Prevents a player from triggering notifications on all watches"
+      "prevent a player from triggering notifications on all watches"
     ),
   async execute(interaction) {
     // NOTE: /blocks command responses differ is similar to /watches command
