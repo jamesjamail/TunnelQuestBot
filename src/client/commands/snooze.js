@@ -62,6 +62,7 @@ module.exports = {
             components,
             ephemeral: true,
           });
+          console.log("metadata = ", metadata);
           return await collectButtonInteractions(interaction, metadata);
         }
         return await interaction.reply({ content, ephemeral: true });

@@ -468,11 +468,10 @@ async function snoozeByItemName(discordId, itemName, hours = 6) {
           }
           return await snooze("item", rows[0].id, hours).then(
             async (results) => {
-              // might need to use is instead of watch_id key below
               return Promise.resolve({
                 results,
                 metadata: {
-                  watch_id: rows[0].id,
+                  id: rows[0].id,
                   itemSnooze: false,
                   active: true,
                 },

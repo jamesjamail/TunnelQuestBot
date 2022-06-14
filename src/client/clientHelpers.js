@@ -47,11 +47,11 @@ async function collectButtonInteractions(interaction, metadata, message) {
   });
   collector.on("collect", async (i) => {
     // TODO: I don't think this is required anymore now that the collector is scoped to the message it's on- cleaner to have a filter as a function
-    // https://discordjs.guide/popular-topics/collectors.html#interaction-collectors
     //
-    // One important difference to note with interaction collectors is that Discord expects a response to all interactions within 3 seconds -
+    // https://discordjs.guide/popular-topics/collectors.html#interaction-collectors
+    // "One important difference to note with interaction collectors is that Discord expects a response to all interactions within 3 seconds -
     // even ones that you don't want to collect. For this reason, you may wish to .deferUpdate() all interactions in your filter, or not use
-    // a filter at all and handle this behavior in the collect event.
+    // a filter at all and handle this behavior in the collect event."
     if (!i.user.bot && i.user.id === interaction.user.id) {
       switch (i.customId) {
         case "globalRefresh":

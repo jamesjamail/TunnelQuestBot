@@ -232,7 +232,7 @@ async function blocks(interaction) {
 async function snooze(interaction) {
   const command = interaction.options.getSubcommand();
   const item = interaction.options.getString("item");
-  const hours = interaction.options.getString("hours") || 6;
+  const hours = interaction.options.getNumber("hours") || 6;
   switch (command) {
     case "watches":
       // snooze all
@@ -274,7 +274,6 @@ async function unsnooze(interaction) {
   const item = interaction.options.getString("item");
   const server = interaction.options.getString("server");
 
-  // TODO: accept server argument
   switch (command) {
     case "watches":
       // unsnooze all

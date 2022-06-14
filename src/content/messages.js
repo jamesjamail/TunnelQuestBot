@@ -32,7 +32,7 @@ const helpMsg =
   "> Pauses notifications on a specific watch.  `hours` is optional; if omitted, watch is snoozed for 6 hours.\n\n" +
   "**/snooze all watches `hours`**\n" +
   "> Pauses notifications on all watches.  `hours` is optional; if omitted, watches are snoozed for 6 hours.\n\n" +
-  "**/unsnooze \`watch\`**\n" +
+  "**/unsnooze `watch`**\n" +
   "> Unsnooze a specific watch.\n\n" +
   "**/unsnooze all watches**\n" +
   "> Unsnooze all watches.\n\n" +

@@ -14,7 +14,8 @@
     "start": "set NODE_ENV=production && pm2 start src/parser/logParser.js",
     "stop": "pm2 stop src/parser/logParser.js",
     "dev": "set NODE_ENV=development && node --trace-warnings src/parser/logParser.js",
-    "lint": "eslint . --ext .js"
+    "lint": "eslint . --ext .js",
+    "prettier": "npx prettier --write ."
   },
   "repository": {
     "type": "git",
