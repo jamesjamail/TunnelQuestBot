@@ -132,6 +132,20 @@ bot.on("messageCreate", async (message) => {
   // inform user about slash commands if DM or public command space message
   else if (
     !message.author.bot &&
+    (message.channelId === COMMAND_CHANNEL || message.channel.type === "DM") &&
+    message.content.trim()[0] === "/" //if user tried a command as a message, give them an informative message
+  ) {
+    await message
+      .reply({
+        content:
+          "You're so close! I got your message but it was not a command. When you type `/` and start typing your command, Discord will autosuggest commands. Be sure to select one of these by either clicking or using the enter key.  Then enter any arguments if neccessary and send the command.",
+        ephemeral: true,
+      })
+      .catch(async (err) => {
+        return await gracefulSystemError(bot, err);
+      });
+  } else if (
+    !message.author.bot &&
     (message.channelId === COMMAND_CHANNEL || message.channel.type === "DM")
   ) {
     await message
