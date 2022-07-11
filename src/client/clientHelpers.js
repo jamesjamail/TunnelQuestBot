@@ -199,7 +199,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
                   // snoozing an inactive watch is a confusing user experience, so let's disable the button
                   btnRow.components[0].setDisabled(true);
                   return await i.update({
-                    content: "This watch has been extended another 7 days!",
+                    content: "This watch has been removed.",
                     embeds: updatedMsg,
                     components: [btnRow],
                   });
