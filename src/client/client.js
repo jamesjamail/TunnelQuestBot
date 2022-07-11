@@ -139,7 +139,6 @@ bot.on("messageCreate", async (message) => {
       .reply({
         content:
           "You're so close! I got your message but it was not a command. When you type `/` and start typing your command, Discord will autosuggest commands. Be sure to select one of these by either clicking or using the enter key.  Then enter any arguments if neccessary and send the command.",
-        ephemeral: true,
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);
@@ -151,7 +150,6 @@ bot.on("messageCreate", async (message) => {
     await message
       .reply({
         content: "I respond to slash commmands.  Type `/` to get started.",
-        ephemeral: true,
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);
