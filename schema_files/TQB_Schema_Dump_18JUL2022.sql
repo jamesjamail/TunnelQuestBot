@@ -5,7 +5,7 @@
 -- Dumped from database version 12.1
 -- Dumped by pg_dump version 12.1
 
--- Started on 2022-06-10 03:22:06
+-- Started on 2022-07-18 09:54:17
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -53,7 +53,7 @@ CREATE SEQUENCE public.blocked_seller_by_user_id_seq
 ALTER TABLE public.blocked_seller_by_user_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2916 (class 0 OID 0)
+-- TOC entry 2924 (class 0 OID 0)
 -- Dependencies: 210
 -- Name: blocked_seller_by_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -91,7 +91,7 @@ CREATE SEQUENCE public.blocked_seller_by_watch_id_seq
 ALTER TABLE public.blocked_seller_by_watch_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2917 (class 0 OID 0)
+-- TOC entry 2925 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: blocked_seller_by_watch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -130,7 +130,7 @@ CREATE SEQUENCE public.communication_history_id_seq
 ALTER TABLE public.communication_history_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2918 (class 0 OID 0)
+-- TOC entry 2926 (class 0 OID 0)
 -- Dependencies: 214
 -- Name: communication_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -167,13 +167,30 @@ CREATE SEQUENCE public.items_id_seq
 ALTER TABLE public.items_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2919 (class 0 OID 0)
+-- TOC entry 2927 (class 0 OID 0)
 -- Dependencies: 203
 -- Name: items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.items_id_seq OWNED BY public.items.id;
 
+
+--
+-- TOC entry 220 (class 1259 OID 17371)
+-- Name: player_name_discord_link; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.player_name_discord_link (
+    id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    char_name text NOT NULL,
+    link_hash text,
+    issued_timestamp timestamp without time zone,
+    private boolean NOT NULL
+);
+
+
+ALTER TABLE public.player_name_discord_link OWNER TO postgres;
 
 --
 -- TOC entry 204 (class 1259 OID 16836)
@@ -204,7 +221,7 @@ CREATE SEQUENCE public.servers_id_seq
 ALTER TABLE public.servers_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2920 (class 0 OID 0)
+-- TOC entry 2928 (class 0 OID 0)
 -- Dependencies: 205
 -- Name: servers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -242,7 +259,7 @@ CREATE SEQUENCE public.snooze_by_user_id_seq
 ALTER TABLE public.snooze_by_user_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2921 (class 0 OID 0)
+-- TOC entry 2929 (class 0 OID 0)
 -- Dependencies: 212
 -- Name: snooze_by_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -280,7 +297,7 @@ CREATE SEQUENCE public.snooze_by_watch_id_seq
 ALTER TABLE public.snooze_by_watch_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2922 (class 0 OID 0)
+-- TOC entry 2930 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: snooze_by_watch_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -317,7 +334,7 @@ CREATE SEQUENCE public.users_id_seq
 ALTER TABLE public.users_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2923 (class 0 OID 0)
+-- TOC entry 2931 (class 0 OID 0)
 -- Dependencies: 207
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -361,7 +378,7 @@ CREATE SEQUENCE public.watches_id_seq
 ALTER TABLE public.watches_id_seq OWNER TO postgres;
 
 --
--- TOC entry 2924 (class 0 OID 0)
+-- TOC entry 2932 (class 0 OID 0)
 -- Dependencies: 209
 -- Name: watches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -370,7 +387,7 @@ ALTER SEQUENCE public.watches_id_seq OWNED BY public.watches.id;
 
 
 --
--- TOC entry 2744 (class 2604 OID 16923)
+-- TOC entry 2749 (class 2604 OID 16923)
 -- Name: blocked_seller_by_user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -378,7 +395,7 @@ ALTER TABLE ONLY public.blocked_seller_by_user ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- TOC entry 2747 (class 2604 OID 16998)
+-- TOC entry 2752 (class 2604 OID 16998)
 -- Name: blocked_seller_by_watch id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -386,7 +403,7 @@ ALTER TABLE ONLY public.blocked_seller_by_watch ALTER COLUMN id SET DEFAULT next
 
 
 --
--- TOC entry 2746 (class 2604 OID 16980)
+-- TOC entry 2751 (class 2604 OID 16980)
 -- Name: communication_history id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -394,7 +411,7 @@ ALTER TABLE ONLY public.communication_history ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 2739 (class 2604 OID 16854)
+-- TOC entry 2744 (class 2604 OID 16854)
 -- Name: items id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -402,7 +419,7 @@ ALTER TABLE ONLY public.items ALTER COLUMN id SET DEFAULT nextval('public.items_
 
 
 --
--- TOC entry 2740 (class 2604 OID 16855)
+-- TOC entry 2745 (class 2604 OID 16855)
 -- Name: servers id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -410,7 +427,7 @@ ALTER TABLE ONLY public.servers ALTER COLUMN id SET DEFAULT nextval('public.serv
 
 
 --
--- TOC entry 2745 (class 2604 OID 16936)
+-- TOC entry 2750 (class 2604 OID 16936)
 -- Name: snooze_by_user id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -418,7 +435,7 @@ ALTER TABLE ONLY public.snooze_by_user ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 2748 (class 2604 OID 17016)
+-- TOC entry 2753 (class 2604 OID 17016)
 -- Name: snooze_by_watch id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -426,7 +443,7 @@ ALTER TABLE ONLY public.snooze_by_watch ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 2741 (class 2604 OID 16856)
+-- TOC entry 2746 (class 2604 OID 16856)
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -434,7 +451,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 2742 (class 2604 OID 16857)
+-- TOC entry 2747 (class 2604 OID 16857)
 -- Name: watches id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -442,7 +459,7 @@ ALTER TABLE ONLY public.watches ALTER COLUMN id SET DEFAULT nextval('public.watc
 
 
 --
--- TOC entry 2760 (class 2606 OID 16925)
+-- TOC entry 2765 (class 2606 OID 16925)
 -- Name: blocked_seller_by_user blocked_seller_by_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -451,7 +468,7 @@ ALTER TABLE ONLY public.blocked_seller_by_user
 
 
 --
--- TOC entry 2772 (class 2606 OID 17003)
+-- TOC entry 2777 (class 2606 OID 17003)
 -- Name: blocked_seller_by_watch blocked_seller_by_watch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -460,7 +477,7 @@ ALTER TABLE ONLY public.blocked_seller_by_watch
 
 
 --
--- TOC entry 2774 (class 2606 OID 17005)
+-- TOC entry 2779 (class 2606 OID 17005)
 -- Name: blocked_seller_by_watch blocked_seller_by_watch_watch_id_seller_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -469,7 +486,7 @@ ALTER TABLE ONLY public.blocked_seller_by_watch
 
 
 --
--- TOC entry 2768 (class 2606 OID 16985)
+-- TOC entry 2773 (class 2606 OID 16985)
 -- Name: communication_history communication_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -478,7 +495,7 @@ ALTER TABLE ONLY public.communication_history
 
 
 --
--- TOC entry 2770 (class 2606 OID 16987)
+-- TOC entry 2775 (class 2606 OID 16987)
 -- Name: communication_history communication_history_watch_id_seller_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -487,7 +504,7 @@ ALTER TABLE ONLY public.communication_history
 
 
 --
--- TOC entry 2750 (class 2606 OID 16859)
+-- TOC entry 2755 (class 2606 OID 16859)
 -- Name: items items_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -496,7 +513,16 @@ ALTER TABLE ONLY public.items
 
 
 --
--- TOC entry 2752 (class 2606 OID 16861)
+-- TOC entry 2785 (class 2606 OID 17378)
+-- Name: player_name_discord_link player_name_discord_link_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_name_discord_link
+    ADD CONSTRAINT player_name_discord_link_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2757 (class 2606 OID 16861)
 -- Name: servers servers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -505,7 +531,7 @@ ALTER TABLE ONLY public.servers
 
 
 --
--- TOC entry 2764 (class 2606 OID 16938)
+-- TOC entry 2769 (class 2606 OID 16938)
 -- Name: snooze_by_user snooze_by_user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -514,7 +540,7 @@ ALTER TABLE ONLY public.snooze_by_user
 
 
 --
--- TOC entry 2766 (class 2606 OID 16940)
+-- TOC entry 2771 (class 2606 OID 16940)
 -- Name: snooze_by_user snooze_by_user_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -523,7 +549,7 @@ ALTER TABLE ONLY public.snooze_by_user
 
 
 --
--- TOC entry 2776 (class 2606 OID 17018)
+-- TOC entry 2781 (class 2606 OID 17018)
 -- Name: snooze_by_watch snooze_by_watch_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -532,7 +558,7 @@ ALTER TABLE ONLY public.snooze_by_watch
 
 
 --
--- TOC entry 2762 (class 2606 OID 17188)
+-- TOC entry 2767 (class 2606 OID 17188)
 -- Name: blocked_seller_by_user unique_user_seller_server; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -541,7 +567,7 @@ ALTER TABLE ONLY public.blocked_seller_by_user
 
 
 --
--- TOC entry 2754 (class 2606 OID 16863)
+-- TOC entry 2759 (class 2606 OID 16863)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -550,7 +576,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 2778 (class 2606 OID 17020)
+-- TOC entry 2783 (class 2606 OID 17020)
 -- Name: snooze_by_watch watch_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -559,7 +585,7 @@ ALTER TABLE ONLY public.snooze_by_watch
 
 
 --
--- TOC entry 2758 (class 2606 OID 16865)
+-- TOC entry 2763 (class 2606 OID 16865)
 -- Name: watches watches_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -568,7 +594,7 @@ ALTER TABLE ONLY public.watches
 
 
 --
--- TOC entry 2755 (class 1259 OID 16866)
+-- TOC entry 2760 (class 1259 OID 16866)
 -- Name: fki_item_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -576,7 +602,7 @@ CREATE INDEX fki_item_id ON public.watches USING btree (item_id);
 
 
 --
--- TOC entry 2756 (class 1259 OID 16867)
+-- TOC entry 2761 (class 1259 OID 16867)
 -- Name: fki_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -584,7 +610,7 @@ CREATE INDEX fki_user_id ON public.watches USING btree (user_id);
 
 
 --
--- TOC entry 2783 (class 2606 OID 17006)
+-- TOC entry 2790 (class 2606 OID 17006)
 -- Name: blocked_seller_by_watch blocked_seller_by_watch_watch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -593,7 +619,7 @@ ALTER TABLE ONLY public.blocked_seller_by_watch
 
 
 --
--- TOC entry 2782 (class 2606 OID 16988)
+-- TOC entry 2789 (class 2606 OID 16988)
 -- Name: communication_history communication_history_watch_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -602,7 +628,7 @@ ALTER TABLE ONLY public.communication_history
 
 
 --
--- TOC entry 2779 (class 2606 OID 16868)
+-- TOC entry 2786 (class 2606 OID 16868)
 -- Name: watches item_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -611,7 +637,7 @@ ALTER TABLE ONLY public.watches
 
 
 --
--- TOC entry 2780 (class 2606 OID 16873)
+-- TOC entry 2787 (class 2606 OID 16873)
 -- Name: watches user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -620,7 +646,7 @@ ALTER TABLE ONLY public.watches
 
 
 --
--- TOC entry 2781 (class 2606 OID 16926)
+-- TOC entry 2788 (class 2606 OID 16926)
 -- Name: blocked_seller_by_user user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -629,7 +655,16 @@ ALTER TABLE ONLY public.blocked_seller_by_user
 
 
 --
--- TOC entry 2784 (class 2606 OID 17021)
+-- TOC entry 2792 (class 2606 OID 17379)
+-- Name: player_name_discord_link user_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.player_name_discord_link
+    ADD CONSTRAINT user_id FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- TOC entry 2791 (class 2606 OID 17021)
 -- Name: snooze_by_watch watch_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -637,7 +672,7 @@ ALTER TABLE ONLY public.snooze_by_watch
     ADD CONSTRAINT watch_id FOREIGN KEY (watch_id) REFERENCES public.watches(id) ON DELETE CASCADE;
 
 
--- Completed on 2022-06-10 03:22:06
+-- Completed on 2022-07-18 09:54:17
 
 --
 -- PostgreSQL database dump complete
