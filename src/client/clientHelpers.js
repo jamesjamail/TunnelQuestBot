@@ -10,13 +10,13 @@ const {
   fetchWikiPricing,
 } = require("../utility/wikiHandler.js");
 const moment = require("moment");
-const sslRootCAs = require("ssl-root-cas");
-sslRootCAs
-  .inject()
-  .addFile(
-    __dirname +
-      "../../../Certificates/SectigoRSADomainValidationSecureServerCA.crt"
-  );
+// const sslRootCAs = require("ssl-root-cas");
+// sslRootCAs
+//   .inject()
+//   .addFile(
+//     __dirname +
+//       "../../../Certificates/SectigoRSADomainValidationSecureServerCA.crt"
+//   );
 const wiki_url = require("../utility/data/items.json");
 const Discord = require("discord.js");
 const SERVER_COLOR = { BLUE: "#1C58B8", GREEN: "#249458", BOTH: "#000" };

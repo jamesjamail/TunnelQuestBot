@@ -29,8 +29,13 @@ cache.on("error", function (error) {
 
 // 2/1/22 - p99 wiki appears to have invalid cert - causing errors. Below is a temporary solution until they fix it upstream.
 const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
+  host: 'www.project1999.com',
+  port: '443',
+  path: '/',
+  rejectUnauthorized: false
 });
+
+
 
 async function fetchAndFormatAuctionData(
   auction_user,
@@ -219,7 +224,8 @@ async function findWikiData(auction_contents, server) {
 async function fetchImageUrl(itemName) {
   if (ITEMS[itemName.toUpperCase()]) {
     return await fetch(
-      `https://wiki.project1999.com${ITEMS[itemName.toUpperCase()]}`
+      `https://wiki.project1999.com${ITEMS[itemName.toUpperCase()]}`,
+      { agent: httpsAgent }
     )
       .then((response) => {
         if (response.ok) {
@@ -252,3 +258,4 @@ exports.getWikiPricing = getWikiPricing;
 exports.SERVER_COLOR = SERVER_COLOR;
 exports.fetchImageUrl = fetchImageUrl;
 exports.fetchWikiPricing = fetchWikiPricing;
+exports.httpsAgent = httpsAgent;

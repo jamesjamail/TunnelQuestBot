@@ -4,12 +4,13 @@ const fs = require("fs");
 
 const BASE_URL = "http://wiki.project1999.com";
 const CATEGORY_URL = "/index.php?title=Category:";
+const httpsAgent = require("../wikiHandler");
 
 async function get_items_in_category(category) {
   const item_map = new Map();
   let next_page = BASE_URL + CATEGORY_URL + category;
   while (next_page) {
-    const page = await fetch(next_page)
+    const page = await fetch(next_page, { agent: httpsAgent })
       .then((response) => response.text())
       .then((text) => {
         return text;
