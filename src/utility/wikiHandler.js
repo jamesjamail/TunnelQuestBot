@@ -6,9 +6,11 @@ const aho_corasick = require("ahocorasick");
 const $ = require("jquery");
 const jsdom = require("jsdom");
 const https = require("https");
+const rootCas = require('ssl-root-cas').create();
+rootCas.addFile(__dirname + "../../../Certificates/intermediate.pem");
+
 const redis = require("redis");
 const cache = redis.createClient();
-
 const cache_expiration = 1 * 24 * 60 * 60 * 1000;
 const BASE_WIKI_URL = "https://wiki.project1999.com";
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
@@ -23,19 +25,14 @@ const ALL_ITEM_KEYS = new Set([
 ]);
 const SERVER_COLOR = { BLUE: "#1C58B8", GREEN: "#249458" };
 
+//  p99 has cert issues so we have to add the intermediate cert manually =(
+//  stackoverflow.com/questions/31673587/error-unable-to-verify-the-first-certificate-in-nodejs
+const httpsAgent = new https.Agent({ca: rootCas});
+
+
 cache.on("error", function (error) {
   console.error(error);
 });
-
-// 2/1/22 - p99 wiki appears to have invalid cert - causing errors. Below is a temporary solution until they fix it upstream.
-const httpsAgent = new https.Agent({
-  host: 'www.project1999.com',
-  port: '443',
-  path: '/',
-  rejectUnauthorized: false
-});
-
-
 
 async function fetchAndFormatAuctionData(
   auction_user,
@@ -156,7 +153,7 @@ async function getWikiPricing(item_url, server) {
         resolve(JSON.parse(cached_data));
       } else {
         // otherwise fetch new data
-        return fetch(item_url, { agent: httpsAgent })
+        return fetch(item_url, {agent: httpsAgent})
           .then((response) => response.text())
           .then((text) => {
             const priceData = parsePage(text, server);
