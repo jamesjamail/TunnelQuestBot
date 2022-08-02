@@ -18,6 +18,7 @@ const {
   watchNotificationBuilder,
   buttonBuilder,
   gracefulSystemError,
+  troubleshootingLinkEmbed,
 } = require("./clientHelpers");
 const { welcomeMsg } = require("../content/messages");
 logger.remove(logger.transports.Console);
@@ -138,7 +139,11 @@ bot.on("messageCreate", async (message) => {
     await message
       .reply({
         content:
-          "You're so close! I got your message but it was not a command. When you type `/` and start typing your command, Discord will autosuggest commands. Be sure to select one of these by either clicking or using the enter key.  Then enter any arguments if neccessary and send the command.",
+          "You're so close! You entered a message, not a command. Please see the guide below for troubleshooting tips.",
+        embeds: [troubleshootingLinkEmbed]
+        })
+      .then((message) => {
+        setTimeout(() => message.delete(), 10000);
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);
@@ -150,6 +155,9 @@ bot.on("messageCreate", async (message) => {
     await message
       .reply({
         content: "I respond to slash commmands.  Type `/` to get started.",
+      })
+      .then((message) => {
+        setTimeout(() => message.delete(), 10000);
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);

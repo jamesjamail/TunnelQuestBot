@@ -483,7 +483,7 @@ function buildListResponse(data) {
         }${formatCapitalCase(
           watch.name
         )}\` | \`${price}\` | \`${formatCapitalCase(watch.server)}\``,
-        value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
+        value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours and ${diffDuration.minutes()} minutes`,
         inline: false,
       });
     });
@@ -794,6 +794,12 @@ async function sendMessagesToUser(
   return postedMessages;
 }
 
+const troubleshootingLinkEmbed = new Discord.MessageEmbed()
+      .addField(
+        `ISSUE: Slash Commands Won't Work`,
+        `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`,
+      );
+
 module.exports = {
   MessageType,
   watchBuilder,
@@ -805,4 +811,5 @@ module.exports = {
   dedupeBlockResults,
   gracefulError,
   watchNotificationBuilder,
+  troubleshootingLinkEmbed,
 };
