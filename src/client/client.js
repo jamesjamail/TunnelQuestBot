@@ -142,8 +142,11 @@ bot.on("messageCreate", async (message) => {
           "You're so close! You entered a message, not a command. Please see the guide below for troubleshooting tips.",
         embeds: [troubleshootingLinkEmbed]
         })
-      .then((message) => {
-        setTimeout(() => message.delete(), 10000);
+      .then((reply) => {
+        setTimeout(() => {
+          reply.delete();
+          message.delete();
+        }, 10000);
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);
@@ -156,8 +159,11 @@ bot.on("messageCreate", async (message) => {
       .reply({
         content: "I respond to slash commmands.  Type `/` to get started.",
       })
-      .then((message) => {
-        setTimeout(() => message.delete(), 10000);
+      .then((reply) => {
+        setTimeout(() => {
+          reply.delete();
+          message.delete();
+        }, 10000);
       })
       .catch(async (err) => {
         return await gracefulSystemError(bot, err);
