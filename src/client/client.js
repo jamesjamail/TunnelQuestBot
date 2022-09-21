@@ -78,7 +78,7 @@ bot.once("ready", () => {
       await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
         body: [],
       })
-      .then(() => console.log("Successfully cleared application command cache"))
+      .then(() => console.log("Successfully cleared guild command cache"))
       .catch((err) => gracefulSystemError(bot, err));
 
       // global commands have a delay before syncing - only use for production
