@@ -73,18 +73,35 @@ bot.once("ready", () => {
   }).setToken(TOKEN);
   (async () => {
     try {
+
+      // clear guild commands regardless of env
+      await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
+        body: [],
+      })
+      .then(() => console.log("Successfully cleared application command cache"))
+      .catch((err) => gracefulSystemError(bot, err));
+
       // global commands have a delay before syncing - only use for production
-      console.log(process.env.NODE_ENV, typeof process.env.NODE_ENV)
       if (process.env.NODE_ENV.trim() === "production") {
+        // clear command cache first to delete deprecated commands
+        await rest.put(Routes.applicationCommands(CLIENT_ID), {
+          body: [],
+        })
+        .then(() => console.log("Successfully cleared application command cache"))
+        .catch((err) => gracefulSystemError(bot, err));
+
         await rest.put(Routes.applicationCommands(CLIENT_ID), {
           body: commands,
-        });
-        console.log("Successfully registered application commands");
+        })
+        .then(() => console.log("Successfully registered application commands"))
+        .catch((err) => gracefulSystemError(bot, err));
+        
       } else {
         await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
           body: commands,
-        });
-        console.log("Successfully registered guild commands");
+        })
+        .then(() => console.log("Successfully registered guild commands"))
+        .catch((err) => gracefulSystemError(bot, err));
       }
     } catch (error) {
       return gracefulSystemError(bot, error);
