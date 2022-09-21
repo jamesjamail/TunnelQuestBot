@@ -104,7 +104,7 @@ bot.on("interactionCreate", async (interaction) => {
     // errors from interactions are caught from within command files - this is a failsafe
     gracefulSystemError(bot, error);
     await interaction.reply({
-      content: "There was an error while executing this command!",
+      content: "Something went wrong...are you clicking on a message that hasn't been updated in the past 30 minutes?  If so, please trigger a fresh message by re-executing the command.",
       ephemeral: true,
     });
   }
