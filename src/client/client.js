@@ -74,6 +74,7 @@ bot.once("ready", () => {
   (async () => {
     try {
       // global commands have a delay before syncing - only use for production
+      console.log(process.env.NODE_ENV, typeof process.env.NODE_ENV)
       if (process.env.NODE_ENV.trim() === "production") {
         await rest.put(Routes.applicationCommands(CLIENT_ID), {
           body: commands,

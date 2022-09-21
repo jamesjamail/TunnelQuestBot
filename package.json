@@ -11,9 +11,9 @@
   },
   "scripts": {
     "test": "jest",
-    "start": "set NODE_ENV=production && pm2 start src/parser/logParser.js",
+    "start": "cross-env NODE_ENV='production' pm2 start src/parser/logParser.js",
     "stop": "pm2 stop src/parser/logParser.js",
-    "dev": "set NODE_ENV=development && node --trace-warnings src/parser/logParser.js",
+    "dev": "cross-env NODE_ENV='development' node --trace-warnings src/parser/logParser.js",
     "lint": "eslint . --ext .js",
     "prettier": "npx prettier --write ."
   },
@@ -47,6 +47,7 @@
     "winston": "^3.6.0"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.17.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-airbnb-base": "^15.0.0",
