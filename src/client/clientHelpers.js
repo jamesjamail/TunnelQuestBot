@@ -754,18 +754,17 @@ const gracefulError = async (interaction, err) => {
   const channelId = settings.discord.logs;
   const logsChannel = await interaction.client.channels.fetch(channelId);
   logsChannel.send(
-    `${interaction.user.username} threw the following error:\n\n${err.message}`
+    `${interaction.user.username} threw the following error:\n\n${err.stack}`
   );
 };
 
 const gracefulSystemError = async (client, err) => {
   // log to console as a safety
   console.error(err.message);
-  // inform user an error occured
   // pass thru to error log channel
   const channelId = settings.discord.logs;
   const logsChannel = await client.channels.fetch(channelId);
-  logsChannel.send(`[ SYSTEM ERROR ]:\n\n${err.message}`);
+  logsChannel.send(`[ SYSTEM ERROR ]:\n\n${err.stack}`);
 };
 
 async function sendMessagesToUser(
