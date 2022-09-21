@@ -793,11 +793,10 @@ async function sendMessagesToUser(
   return postedMessages;
 }
 
-const troubleshootingLinkEmbed = new Discord.MessageEmbed()
-      .addField(
-        `ISSUE: Slash Commands Won't Work`,
-        `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`,
-      );
+const troubleshootingLinkEmbed = new Discord.MessageEmbed().addField(
+  `ISSUE: Slash Commands Won't Work`,
+  `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`
+);
 
 module.exports = {
   MessageType,

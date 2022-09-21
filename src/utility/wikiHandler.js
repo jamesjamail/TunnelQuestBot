@@ -6,7 +6,7 @@ const aho_corasick = require("ahocorasick");
 const $ = require("jquery");
 const jsdom = require("jsdom");
 const https = require("https");
-const rootCas = require('ssl-root-cas').create();
+const rootCas = require("ssl-root-cas").create();
 rootCas.addFile(__dirname + "../../../Certificates/intermediate.pem");
 
 const redis = require("redis");
@@ -27,8 +27,7 @@ const SERVER_COLOR = { BLUE: "#1C58B8", GREEN: "#249458" };
 
 //  p99 has cert issues so we have to add the intermediate cert manually =(
 //  stackoverflow.com/questions/31673587/error-unable-to-verify-the-first-certificate-in-nodejs
-const httpsAgent = new https.Agent({ca: rootCas});
-
+const httpsAgent = new https.Agent({ ca: rootCas });
 
 cache.on("error", function (error) {
   console.error(error);
@@ -153,7 +152,7 @@ async function getWikiPricing(item_url, server) {
         resolve(JSON.parse(cached_data));
       } else {
         // otherwise fetch new data
-        return fetch(item_url, {agent: httpsAgent})
+        return fetch(item_url, { agent: httpsAgent })
           .then((response) => response.text())
           .then((text) => {
             const priceData = parsePage(text, server);

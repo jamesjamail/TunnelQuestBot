@@ -50,7 +50,10 @@ module.exports = {
         });
 
         // after 3 seconds, slash commands cannot be replied to.  Workaround, reply before starting work, then edit the message on completion.
-        await interaction.reply({ content: "Working on it..." , ephemeral: true});
+        await interaction.reply({
+          content: "Working on it...",
+          ephemeral: true,
+        });
         // button interactions are collected from within function below
         return await sendMessagesToUser(
           interaction,
