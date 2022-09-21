@@ -810,6 +810,7 @@ module.exports = {
   buildListResponse,
   dedupeBlockResults,
   gracefulError,
+  gracefulSystemError,
   watchNotificationBuilder,
   troubleshootingLinkEmbed,
 };
