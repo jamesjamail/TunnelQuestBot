@@ -1,8 +1,6 @@
 /* eslint-disable indent */
 /* eslint-disable max-nested-callbacks */
 const { Client, Intents, Collection } = require("discord.js");
-const { Routes } = require("discord-api-types/v9");
-const { REST } = require("@discordjs/rest");
 const logger = require("winston");
 const settings = require("../settings/settings.json");
 const db = require("../db/db.js");
@@ -20,6 +18,7 @@ const {
   gracefulSystemError,
   troubleshootingLinkEmbed,
 } = require("./clientHelpers");
+const { registerCommands } = require("./registerCommands");
 const { welcomeMsg } = require("../content/messages");
 logger.remove(logger.transports.Console);
 logger.add(new logger.transports.Console(), {
@@ -66,57 +65,15 @@ for (const file of commandFiles) {
 //TODO  create a separate file for registering guild commands, and only run it when neccesary manually
 
 // When the client is ready, run this code (only once)
-bot.once("ready", () => {
+bot.once("ready", async () => {
   console.log("Ready!");
   // There is a limit of 200 application command register calls per day
   // Only refresh commands if specified as an option
   if (process.argv.includes('--refresh-commands')) {
-    const CLIENT_ID = bot.user.id;
-    const rest = new REST({
-      version: "9",
-    }).setToken(TOKEN);
-    (async () => {
-      try {
-        // clear guild commands regardless of env
-        await rest
-          .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-            body: [],
-          })
-          .then(() => console.log("Successfully cleared guild command cache"))
-          .catch((err) => gracefulSystemError(bot, err));
-  
-        // global commands have a delay before syncing - only use for production
-        if (process.env.NODE_ENV.trim() === "production") {
-          // clear command cache first to delete deprecated commands
-          await rest
-            .put(Routes.applicationCommands(CLIENT_ID), {
-              body: [],
-            })
-            .then(() =>
-              console.log("Successfully cleared application command cache")
-            )
-            .catch((err) => gracefulSystemError(bot, err));
-  
-          await rest
-            .put(Routes.applicationCommands(CLIENT_ID), {
-              body: commands,
-            })
-            .then(() =>
-              console.log("Successfully registered application commands")
-            )
-            .catch((err) => gracefulSystemError(bot, err));
-        } else {
-          await rest
-            .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-              body: commands,
-            })
-            .then(() => console.log("Successfully registered guild commands"))
-            .catch((err) => gracefulSystemError(bot, err));
-        }
-      } catch (error) {
-        return gracefulSystemError(bot, error);
-      }
-    })();
+    await registerCommands(bot, TOKEN, GUILD, commands)
+    // kill the bot to avoid people using this script for process mgmt
+    console.log("Command registration complete.  You can now restart the bot.")
+    bot.destroy();
   }
 });
 

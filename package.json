@@ -12,7 +12,7 @@
   "scripts": {
     "test": "jest",
     "start": "cross-env NODE_ENV='production' pm2 start src/parser/logParser.js --update-env",
-    "build": "cross-env NODE_ENV='production' pm2 start src/parser/logParser.js -- --refresh-commands",
+    "register-commands": "cross-env NODE_ENV='production' node src/parser/logParser.js --refresh-commands  --update-env",
     "stop": "pm2 stop src/parser/logParser.js",
     "dev": "cross-env NODE_ENV='development' node --trace-warnings src/parser/logParser.js --register-commands",
     "lint": "eslint . --ext .js",
