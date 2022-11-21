@@ -63,56 +63,61 @@ for (const file of commandFiles) {
   bot.commands.set(command.data.name, command);
 }
 
+//TODO  create a separate file for registering guild commands, and only run it when neccesary manually
+
 // When the client is ready, run this code (only once)
 bot.once("ready", () => {
   console.log("Ready!");
-  // Registering the commands in the client
-  // const CLIENT_ID = bot.user.id;
-  // const rest = new REST({
-  //   version: "9",
-  // }).setToken(TOKEN);
-  // (async () => {
-  //   try {
-  //     // clear guild commands regardless of env
-  //     await rest
-  //       .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-  //         body: [],
-  //       })
-  //       .then(() => console.log("Successfully cleared guild command cache"))
-  //       .catch((err) => gracefulSystemError(bot, err));
-
-  //     // global commands have a delay before syncing - only use for production
-  //     if (process.env.NODE_ENV.trim() === "production") {
-  //       // clear command cache first to delete deprecated commands
-  //       await rest
-  //         .put(Routes.applicationCommands(CLIENT_ID), {
-  //           body: [],
-  //         })
-  //         .then(() =>
-  //           console.log("Successfully cleared application command cache")
-  //         )
-  //         .catch((err) => gracefulSystemError(bot, err));
-
-  //       await rest
-  //         .put(Routes.applicationCommands(CLIENT_ID), {
-  //           body: commands,
-  //         })
-  //         .then(() =>
-  //           console.log("Successfully registered application commands")
-  //         )
-  //         .catch((err) => gracefulSystemError(bot, err));
-  //     } else {
-  //       await rest
-  //         .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
-  //           body: commands,
-  //         })
-  //         .then(() => console.log("Successfully registered guild commands"))
-  //         .catch((err) => gracefulSystemError(bot, err));
-  //     }
-  //   } catch (error) {
-  //     return gracefulSystemError(bot, error);
-  //   }
-  // })();
+  // There is a limit of 200 application command register calls per day
+  // Only refresh commands if specified as an option
+  if (process.argv.includes('--refresh-commands')) {
+    const CLIENT_ID = bot.user.id;
+    const rest = new REST({
+      version: "9",
+    }).setToken(TOKEN);
+    (async () => {
+      try {
+        // clear guild commands regardless of env
+        await rest
+          .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
+            body: [],
+          })
+          .then(() => console.log("Successfully cleared guild command cache"))
+          .catch((err) => gracefulSystemError(bot, err));
+  
+        // global commands have a delay before syncing - only use for production
+        if (process.env.NODE_ENV.trim() === "production") {
+          // clear command cache first to delete deprecated commands
+          await rest
+            .put(Routes.applicationCommands(CLIENT_ID), {
+              body: [],
+            })
+            .then(() =>
+              console.log("Successfully cleared application command cache")
+            )
+            .catch((err) => gracefulSystemError(bot, err));
+  
+          await rest
+            .put(Routes.applicationCommands(CLIENT_ID), {
+              body: commands,
+            })
+            .then(() =>
+              console.log("Successfully registered application commands")
+            )
+            .catch((err) => gracefulSystemError(bot, err));
+        } else {
+          await rest
+            .put(Routes.applicationGuildCommands(CLIENT_ID, GUILD), {
+              body: commands,
+            })
+            .then(() => console.log("Successfully registered guild commands"))
+            .catch((err) => gracefulSystemError(bot, err));
+        }
+      } catch (error) {
+        return gracefulSystemError(bot, error);
+      }
+    })();
+  }
 });
 
 // command syntax is defined in /commands directory
