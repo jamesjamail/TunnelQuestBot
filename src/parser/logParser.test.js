@@ -48,6 +48,31 @@ const logParserTests = {
     expectedAuctionContents: "WTS - Chestplate of the Constant . 2k.",
     expectedMatches: [],
   },
+  "properly parses a log line and matches a WTB watch": {
+    text: "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p'",
+    itemList: [
+      {
+        watch_type: "WTB",
+        item_name: "Blanket of Forgetfulness",
+        user_id: "1234",
+        user_name: "testuser",
+        price: 1300,
+        server: "GREEN",
+      },
+    ],
+    expectedAuctionUser: "Stashboxx",
+    expectedAuctionContents:
+      "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
+    expectedMatches: [
+      {
+        userName: "testuser",
+        seller: "Stashboxx",
+        itemName: "Blanket of Forgetfulness",
+        buyingPrice: 1200,
+        server: "GREEN",
+      },
+    ],
+  },
 };
 
 // RUN TESTS

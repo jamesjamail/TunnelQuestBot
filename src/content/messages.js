@@ -12,8 +12,8 @@ const helpMsg =
   "__***COMMANDS***__\n" +
   "**/help**\n" +
   "> Displays available commands.\n\n" +
-  "**/watch `item` `server` `maximum price`**\n" +
-  "> Starts a watch based on entered parameters. Maximum price is optional.\n\n" +
+  "**/watch `watch_type` `item` `server` `maximum price`**\n" +
+  "> Starts a watch based on entered parameters. `watch_type` can be either WTS or WTB. Maximum price is optional.\n\n" +
   "**/unwatch item `item` `server`**\n" +
   "> Ends a currently running watch. Server is optional.\n\n" +
   "**/unwatch all watches**\n" +

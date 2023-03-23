@@ -55,6 +55,7 @@ bot.on("ready", () => {
 // commands during development and publish them to global commands when they're
 // ready for public use.
 bot.commands = new Collection();
+console.log("bot.commands type:", typeof bot.commands);
 const commands = [];
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
@@ -178,14 +179,18 @@ async function pingUser(
   price,
   server,
   fullAuction,
-  timestamp
+  timestamp,
+  watch_type // Add a new parameter 'watch_type'
 ) {
   // query db for communication history and blocked sellers - abort if not valid
   const validity = await db.validateWatchNotification(userId, watchId, seller);
   if (!validity) return;
   await db.postSuccessfulCommunication(watchId, seller);
 
-  // 	watch notifications have different fields from watch results
+  // Customize the message depending on the watch_type
+  const watchMessage = watch_type === "WTS" ? "selling" : (watch_type === "WTB" ? "buying" : "");
+
+  // watch notifications have different fields from watch results
   const embed = await watchNotificationBuilder({
     item,
     server,
@@ -193,6 +198,7 @@ async function pingUser(
     seller: seller || null,
     fullAuction,
     timestamp,
+    watch_type, // Pass the watch_type to the watchNotificationBuilder
   });
 
   const directMessageChannel = await bot.users.createDM(user);
@@ -203,7 +209,7 @@ async function pingUser(
     { type: "watchNotificationWatchRefresh" },
   ]);
   directMessageChannel
-    .send({ embeds: embed, components: [btnRow] })
+    .send({ content: `Found someone ${watchMessage} ${item}!`, embeds: [embed], components: [btnRow] }) // Update the content with the customized message
     .then(async (message) => {
       // Sorry about this monstronsity...ideally there should be separate collectors for interactions and messages, however right now
       // its a monolith in clientHelpers.  All we need is the userId and id from the interaction, so let's just fake it for now

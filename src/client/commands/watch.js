@@ -6,12 +6,20 @@ const {
   gracefulError,
 } = require("../clientHelpers");
 
-// TODO: add subommands like unwatch.js, /watch item and /watch player
-// /watch player could be useful for players who spotted auctions after the player logged
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("watch")
     .setDescription("add or modify a watch.")
+    .addStringOption((option) =>
+      option
+        .setName("watch_type")
+        .setDescription("choose whether you want to watch WTS or WTB messages")
+        .addChoices([
+          ["watch for selling (WTS)", "WTS"],
+          ["watch for buying (WTB)", "WTB"],
+        ])
+        .setRequired(true)
+    )
     .addStringOption((option) =>
       option
         .setName("item")

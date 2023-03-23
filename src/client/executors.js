@@ -8,18 +8,21 @@ const {
 } = require("./clientHelpers");
 const { formatCapitalCase } = require("../utility/utils.js");
 
-//	the purpose of this file is to do the heavy lifting of the command execution.
-// 	this file combines discord and db commands
+// the purpose of this file is to do the heavy lifting of the command execution.
+// this file combines discord and db commands
 
 async function watch(interaction) {
   const args = interaction.options.data;
+  const type = args[3]?.value || 'WTS'; // Default to WTS if not provided
+
   if (args.length > 2 && args[2].value > 0) {
     return await db
       .addWatch(
         interaction.user.id,
         args[0].value,
         args[1].value,
-        args[2].value
+        args[2].value,
+        type
       )
       .then(async (res) => {
         const metadata = {
@@ -32,6 +35,7 @@ async function watch(interaction) {
             server: args[1].value,
             price: args[2].value,
             datetime: Date.now(),
+            type: type,
           },
         ]).catch(console.error);
         return Promise.resolve({ embeds, metadata });
@@ -44,7 +48,7 @@ async function watch(interaction) {
   } else {
     // if no price, set watch accordingly
     return await db
-      .addWatch(interaction.user.id, args[0].value, args[1].value)
+      .addWatch(interaction.user.id, args[0].value, args[1].value, null, type)
       .then(async (res) => {
         const metadata = {
           id: res.id,
@@ -56,6 +60,7 @@ async function watch(interaction) {
             server: args[1].value,
             price: -1,
             datetime: Date.now(),
+            type: type,
           },
         ]).catch(console.error);
         return Promise.resolve({ embeds, metadata });

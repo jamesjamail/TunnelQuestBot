@@ -30,7 +30,7 @@ const SERVER_COLOR = { BLUE: "#1C58B8", GREEN: "#249458" };
 const httpsAgent = new https.Agent({ ca: rootCas });
 
 cache.on("error", function (error) {
-  console.error(error);
+  console.error('Redis error:', error);
 });
 
 async function fetchAndFormatAuctionData(
@@ -67,14 +67,17 @@ async function fetchAndFormatAuctionData(
     fields.push(field);
   });
 
+  const formattedTitle = fields.length > 0 ? auction_user : `[ --- ] ${auction_user}`;
+
   return new Discord.MessageEmbed()
     .setColor(SERVER_COLOR[server])
-    .setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
+    .setTitle(`**[ ${auction_mode} ]**   ${formattedTitle}`)
     .setDescription(`\`\`\`${auction_contents}\`\`\``)
     .addFields(fields)
     .setFooter({ text: `Project 1999 ${utils.formatCapitalCase(server)}` })
     .setTimestamp();
 }
+
 
 function formatItemData(item_data) {
   const formatted_items = {};
@@ -145,13 +148,16 @@ async function getWikiPricing(item_url, server) {
   return new Promise((resolve, reject) => {
     cache.get(key, (err, cached_data) => {
       if (err) {
+        console.error('Error getting cached data:', err);
         reject(err);
       }
       // use cached data if available
       if (cached_data !== null) {
+        console.log('Using cached data:', cached_data);
         resolve(JSON.parse(cached_data));
       } else {
         // otherwise fetch new data
+        console.log('Fetching new data:', item_url);
         return fetch(item_url, { agent: httpsAgent })
           .then((response) => response.text())
           .then((text) => {
@@ -160,12 +166,19 @@ async function getWikiPricing(item_url, server) {
             const priceDataStr = JSON.stringify(priceData);
             // store parsed data in cache as a string
             cache.setex(key, cache_expiration, priceDataStr, (err) => {
-              if (err) console.error(err);
+              if (err) {
+                console.error('Error setting cache:', err);
+              } else {
+                console.log('Cache set successfully:', key, priceDataStr);
+              }
             });
             // return parsed data as array
             resolve(priceData);
           })
-          .catch((err) => reject(err));
+          .catch((err) => {
+            console.error('Error fetching new data:', err);
+            reject(err);
+          });
       }
     });
   });

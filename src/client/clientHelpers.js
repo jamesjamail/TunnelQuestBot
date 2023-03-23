@@ -522,10 +522,10 @@ async function watchBuilder(watchesToBuild) {
         : watch.price.toString().concat("pp");
     const item = formatCapitalCase(watch.name);
     const server = `${formatCapitalCase(watch.server)} Server`;
-    // const url = await fetchImageUrl(item).catch(console.error);
+    const watchType = watch.type === "WTS" ? "WTS" : "WTB"; // Determine the watch type
 
     watches.push({
-      name: `${price}   |   ${server}`,
+      name: `${price}   |   ${server}   |   ${watchType}`, // Include the watch type in the name
       value: `Expires in ${diffDuration.days()} days ${diffDuration.hours()} hours  and ${diffDuration.minutes()} minutes`,
       inline: false,
     });

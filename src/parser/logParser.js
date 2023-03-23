@@ -5,6 +5,7 @@ const { parsePrice } = require("../utility/utils");
 const pollInterval = 10 * 1000;
 const AUC_REGEX = /^\[.*?\] (\w+) auctions, '(.*)'$/;
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
+const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
 
 // stream log file(s)
 if (require.main === module) {
@@ -41,6 +42,16 @@ function filterWTS(auction_contents) {
   return auctionWTS.toUpperCase().trim();
 }
 
+// remove any WTS sections from the buyer message
+function filterWTB(auction_contents) {
+  const filteredWTB = [...auction_contents.matchAll(WTB_REGEX)];
+  let auctionWTB = "";
+  for (const section in filteredWTB) {
+    auctionWTB += filteredWTB[section][1].trim() + " ";
+  }
+  return auctionWTB.toUpperCase().trim();
+}
+
 function parseLog(text, itemList, logServer, client) {
   const outgoing = [];
   // test if is auction
@@ -51,53 +62,52 @@ function parseLog(text, itemList, logServer, client) {
     // stream for stream channels
     client.streamAuction(auction_user, auction_contents, logServer);
     const auctionWTS = filterWTS(auction_contents);
+    const auctionWTB = filterWTB(auction_contents);
+
     if (auctionWTS) {
-      itemList.forEach(
-        ({
-          watch_id,
-          item_name,
-          user_id,
-          user_name,
-          price,
-          server,
-          timestamp,
-        }) => {
-          if (server === logServer && auctionWTS.includes(item_name)) {
-            const filteredAuction = auctionWTS.slice(
-              auctionWTS.indexOf(item_name),
-              auctionWTS.length
-            );
-            const logPrice = parsePrice(filteredAuction, item_name.length);
-            if (price === -1) {
-              const msg = {
-                watchId: watch_id,
-                userId: user_id,
-                userName: user_name,
-                itemName: item_name,
-                sellingPrice: logPrice,
-                seller: auction_user,
-                server,
-                fullAuction: text,
-                timestamp,
-              };
-              outgoing.push(msg);
-            } else if (logPrice && logPrice <= price) {
-              const msg = {
-                watchId: watch_id,
-                userId: user_name,
-                userName: user_name,
-                itemName: item_name,
-                sellingPrice: logPrice,
-                seller: auction_user,
-                server,
-                fullAuction: text,
-                timestamp,
-              };
-              outgoing.push(msg);
-            }
+      itemList.forEach(({ watch_id, item_name, user_id, user_name, price, server, timestamp, watch_type }) => {
+        if (server === logServer && watch_type === "WTS" && auctionWTS.includes(item_name)) {
+          const filteredAuction = auctionWTS.slice(auctionWTS.indexOf(item_name), auctionWTS.length);
+          const logPrice = parsePrice(filteredAuction, item_name.length);
+          if (price === -1 || (logPrice && logPrice <= price)) {
+            const msg = {
+              watchId: watch_id,
+              userId: user_id,
+              userName: user_name,
+              itemName: item_name,
+              sellingPrice: logPrice,
+              seller: auction_user,
+              server,
+              fullAuction: text,
+              timestamp,
+            };
+            outgoing.push(msg);
           }
         }
-      );
+      });
+    }
+
+    if (auctionWTB) {
+      itemList.forEach(({ watch_id, item_name, user_id, user_name, price, server, timestamp, watch_type }) => {
+        if (server === logServer && watch_type === "WTB" && auctionWTB.includes(item_name)) {
+          const filteredAuction = auctionWTB.slice(auctionWTB.indexOf(item_name), auctionWTB.length);
+          const logPrice = parsePrice(filteredAuction, item_name.length);
+          if (price === -1 || (logPrice && logPrice >= price)) {
+            const msg = {
+              watchId: watch_id,
+              userId: user_id,
+              userName: user_name,
+              itemName: item_name,
+              buyingPrice: logPrice,
+              buyer: auction_user,
+              server,
+              fullAuction: text,
+              timestamp,
+            };
+            outgoing.push(msg);
+          }
+        }
+      });
     }
   }
   sendDiscordMessages(client, outgoing);
@@ -109,12 +119,13 @@ async function sendDiscordMessages(client, outgoing) {
       msg.watchId,
       msg.userName,
       msg.userId,
-      msg.seller,
+      msg.seller || msg.buyer, // Handle both WTS and WTB cases
       msg.itemName,
-      msg.sellingPrice || null,
+      msg.sellingPrice || msg.buyingPrice, // Handle both WTS and WTB cases
       msg.server,
       msg.fullAuction,
-      msg.timestamp
+      msg.timestamp,
+      msg.watch_type // Pass the watch_type to the pingUser function
     );
   });
 }

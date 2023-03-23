@@ -123,13 +123,24 @@ for (const testCase in wikiHandlerTests) {
   const auction_user = wikiHandlerTests[testCase].auctionUser;
   const auction_contents = wikiHandlerTests[testCase].auctionContents;
   const expected_fields = wikiHandlerTests[testCase].expectedFields;
-  test(testCase, () => {
-    return wikiHandler
-      .fetchAndFormatAuctionData(auction_user, auction_contents, "GREEN")
-      .then((auc_data) => {
-        for (const field in expected_fields) {
-          expect(auc_data[field]).toEqual(expected_fields[field]);
-        }
-      });
+
+  test(testCase, async () => {
+    try {
+      console.log(`Starting test case: ${testCase}`);
+      const auc_data = await wikiHandler.fetchAndFormatAuctionData(
+        auction_user,
+        auction_contents,
+        "GREEN"
+      );
+      console.log(`Running test case: ${testCase}`);
+      console.log("Actual fields:", JSON.stringify(auc_data, null, 2));
+      console.log("Expected fields:", JSON.stringify(expected_fields, null, 2));
+
+      for (const field in expected_fields) {
+        expect(auc_data[field]).toEqual(expected_fields[field]);
+      }
+    } catch (error) {
+      console.error(`Error in test case: ${testCase}`, error);
+    }
   });
 }

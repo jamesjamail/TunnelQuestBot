@@ -78,7 +78,7 @@ function getWatches(callback) {
     .catch((err) => console.error(err));
 }
 
-async function addWatch(user, item, server, price, watchId) {
+async function addWatch(user, item, server, price, watchId, watchType) {
   // if already have watchId, simple update -- Do we use this? or the separate function
   if (watchId) {
     const queryStr = "UPDATE watches SET active = true WHERE id = $1;";
@@ -100,18 +100,18 @@ async function addWatch(user, item, server, price, watchId) {
       const queryStr =
         "" +
         "UPDATE watches " +
-        "SET user_id = $1, item_id = $2, price = $3, server = $4, active = TRUE, datetime = current_timestamp " +
-        "WHERE user_id = $1 AND item_id = $2 AND server = $4 RETURNING watches.id";
+        "SET user_id = $1, item_id = $2, price = $3, server = $4, watch_type = $5, active = TRUE, datetime = current_timestamp " +
+        "WHERE user_id = $1 AND item_id = $2 AND server = $4 AND watch_type = $5 RETURNING watches.id";
       return await connection
-        .query(queryStr, [userId, itemId, convertedPrice, server])
+        .query(queryStr, [userId, itemId, convertedPrice, server, watchType])
         .then(async (results) => {
           if (results.rowCount === 0) {
             const queryStr =
               "" +
-              "INSERT INTO watches (user_id, item_id, price, server, datetime, active) " +
-              "VALUES ($1, $2, $3, $4, current_timestamp, true) RETURNING id";
+              "INSERT INTO watches (user_id, item_id, price, server, watch_type, datetime, active) " +
+              "VALUES ($1, $2, $3, $4, $5, current_timestamp, true) RETURNING id";
             return await connection
-              .query(queryStr, [userId, itemId, convertedPrice, server])
+              .query(queryStr, [userId, itemId, convertedPrice, server, watchType])
               .then(async (res) => {
                 return await showWatchById(res.rows[0].id);
               });
