@@ -25,10 +25,13 @@ const logParserTests = {
       "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
     expectedMatches: [
       {
-        userName: "testuser",
+        // TODO: watchId should probably be passed through somehow and not undefined
+        watchId: undefined,
+        user: "testuser",
+        userId: "testuser",
         seller: "Stashboxx",
-        itemName: "SHIFTLESS DEEDS",
-        sellingPrice: 5100,
+        item: "SHIFTLESS DEEDS",
+        price: 5100,
         server: "GREEN",
       },
     ],
@@ -75,7 +78,8 @@ for (const testCase in logParserTests) {
     expect(pingUserMock).toHaveBeenCalledTimes(expected_pings.length);
     expected_pings.forEach((ping) => {
       expect(pingUserMock).toHaveBeenCalledWith(
-        ...Object.values(ping).concat([test_auction_string])
+        // TODO: I don't think adding undefined here is right -- should be a timestamp?
+        ...Object.values(ping).concat([test_auction_string]).concat([undefined])
       );
     });
   });

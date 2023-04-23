@@ -1,20 +1,34 @@
-jest.unmock("./wikiHandler.js");
+// jest.unmock("./wikiHandler.js");
 jest.unmock("discord.js");
-const wikiHandler = require("./wikiHandler.js");
 
 // Mock getWikiPricing for our tests
-wikiHandler.getWikiPricing = jest.fn();
-wikiHandler.getWikiPricing.mockReturnValue({
-  30: "1 ± 2",
-  90: "2 ± 3",
-});
+// TODO: This is a mess, none of this works right
+const wikiHandler = require("./wikiHandler.js");
+jest.mock("./wikiHandler.js", () => {
+  const originalModule = jest.requireActual("./wikiHandler.js");
 
+  return {
+    __esModule: true,
+    ...originalModule,
+    getWikiPricing: jest.fn((item_url, server) => {
+      return {
+        30: "1 ± 2",
+        90: "2 ± 3",
+      }
+    }),
+  };
+});
+// jest.mock("./wikiHandler.js")
+// getWikiPricing.mockImplementation(() => { return {
+//         30: "1 ± 2",
+//         90: "2 ± 3",
+//       }})
 const wikiHandlerTests = {
   "properly formats a single item auction": {
     auctionUser: "Crakle",
     auctionContents: "WTS - Chestplate of the Constant . 2k.",
     expectedFields: {
-      title: "Crakle (WTS)",
+      title: "**[ WTS ]**   Crakle",
       description: "```WTS - Chestplate of the Constant . 2k.```",
       fields: [
         {
@@ -31,7 +45,7 @@ const wikiHandlerTests = {
     auctionContents:
       "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
     expectedFields: {
-      title: "Stashboxx (WTB / WTS)",
+      title: "**[ WTB / WTS ]**   Stashboxx",
       description:
         "```wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p```",
       fields: [
@@ -72,7 +86,7 @@ const wikiHandlerTests = {
     auctionUser: "Someone",
     auctionContents: "I am new to auc and what is this",
     expectedFields: {
-      title: "Someone (???)",
+      title: "**[ --- ]**   Someone",
       description: "```I am new to auc and what is this```",
       fields: [],
     },
@@ -81,7 +95,7 @@ const wikiHandlerTests = {
     auctionUser: "Crakle",
     auctionContents: "WTS - Chestplate of the cONstant . 2k.",
     expectedFields: {
-      title: "Crakle (WTS)",
+      title: "**[ WTS ]**   Crakle",
       description: "```WTS - Chestplate of the cONstant . 2k.```",
       fields: [
         {
@@ -97,7 +111,7 @@ const wikiHandlerTests = {
     auctionUser: "Berbank",
     auctionContents: "WTS Golden Amber Earring 500p, Jasper Gold Earring 300p",
     expectedFields: {
-      title: "Berbank (WTS)",
+      title: "**[ WTS ]**   Berbank",
       description:
         "```WTS Golden Amber Earring 500p, Jasper Gold Earring 300p```",
       fields: [
@@ -124,11 +138,10 @@ for (const testCase in wikiHandlerTests) {
   const auction_contents = wikiHandlerTests[testCase].auctionContents;
   const expected_fields = wikiHandlerTests[testCase].expectedFields;
   test(testCase, () => {
-    return wikiHandler
-      .fetchAndFormatAuctionData(auction_user, auction_contents, "GREEN")
+    return wikiHandler.fetchAndFormatAuctionData(auction_user, auction_contents, "GREEN")
       .then((auc_data) => {
         for (const field in expected_fields) {
-          expect(auc_data[field]).toEqual(expected_fields[field]);
+          expect(auc_data.data[field]).toEqual(expected_fields[field]);
         }
       });
   });

@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 /* eslint-disable max-nested-callbacks */
-const { Client, Intents, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Partials } = require("discord.js");
 const logger = require("winston");
 const settings = require("../settings/settings.json");
 const db = require("../db/db.js");
@@ -29,12 +29,12 @@ logger.level = "debug";
 // Initialize Discord Client - this "partials" array below is required for Direct Messages to trigger messageCreate events.  Not documented much in discordjs docs.
 const bot = new Client({
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-    Intents.FLAGS.DIRECT_MESSAGES,
-    Intents.FLAGS.GUILD_MESSAGES,
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.DirectMessageReactions,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.GuildMessages,
   ],
-  partials: ["CHANNEL"],
+  partials: [Partials.Channel],
 });
 const TOKEN = settings.discord.token;
 const GUILD = settings.discord.guild;
@@ -54,7 +54,7 @@ bot.on("ready", () => {
 // hour. Guild commands update instantly. As such, we recommend you use guild-based
 // commands during development and publish them to global commands when they're
 // ready for public use.
-bot.commands = new Collection();
+bot.commands = new Map();
 const commands = [];
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);

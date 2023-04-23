@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { MessageActionRow, MessageButton } = require("discord.js");
+const { MessageActionRow, MessageButton, EmbedBuilder } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -487,7 +487,7 @@ function buildListResponse(data) {
         inline: false,
       });
     });
-    const embed = new Discord.MessageEmbed()
+    const embed = new EmbedBuilder()
       .setTitle(
         globalSnooze
           ? "__Active Watches (Global Snooze Active)__"
@@ -542,7 +542,7 @@ async function watchBuilder(watchesToBuild) {
     const href = matchingItemName
       ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}`
       : null;
-    return new Discord.MessageEmbed()
+    return new EmbedBuilder()
       .setColor(SERVER_COLOR[watch.server])
       .setAuthor({ name: "Auction Watch", url: href, iconURL: urls[index] })
       .addFields(watches)
@@ -582,7 +582,7 @@ async function watchNotificationBuilder({
     });
   }
 
-  const msg = new Discord.MessageEmbed()
+  const msg = new EmbedBuilder()
     .setColor(SERVER_COLOR[server])
     .setImage(thumbnailUrl)
     .setTitle(`${formatCapitalCase(item)}`)
@@ -640,7 +640,7 @@ function blockBuilder(blocksToBuild) {
       });
     }
 
-    return new Discord.MessageEmbed()
+    return new EmbedBuilder()
       .setColor(SERVER_COLOR[block.server])
       .addFields(blocks)
       .setTitle(block.name ? "Watch Block" : "Global Block")
@@ -793,10 +793,12 @@ async function sendMessagesToUser(
   return postedMessages;
 }
 
-const troubleshootingLinkEmbed = new Discord.MessageEmbed().addField(
-  `ISSUE: Slash Commands Won't Work`,
-  `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`
-);
+const troubleshootingLinkEmbed = new EmbedBuilder().addFields([
+    {
+        name: `ISSUE: Slash Commands Won't Work`,
+        value: `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`
+    }
+]);
 
 module.exports = {
   MessageType,

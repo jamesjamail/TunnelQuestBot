@@ -1,4 +1,4 @@
-const Discord = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const utils = require("./utils.js");
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
@@ -67,7 +67,7 @@ async function fetchAndFormatAuctionData(
     fields.push(field);
   });
 
-  return new Discord.MessageEmbed()
+  return new EmbedBuilder()
     .setColor(SERVER_COLOR[server])
     .setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
     .setDescription(`\`\`\`${auction_contents}\`\`\``)
