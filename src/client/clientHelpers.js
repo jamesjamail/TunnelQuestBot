@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
