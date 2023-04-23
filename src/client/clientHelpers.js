@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { MessageActionRow, MessageButton, EmbedBuilder } = require("discord.js");
+const { ActionRowBuilder, MessageButton, EmbedBuilder } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -650,7 +650,7 @@ function blockBuilder(blocksToBuild) {
 }
 
 function buttonBuilder(buttonTypes) {
-  const row = new MessageActionRow();
+  const row = new ActionRowBuilder();
   const buttons = buttonTypes.map((button) => {
     switch (button.type) {
       case "itemSnooze":
