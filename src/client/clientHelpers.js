@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { ActionRowBuilder, MessageButton, EmbedBuilder } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -654,59 +654,59 @@ function buttonBuilder(buttonTypes) {
   const buttons = buttonTypes.map((button) => {
     switch (button.type) {
       case "itemSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("itemSnooze")
           .setLabel("💤")
           .setStyle(button.active ? "PRIMARY" : "SECONDARY");
       case "globalSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalSnooze")
           .setLabel("💤")
           .setStyle(button.active ? "PRIMARY" : "SECONDARY");
       case "unwatch":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("unwatch")
           .setLabel("❌")
           .setStyle(button.active ? "DANGER" : "SECONDARY");
 
       case "itemRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("itemRefresh")
           .setLabel("♻️")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
 
       case "globalRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalRefresh")
           .setLabel("♻️")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
       case "globalUnblock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalUnblock")
           .setLabel("❌")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
       case "watchBlock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchBlock")
           .setLabel("🔕")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
       case "watchUnblock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchUnblock")
           .setLabel("❌")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
       case "watchNotificationSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationSnooze")
           .setLabel("💤")
           .setStyle(button.active ? "PRIMARY" : "SECONDARY");
       case "watchNotificationUnwatch":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationUnwatch")
           .setLabel("❌")
           .setStyle(button.active ? "DANGER" : "SECONDARY");
       case "watchNotificationWatchRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationWatchRefresh")
           .setLabel("♻️")
           .setStyle(button.active ? "SUCCESS" : "SECONDARY");
