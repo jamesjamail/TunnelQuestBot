@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { ActionRowBuilder, ButtonBuilder, EmbedBuilder } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -657,59 +657,59 @@ function buttonBuilder(buttonTypes) {
         return new ButtonBuilder()
           .setCustomId("itemSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "globalSnooze":
         return new ButtonBuilder()
           .setCustomId("globalSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "unwatch":
         return new ButtonBuilder()
           .setCustomId("unwatch")
           .setLabel("❌")
-          .setStyle(button.active ? "DANGER" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Danger : ButtonStyle.Secondary);
 
       case "itemRefresh":
         return new ButtonBuilder()
           .setCustomId("itemRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
 
       case "globalRefresh":
         return new ButtonBuilder()
           .setCustomId("globalRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "globalUnblock":
         return new ButtonBuilder()
           .setCustomId("globalUnblock")
           .setLabel("❌")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchBlock":
         return new ButtonBuilder()
           .setCustomId("watchBlock")
           .setLabel("🔕")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchUnblock":
         return new ButtonBuilder()
           .setCustomId("watchUnblock")
           .setLabel("❌")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchNotificationSnooze":
         return new ButtonBuilder()
           .setCustomId("watchNotificationSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "watchNotificationUnwatch":
         return new ButtonBuilder()
           .setCustomId("watchNotificationUnwatch")
           .setLabel("❌")
-          .setStyle(button.active ? "DANGER" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Danger : ButtonStyle.Secondary);
       case "watchNotificationWatchRefresh":
         return new ButtonBuilder()
           .setCustomId("watchNotificationWatchRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       default:
         return null;
     }
