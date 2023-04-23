@@ -6,15 +6,14 @@ discord.Client.prototype.users = {
     send: jest.fn().mockName("send_mock").mockReturnValue({
       then: jest.fn().mockName("then_mock"),
     }),
+  },
+  // TODO: This isn't right yet
+  createDM: jest.fn().mockReturnValue({
+    send: jest.fn().mockReturnValue({
+      then: jest.fn(),
+    }),
   }),
 };
-
-discord.Client.on = jest.fn();
-
-discord.EmbedBuilder = origDiscord.EmbedBuilder;
-discord.ButtonBuilder = origDiscord.ButtonBuilder;
-discord.ButtonStyle = origDiscord.ButtonStyle;
-discord.ActionRowBuilder = origDiscord.ActionRowBuilder;
 
 // TODO: I don't know if we can somehow pull this from the original?
 // For now I've just copy/pasted it but that seems bad

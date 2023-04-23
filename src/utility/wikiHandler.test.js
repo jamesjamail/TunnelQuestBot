@@ -1,7 +1,28 @@
+// jest.unmock("./wikiHandler.js");
 jest.unmock("discord.js");
-jest.mock("./wikiHandler.js");
 
-const wikiHandler = require("./wikiHandler.js").default;
+// Mock getWikiPricing for our tests
+// TODO: This is a mess, none of this works right
+const wikiHandler = require("./wikiHandler.js");
+jest.mock("./wikiHandler.js", () => {
+  const originalModule = jest.requireActual("./wikiHandler.js");
+
+  return {
+    __esModule: true,
+    ...originalModule,
+    getWikiPricing: jest.fn((item_url, server) => {
+      return {
+        30: "1 ± 2",
+        90: "2 ± 3",
+      }
+    }),
+  };
+});
+// jest.mock("./wikiHandler.js")
+// getWikiPricing.mockImplementation(() => { return {
+//         30: "1 ± 2",
+//         90: "2 ± 3",
+//       }})
 const wikiHandlerTests = {
   "properly formats a single item auction": {
     auctionUser: "Crakle",
