@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -42,7 +42,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
   // chaos using interactions in guild channels and DMs simultaneously.  Keep the collector scoped to the message
   // the buttons are attached to ensure button events are handled correctly (and reduce load on the collector)
   const collector = reply.createMessageComponentCollector({
-    componentType: "BUTTON",
+    componentType: ComponentType.Button,
     time: 30 * 60000,
   });
   collector.on("collect", async (i) => {
