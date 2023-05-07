@@ -26,7 +26,7 @@ const clientTests = {
     price: item1.price,
     server: item1.server,
     auctionContents: `WTS - ${item1.name} . ${item1.priceAbbr}.`,
-    timestamp: "some timestamp"
+    timestamp: "2020-02-10 00:26:52.123456"
   },
 };
 
