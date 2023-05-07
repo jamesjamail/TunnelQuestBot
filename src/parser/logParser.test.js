@@ -30,7 +30,7 @@ const logParserTests = {
     expectedMatches: [
       {
         // TODO: watchId should probably be passed through somehow and not undefined
-        watchId: undefined,
+        watchId: 1,
         user: "testuser",
         userId: "testuser",
         seller: "Stashboxx",
@@ -86,7 +86,7 @@ for (const testCase in logParserTests) {
       ping.text = test_auction_string;
       expect(pingUserMock).toHaveBeenCalledWith(
         // TODO: I don't think adding undefined here is right -- should be a timestamp?
-        ...Object.values(ping).concat([test_auction_string]).concat([undefined])
+        ...Object.values(ping)
       );
     });
   });
