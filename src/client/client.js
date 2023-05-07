@@ -249,4 +249,4 @@ async function streamAuction(auction_user, auction_contents, server) {
 
 bot.login(TOKEN);
 
-module.exports = { pingUser, streamAuction };
+module.exports = { pingUser, streamAuction, bot };

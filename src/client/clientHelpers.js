@@ -8,7 +8,7 @@ const {
 const {
   fetchImageUrl,
   fetchWikiPricing,
-} = require("../utility/wikiHandler.js");
+} = require("../utility/wikiHandler.js").default;
 const moment = require("moment");
 // const sslRootCAs = require("ssl-root-cas");
 // sslRootCAs
@@ -548,7 +548,7 @@ async function watchBuilder(watchesToBuild) {
       .addFields(watches)
       .setTitle(formatCapitalCase(watch.name))
       .setFooter({
-        text: "To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻",
+        text: "To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻️",
       });
   });
   return Promise.resolve(embeds);
@@ -603,7 +603,7 @@ async function watchNotificationBuilder({
     )
     .addFields(fields)
     .setFooter({
-      text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(
+      text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻️\nWatch expires ${moment(
         timestamp
       )
         .add(7, "days")
@@ -812,5 +812,5 @@ module.exports = {
   gracefulError,
   gracefulSystemError,
   watchNotificationBuilder,
-  troubleshootingLinkEmbed,
+  troubleshootingLinkEmbed
 };

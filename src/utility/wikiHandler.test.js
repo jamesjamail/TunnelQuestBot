@@ -1,28 +1,7 @@
-// jest.unmock("./wikiHandler.js");
 jest.unmock("discord.js");
+jest.mock("./wikiHandler.js");
 
-// Mock getWikiPricing for our tests
-// TODO: This is a mess, none of this works right
-const wikiHandler = require("./wikiHandler.js");
-jest.mock("./wikiHandler.js", () => {
-  const originalModule = jest.requireActual("./wikiHandler.js");
-
-  return {
-    __esModule: true,
-    ...originalModule,
-    getWikiPricing: jest.fn((item_url, server) => {
-      return {
-        30: "1 ± 2",
-        90: "2 ± 3",
-      }
-    }),
-  };
-});
-// jest.mock("./wikiHandler.js")
-// getWikiPricing.mockImplementation(() => { return {
-//         30: "1 ± 2",
-//         90: "2 ± 3",
-//       }})
+const wikiHandler = require("./wikiHandler.js").default;
 const wikiHandlerTests = {
   "properly formats a single item auction": {
     auctionUser: "Crakle",
@@ -35,7 +14,7 @@ const wikiHandlerTests = {
           inline: true,
           name: "2k",
           value:
-            "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Chestplate of the Constant](https://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -53,31 +32,31 @@ const wikiHandlerTests = {
           inline: true,
           name: "No Price Listed",
           value:
-            "[Allure](http://wiki.project1999.com/Allure '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Allure](https://wiki.project1999.com/Allure '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "1k",
           value:
-            "[Paralyzing Earth](http://wiki.project1999.com/Paralyzing_Earth '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Paralyzing Earth](https://wiki.project1999.com/Paralyzing_Earth '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "1.2k",
           value:
-            "[Blanket of Forgetfulness](http://wiki.project1999.com/Blanket_of_Forgetfulness '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Blanket of Forgetfulness](https://wiki.project1999.com/Blanket_of_Forgetfulness '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "5.1k",
           value:
-            "[Shiftless Deeds](http://wiki.project1999.com/Shiftless_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Shiftless Deeds](https://wiki.project1999.com/Shiftless_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "40pp",
           value:
-            "[Tepid Deeds](http://wiki.project1999.com/Tepid_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Tepid Deeds](https://wiki.project1999.com/Tepid_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -102,7 +81,7 @@ const wikiHandlerTests = {
           inline: true,
           name: "2k",
           value:
-            "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Chestplate of the Constant](https://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -119,13 +98,13 @@ const wikiHandlerTests = {
           inline: true,
           name: "500pp",
           value:
-            "[Golden Amber Earring](http://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Golden Amber Earring](https://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "300pp",
           value:
-            "[Jasper Gold Earring](http://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Jasper Gold Earring](https://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
