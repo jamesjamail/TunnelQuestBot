@@ -46,6 +46,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
     time: 30 * 60000,
   });
   collector.on("collect", async (i) => {
+      await gracefulSystemError(`Button Interation Collected ${i.customId} from user ${i.user.id}`);
     // TODO: I don't think this is required anymore now that the collector is scoped to the message it's on- cleaner to have a filter as a function
     //
     // https://discordjs.guide/popular-topics/collectors.html#interaction-collectors
