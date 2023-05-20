@@ -31,10 +31,10 @@ module.exports = {
             .setDescription(
               "optionally specify a server - defaults to both servers"
             )
-            .addChoices([
-              ["blue server", "BLUE"],
-              ["green server", "GREEN"],
-            ])
+            .addChoices(
+              {name: "blue server", value: "BLUE"},
+              {name: "green server", value: "GREEN"},
+            )
         )
     ),
   async execute(interaction) {

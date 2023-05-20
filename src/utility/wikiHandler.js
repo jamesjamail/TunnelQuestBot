@@ -1,4 +1,4 @@
-const Discord = require("discord.js");
+const { EmbedBuilder } = require("discord.js");
 const utils = require("./utils.js");
 const fetch = require("node-fetch");
 const cheerio = require("cheerio");
@@ -67,7 +67,7 @@ async function fetchAndFormatAuctionData(
     fields.push(field);
   });
 
-  return new Discord.MessageEmbed()
+  return new EmbedBuilder()
     .setColor(SERVER_COLOR[server])
     .setTitle(`**[ ${auction_mode} ]**   ${auction_user}`)
     .setDescription(`\`\`\`${auction_contents}\`\`\``)
@@ -204,7 +204,7 @@ async function findWikiData(auction_contents, server) {
       link = BASE_WIKI_URL + ALIASES[item_name];
     }
 
-    const historical_pricing = await getWikiPricing(link, server);
+    const historical_pricing = await exportFunctions.getWikiPricing(link, server);
     const sale_price = utils.parsePrice(auction_contents, item[0] + 1);
     if (link) {
       wiki_data[link] = [sale_price, historical_pricing];
@@ -249,9 +249,12 @@ function parseResponse(html) {
   );
 }
 
-exports.fetchAndFormatAuctionData = fetchAndFormatAuctionData;
-exports.getWikiPricing = getWikiPricing;
-exports.SERVER_COLOR = SERVER_COLOR;
-exports.fetchImageUrl = fetchImageUrl;
-exports.fetchWikiPricing = fetchWikiPricing;
-exports.httpsAgent = httpsAgent;
+const exportFunctions = {
+  fetchAndFormatAuctionData,
+  fetchImageUrl,
+  fetchWikiPricing,
+  getWikiPricing,
+  SERVER_COLOR,
+  httpsAgent
+}
+export default exportFunctions;

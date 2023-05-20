@@ -19,10 +19,10 @@ module.exports = {
       option
         .setName("server")
         .setDescription("select a server")
-        .addChoices([
-          ["blue server", "BLUE"],
-          ["green server", "GREEN"],
-        ])
+        .addChoices(
+          {name: "blue server", value: "BLUE"},
+          {name: "green server", value: "GREEN"},
+        )
     )
     .setDescription(
       "prevent a player from triggering notifications on all watches"

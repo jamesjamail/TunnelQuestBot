@@ -22,10 +22,10 @@ module.exports = {
       option
         .setName("server")
         .setDescription("select a server")
-        .addChoices([
-          ["blue server", "BLUE"],
-          ["green server", "GREEN"],
-        ])
+        .addChoices(
+          {name: "blue server", value: "BLUE"},
+          {name: "green server", value: "GREEN"},
+        )
         .setRequired(true)
     )
     .addNumberOption((option) =>

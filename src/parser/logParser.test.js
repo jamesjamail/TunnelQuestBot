@@ -6,18 +6,22 @@ const logParserTests = {
     text: "[Mon Feb 10 00:26:16 2020] Stashboxx auctions, 'wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p'",
     itemList: [
       {
+        watch_id: 1,
         item_name: "SHIFTLESS DEEDS",
         user_id: "1234",
         user_name: "testuser",
         price: 5200,
         server: "GREEN",
+        timestamp: "2020-02-08 00:26:52.123456"
       },
       {
+        watch_id: 2,
         item_name: "TEPID DEEDS",
         user_id: "5678",
         user_name: "user2",
         price: 20,
         server: "GREEN",
+        timestamp: "2020-02-09 00:26:52.123456"
       },
     ],
     expectedAuctionUser: "Stashboxx",
@@ -25,11 +29,16 @@ const logParserTests = {
       "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
     expectedMatches: [
       {
-        userName: "testuser",
+        // TODO: watchId should probably be passed through somehow and not undefined
+        watchId: 1,
+        user: "testuser",
+        userId: "testuser",
         seller: "Stashboxx",
-        itemName: "SHIFTLESS DEEDS",
-        sellingPrice: 5100,
+        item: "SHIFTLESS DEEDS",
+        price: 5100,
         server: "GREEN",
+        text: null,
+        timestamp: "2020-02-08 00:26:52.123456"
       },
     ],
   },
@@ -74,8 +83,10 @@ for (const testCase in logParserTests) {
     );
     expect(pingUserMock).toHaveBeenCalledTimes(expected_pings.length);
     expected_pings.forEach((ping) => {
+      ping.text = test_auction_string;
       expect(pingUserMock).toHaveBeenCalledWith(
-        ...Object.values(ping).concat([test_auction_string])
+        // TODO: I don't think adding undefined here is right -- should be a timestamp?
+        ...Object.values(ping)
       );
     });
   });

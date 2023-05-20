@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 const db = require("../db/db.js");
-const { MessageActionRow, MessageButton } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, EmbedBuilder, ButtonStyle, ComponentType } = require("discord.js");
 const {
   formatCapitalCase,
   removeLogTimestamp,
@@ -8,7 +8,7 @@ const {
 const {
   fetchImageUrl,
   fetchWikiPricing,
-} = require("../utility/wikiHandler.js");
+} = require("../utility/wikiHandler.js").default;
 const moment = require("moment");
 // const sslRootCAs = require("ssl-root-cas");
 // sslRootCAs
@@ -42,7 +42,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
   // chaos using interactions in guild channels and DMs simultaneously.  Keep the collector scoped to the message
   // the buttons are attached to ensure button events are handled correctly (and reduce load on the collector)
   const collector = reply.createMessageComponentCollector({
-    componentType: "BUTTON",
+    componentType: ComponentType.Button,
     time: 30 * 60000,
   });
   collector.on("collect", async (i) => {
@@ -487,7 +487,7 @@ function buildListResponse(data) {
         inline: false,
       });
     });
-    const embed = new Discord.MessageEmbed()
+    const embed = new EmbedBuilder()
       .setTitle(
         globalSnooze
           ? "__Active Watches (Global Snooze Active)__"
@@ -542,13 +542,13 @@ async function watchBuilder(watchesToBuild) {
     const href = matchingItemName
       ? `https://wiki.project1999.com${wiki_url[watch.name.toUpperCase()]}`
       : null;
-    return new Discord.MessageEmbed()
+    return new EmbedBuilder()
       .setColor(SERVER_COLOR[watch.server])
       .setAuthor({ name: "Auction Watch", url: href, iconURL: urls[index] })
       .addFields(watches)
       .setTitle(formatCapitalCase(watch.name))
       .setFooter({
-        text: "To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻",
+        text: "To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻️",
       });
   });
   return Promise.resolve(embeds);
@@ -582,7 +582,7 @@ async function watchNotificationBuilder({
     });
   }
 
-  const msg = new Discord.MessageEmbed()
+  const msg = new EmbedBuilder()
     .setColor(SERVER_COLOR[server])
     .setImage(thumbnailUrl)
     .setTitle(`${formatCapitalCase(item)}`)
@@ -603,7 +603,7 @@ async function watchNotificationBuilder({
     )
     .addFields(fields)
     .setFooter({
-      text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻\nWatch expires ${moment(
+      text: `To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions by this seller, click 🔕\nTo extend this watch, click ♻️\nWatch expires ${moment(
         timestamp
       )
         .add(7, "days")
@@ -640,7 +640,7 @@ function blockBuilder(blocksToBuild) {
       });
     }
 
-    return new Discord.MessageEmbed()
+    return new EmbedBuilder()
       .setColor(SERVER_COLOR[block.server])
       .addFields(blocks)
       .setTitle(block.name ? "Watch Block" : "Global Block")
@@ -650,66 +650,66 @@ function blockBuilder(blocksToBuild) {
 }
 
 function buttonBuilder(buttonTypes) {
-  const row = new MessageActionRow();
+  const row = new ActionRowBuilder();
   const buttons = buttonTypes.map((button) => {
     switch (button.type) {
       case "itemSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("itemSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "globalSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "unwatch":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("unwatch")
           .setLabel("❌")
-          .setStyle(button.active ? "DANGER" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Danger : ButtonStyle.Secondary);
 
       case "itemRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("itemRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
 
       case "globalRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "globalUnblock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("globalUnblock")
           .setLabel("❌")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchBlock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchBlock")
           .setLabel("🔕")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchUnblock":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchUnblock")
           .setLabel("❌")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       case "watchNotificationSnooze":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationSnooze")
           .setLabel("💤")
-          .setStyle(button.active ? "PRIMARY" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Primary : ButtonStyle.Secondary);
       case "watchNotificationUnwatch":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationUnwatch")
           .setLabel("❌")
-          .setStyle(button.active ? "DANGER" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Danger : ButtonStyle.Secondary);
       case "watchNotificationWatchRefresh":
-        return new MessageButton()
+        return new ButtonBuilder()
           .setCustomId("watchNotificationWatchRefresh")
           .setLabel("♻️")
-          .setStyle(button.active ? "SUCCESS" : "SECONDARY");
+          .setStyle(button.active ? ButtonStyle.Success : ButtonStyle.Secondary);
       default:
         return null;
     }
@@ -793,10 +793,12 @@ async function sendMessagesToUser(
   return postedMessages;
 }
 
-const troubleshootingLinkEmbed = new Discord.MessageEmbed().addField(
-  `ISSUE: Slash Commands Won't Work`,
-  `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`
-);
+const troubleshootingLinkEmbed = new EmbedBuilder().addFields([
+    {
+        name: `ISSUE: Slash Commands Won't Work`,
+        value: `[Learn More](https://discord.com/channels/643500242846744611/836431631073935381/1003850402787242014)`
+    }
+]);
 
 module.exports = {
   MessageType,
@@ -810,5 +812,5 @@ module.exports = {
   gracefulError,
   gracefulSystemError,
   watchNotificationBuilder,
-  troubleshootingLinkEmbed,
+  troubleshootingLinkEmbed
 };

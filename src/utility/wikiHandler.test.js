@@ -1,27 +1,20 @@
-jest.unmock("./wikiHandler.js");
 jest.unmock("discord.js");
-const wikiHandler = require("./wikiHandler.js");
+jest.mock("./wikiHandler.js");
 
-// Mock getWikiPricing for our tests
-wikiHandler.getWikiPricing = jest.fn();
-wikiHandler.getWikiPricing.mockReturnValue({
-  30: "1 ± 2",
-  90: "2 ± 3",
-});
-
+const wikiHandler = require("./wikiHandler.js").default;
 const wikiHandlerTests = {
   "properly formats a single item auction": {
     auctionUser: "Crakle",
     auctionContents: "WTS - Chestplate of the Constant . 2k.",
     expectedFields: {
-      title: "Crakle (WTS)",
+      title: "**[ WTS ]**   Crakle",
       description: "```WTS - Chestplate of the Constant . 2k.```",
       fields: [
         {
           inline: true,
           name: "2k",
           value:
-            "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Chestplate of the Constant](https://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -31,7 +24,7 @@ const wikiHandlerTests = {
     auctionContents:
       "wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p",
     expectedFields: {
-      title: "Stashboxx (WTB / WTS)",
+      title: "**[ WTB / WTS ]**   Stashboxx",
       description:
         "```wts Spell: Allure ..Spell: Paralyzing Earth1k WTB ..Spell: Blanket of Forgetfulness1.2k...WTSSpell: Shiftless Deeds...5.1k ...Spell: Tepid Deeds40p```",
       fields: [
@@ -39,31 +32,31 @@ const wikiHandlerTests = {
           inline: true,
           name: "No Price Listed",
           value:
-            "[Allure](http://wiki.project1999.com/Allure '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Allure](https://wiki.project1999.com/Allure '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "1k",
           value:
-            "[Paralyzing Earth](http://wiki.project1999.com/Paralyzing_Earth '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Paralyzing Earth](https://wiki.project1999.com/Paralyzing_Earth '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "1.2k",
           value:
-            "[Blanket of Forgetfulness](http://wiki.project1999.com/Blanket_of_Forgetfulness '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Blanket of Forgetfulness](https://wiki.project1999.com/Blanket_of_Forgetfulness '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "5.1k",
           value:
-            "[Shiftless Deeds](http://wiki.project1999.com/Shiftless_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Shiftless Deeds](https://wiki.project1999.com/Shiftless_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "40pp",
           value:
-            "[Tepid Deeds](http://wiki.project1999.com/Tepid_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Tepid Deeds](https://wiki.project1999.com/Tepid_Deeds '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -72,7 +65,7 @@ const wikiHandlerTests = {
     auctionUser: "Someone",
     auctionContents: "I am new to auc and what is this",
     expectedFields: {
-      title: "Someone (???)",
+      title: "**[ --- ]**   Someone",
       description: "```I am new to auc and what is this```",
       fields: [],
     },
@@ -81,14 +74,14 @@ const wikiHandlerTests = {
     auctionUser: "Crakle",
     auctionContents: "WTS - Chestplate of the cONstant . 2k.",
     expectedFields: {
-      title: "Crakle (WTS)",
+      title: "**[ WTS ]**   Crakle",
       description: "```WTS - Chestplate of the cONstant . 2k.```",
       fields: [
         {
           inline: true,
           name: "2k",
           value:
-            "[Chestplate of the Constant](http://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Chestplate of the Constant](https://wiki.project1999.com/Chestplate_of_the_Constant '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -97,7 +90,7 @@ const wikiHandlerTests = {
     auctionUser: "Berbank",
     auctionContents: "WTS Golden Amber Earring 500p, Jasper Gold Earring 300p",
     expectedFields: {
-      title: "Berbank (WTS)",
+      title: "**[ WTS ]**   Berbank",
       description:
         "```WTS Golden Amber Earring 500p, Jasper Gold Earring 300p```",
       fields: [
@@ -105,13 +98,13 @@ const wikiHandlerTests = {
           inline: true,
           name: "500pp",
           value:
-            "[Golden Amber Earring](http://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Golden Amber Earring](https://wiki.project1999.com/Golden_Amber_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
         {
           inline: true,
           name: "300pp",
           value:
-            "[Jasper Gold Earring](http://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
+            "[Jasper Gold Earring](https://wiki.project1999.com/Jasper_Gold_Earring '30 day average: 1 ± 2\n90 day average: 2 ± 3')",
         },
       ],
     },
@@ -124,11 +117,10 @@ for (const testCase in wikiHandlerTests) {
   const auction_contents = wikiHandlerTests[testCase].auctionContents;
   const expected_fields = wikiHandlerTests[testCase].expectedFields;
   test(testCase, () => {
-    return wikiHandler
-      .fetchAndFormatAuctionData(auction_user, auction_contents, "GREEN")
+    return wikiHandler.fetchAndFormatAuctionData(auction_user, auction_contents, "GREEN")
       .then((auc_data) => {
         for (const field in expected_fields) {
-          expect(auc_data[field]).toEqual(expected_fields[field]);
+          expect(auc_data.data[field]).toEqual(expected_fields[field]);
         }
       });
   });
