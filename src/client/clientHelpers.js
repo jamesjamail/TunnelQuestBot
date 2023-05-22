@@ -46,7 +46,7 @@ async function collectButtonInteractions(interaction, metadata, message) {
     time: 30 * 60000,
   });
   collector.on("collect", async (i) => {
-      await gracefulSystemError(`Button Interation Collected ${i.customId} from user ${i.user.id}`);
+      await log(collector.client, `Button Interation Collected ${i.customId} from user ${i.user.id}`);
     // TODO: I don't think this is required anymore now that the collector is scoped to the message it's on- cleaner to have a filter as a function
     //
     // https://discordjs.guide/popular-topics/collectors.html#interaction-collectors
@@ -740,6 +740,16 @@ function dedupeBlockResults(blockResults) {
   });
 }
 
+const log = async(client, log) => {
+  console.log('client = ', client)
+  // log to console as a safety
+  console.log(log);
+  // pass thru to error log channel
+  const channelId = settings.discord.logs;
+  const logsChannel = await client.channels.fetch(channelId);
+  logsChannel.send(`[ SYSTEM LOG ]:\n\n${log}`);
+}
+
 //	to be used to handle errors at the top level in command files.
 // 	there is one last try catch block outside the command files as a fail safe
 // 	ideally executors and clientHelpers should not catch any errors so they bubble up
@@ -810,6 +820,7 @@ module.exports = {
   collectButtonInteractions,
   buildListResponse,
   dedupeBlockResults,
+  log,
   gracefulError,
   gracefulSystemError,
   watchNotificationBuilder,

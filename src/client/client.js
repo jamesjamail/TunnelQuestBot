@@ -17,7 +17,7 @@ const {
   buttonBuilder,
   gracefulSystemError,
   troubleshootingLinkEmbed,
-  gracefulError,
+  log,
 } = require("./clientHelpers");
 const { registerCommands } = require("./registerCommands");
 const { welcomeMsg } = require("../content/messages");
@@ -87,7 +87,7 @@ bot.on("interactionCreate", async (interaction) => {
 
   try {
     await command.execute(interaction);
-    await gracefulSystemError(bot, new Error(`${interaction.user} just used ${command}`));
+    await log(bot, `${interaction.user} just used ${command}`);
   } catch (error) {
     // errors from interactions are caught from within command files - this is a failsafe
     gracefulSystemError(bot, error);
@@ -187,7 +187,7 @@ async function pingUser(
   if (!validity) return;
   await db.postSuccessfulCommunication(watchId, seller);
   
-  await gracefulSystemError(bot, new Error(`sending watch notification to userId ${userId} for watchId ${watchId}`));
+  await log(bot, `sending watch notification to userId ${userId} for watchId ${watchId}`);
   
   // 	watch notifications have different fields from watch results
   const embed = await watchNotificationBuilder({
