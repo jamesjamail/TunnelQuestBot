@@ -3,11 +3,17 @@ const origDiscord = jest.requireActual("discord.js");
 
 discord.Client.prototype.users = {
   createDM: jest.fn().mockName("createDM_mock").mockReturnValue({
-    send: jest.fn().mockName("send_mock").mockReturnValue({
+    send: jest.fn().mockName("send_mock_1").mockReturnValue({
       then: jest.fn().mockName("then_mock"),
     }),
   }),
 };
+
+discord.Client.prototype.channels = {
+  fetch: jest.fn().mockName("fetch_mock").mockReturnValue({
+    send: jest.fn().mockName("send_mock_2"),
+  })
+}
 
 discord.Client.on = jest.fn();
 

@@ -12,7 +12,8 @@
   "discord": {
     "token": "DISCORD_API_TOKEN",
     "guild": "GUILD_ID",
-    "command_channel": "CHANNEL_ID"
+    "command_channel": "CHANNEL_ID",
+    "logs": "LOGS_CHANNEL_ID"
   },
   "sql": {
     "user": "DB_USER",
