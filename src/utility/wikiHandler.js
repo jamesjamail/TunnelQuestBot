@@ -15,8 +15,8 @@ const cache_expiration = 1 * 24 * 60 * 60 * 1000;
 const BASE_WIKI_URL = "https://wiki.project1999.com";
 const WTS_REGEX = /WTS(.*?)(?=WTB|$)/gi;
 const WTB_REGEX = /WTB(.*?)(?=WTS|$)/gi;
-const ITEMS = require("./data/items.json");
-const SPELLS = require("./data/spells.json");
+const ITEMS = utils.fixApostrophes(require("./data/items.json"));
+const SPELLS = utils.fixApostrophes(require("./data/spells.json"));
 const ALIASES = require("./data/aliases.json");
 const ALL_ITEM_KEYS = new Set([
   ...Object.keys(ITEMS),

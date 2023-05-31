@@ -76,10 +76,28 @@ function removeLogTimestamp(log) {
   return log.slice(log.indexOf("]") + 2);
 }
 
+function fixApostrophes(items) {
+  let duped_items = {};
+  Object.entries(items).forEach((item, index) => {
+    let item_name = item[0];
+    let item_link = item[1];
+    if (item_name.indexOf('`') > 0) {
+      duped_items[item_name.replaceAll('`', '')] = item_link;
+      duped_items[item_name.replaceAll('`', "'")] = item_link;
+    }
+    else if (item_name.indexOf("'") > 0) {
+      duped_items[item_name.replaceAll("'", '')] = item_link;
+      duped_items[item_name.replaceAll("'", '`')] = item_link;
+    }
+  })
+  return {...items, ...duped_items};
+}
+
 module.exports = {
   parsePrice,
   composeRanges,
   _in,
   formatCapitalCase,
   removeLogTimestamp,
+  fixApostrophes,
 };
