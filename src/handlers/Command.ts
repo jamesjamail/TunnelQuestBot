@@ -13,7 +13,7 @@ module.exports = (client : Client) => {
     let commandsDir = join(__dirname,"../commands")
 
     readdirSync(slashCommandsDir).forEach(file => {
-        if (!file.endsWith(".js")) return;
+        if (!file.endsWith(".js") || file.startsWith('_')) return;
         let command : SlashCommand = require(`${slashCommandsDir}/${file}`).default
         slashCommands.push(command.command)
         client.slashCommands.set(command.command.name, command)
