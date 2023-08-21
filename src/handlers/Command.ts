@@ -8,22 +8,15 @@ import { Command, SlashCommand } from "../types";
 module.exports = (client : Client) => {
     const slashCommands : SlashCommandBuilder[] = []
     const commands : Command[] = []
-
+    // this template used to also contain a /commands folder for non-slashCommands, but it was removed as TQB
+    // exclusively uses slashCommands.  If regular commmands are ever needed, refer to template.
     let slashCommandsDir = join(__dirname,"../slashCommands")
-    let commandsDir = join(__dirname,"../commands")
 
     readdirSync(slashCommandsDir).forEach(file => {
         if (!file.endsWith(".js") || file.startsWith('_')) return;
         let command : SlashCommand = require(`${slashCommandsDir}/${file}`).default
         slashCommands.push(command.command)
         client.slashCommands.set(command.command.name, command)
-    })
-
-    readdirSync(commandsDir).forEach(file => {
-        if (!file.endsWith(".js")) return;
-        let command : Command = require(`${commandsDir}/${file}`).default
-        commands.push(command)
-        client.commands.set(command.name, command)
     })
 
     const rest = new REST({version: "10"}).setToken(process.env.TOKEN);
