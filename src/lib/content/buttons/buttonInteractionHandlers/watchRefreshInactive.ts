@@ -17,7 +17,7 @@ export default async function handleWatchRefreshInactive(
 		true,
 	]);
 	const embeds = [watchCommandResponseBuilder(data)];
-	await interaction.reply({
+	await interaction.update({
 		content: messageCopy.yourWatchHasBeenExtended,
 		embeds,
 		components,

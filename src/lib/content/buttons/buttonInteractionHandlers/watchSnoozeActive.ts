@@ -16,7 +16,7 @@ export default async function handleWatchSnoozeActive(
 		false,
 	]);
 	const embeds = [watchCommandResponseBuilder(data)];
-	await interaction.reply({
+	await interaction.update({
 		content: messageCopy.yourWatchHasBeenUnoozed,
 		embeds,
 		components,

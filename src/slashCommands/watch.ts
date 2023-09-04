@@ -50,14 +50,13 @@ const command: SlashCommand = {
 		const components = buttonRowBuilder(CommandTypes.watch);
 
 		const response = await interaction.reply({
-			content: 'watch',
 			embeds,
 			components,
 		});
 
 		return await collectButtonInteractionAndReturnResponse(response, data);
 	},
-	cooldown: 10,
+	cooldown: 3,
 };
 
 export default command;

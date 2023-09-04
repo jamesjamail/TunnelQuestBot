@@ -17,7 +17,7 @@ export default async function handleUnwatchInactive(
 		false,
 	]);
 	const embeds = [watchCommandResponseBuilder(data)];
-	await interaction.reply({
+	await interaction.update({
 		content: messageCopy.yourWatchHasBeenUnwatched,
 		embeds,
 		components,

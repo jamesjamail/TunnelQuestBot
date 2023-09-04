@@ -99,19 +99,21 @@ type SnoozedWatchWithRelation = SnoozedWatch & {
 	watch: Watch;
 };
 
-type ModifiedSnoozedWatch = Omit<
-	SnoozedWatchWithRelation,
-	'id' | 'watchId' | 'endTimestamp'
->;
-
-export function removeSnoozedWatchDataFromDbResult(
+export function removeSnoozedWatchDataFromFormattedResult(
 	dbResult: SnoozedWatchWithRelation,
-): ModifiedSnoozedWatch {
-	const modifiedResult: Partial<SnoozedWatchWithRelation> = { ...dbResult };
+	inaccurateData: WatchWithSnoozedWatches,
+): WatchWithSnoozedWatches {
+	// Extract the ID of the deleted snoozedWatch
+	const deletedSnoozedWatchId = dbResult.id;
 
-	delete modifiedResult.id;
-	delete modifiedResult.watchId;
-	delete modifiedResult.endTimestamp;
+	// Filter out the deleted snoozedWatch from the snoozedWatches array
+	const updatedSnoozedWatches = inaccurateData.snoozedWatches.filter(
+		(sw) => sw.id !== deletedSnoozedWatchId,
+	);
 
-	return modifiedResult as ModifiedSnoozedWatch;
+	// Return the modified inaccurateData
+	return {
+		...inaccurateData,
+		snoozedWatches: updatedSnoozedWatches,
+	};
 }

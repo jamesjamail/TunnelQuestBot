@@ -3,7 +3,7 @@ import { User } from 'discord.js';
 import { getExpirationTimestampForSnooze } from './datetime';
 import {
 	formatSnoozedWatchResult,
-	removeSnoozedWatchDataFromDbResult,
+	removeSnoozedWatchDataFromFormattedResult,
 } from './helpers';
 
 const prisma = new PrismaClient();
@@ -103,8 +103,11 @@ export async function unsnoozeWatch(metadata: MetadataType) {
 	});
 	// prisma's delete returns the deleted entry, which we don't want
 	// let's delete it ourselves to save an extra db query
-	const accurateData = removeSnoozedWatchDataFromDbResult(result);
-	return formatSnoozedWatchResult(accurateData);
+	const formattedDataToCorrect = formatSnoozedWatchResult(result);
+	return removeSnoozedWatchDataFromFormattedResult(
+		result,
+		formattedDataToCorrect,
+	);
 }
 
 export async function unwatch(metadata: MetadataType) {
