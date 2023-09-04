@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from "discord.js"
 import { SlashCommand } from "../types";
-import { helpMsg } from "../content/messageResponseCopy";
+import { messageCopy } from "../lib/content/copy/messageCopy";
 
 const command: SlashCommand = {
     command: new SlashCommandBuilder()
@@ -9,7 +9,7 @@ const command: SlashCommand = {
     ,
     execute: interaction => {
         interaction.reply({
-            content: helpMsg,
+            content: messageCopy.helpMsg,
         })
     },
     cooldown: 10

@@ -8,8 +8,8 @@ import { Command, SlashCommand } from "../types";
 module.exports = (client : Client) => {
     const slashCommands : SlashCommandBuilder[] = []
     const commands : Command[] = []
-    // this template used to also contain a /commands folder for non-slashCommands, but it was removed as TQB
-    // exclusively uses slashCommands.  If regular commmands are ever needed, refer to template.
+    // this template also contained a /commands folder for non-slashCommands, but it was removed as TQB
+    // exclusively uses slashCommands.  If regular commmands are ever needed, refer to template (see readme).
     let slashCommandsDir = join(__dirname,"../slashCommands")
 
     readdirSync(slashCommandsDir).forEach(file => {
