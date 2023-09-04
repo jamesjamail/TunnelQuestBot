@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import {
 	Guild,
 	GuildMember,
-	Message,
 	PermissionFlagsBits,
 	PermissionResolvable,
 	TextChannel,
@@ -23,7 +22,7 @@ export const getThemeColor = (color: colorType) =>
 	Number(`0x${themeColors[color].substring(1)}`);
 
 // eslint-disable-next-line no-shadow
-export const color = (color: colorType, message: Message) => {
+export const color = (color: colorType, message: string) => {
 	return chalk.hex(themeColors[color])(message);
 };
 

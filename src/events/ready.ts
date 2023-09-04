@@ -10,7 +10,10 @@ const event: BotEvent = {
 		console.log(
 			color(
 				'text',
-				`💪 Logged in as ${color('variable', client.user?.tag)}`,
+				`💪 Logged in as ${color(
+					'variable',
+					client.user?.tag as string,
+				)}`,
 			),
 		);
 	},
