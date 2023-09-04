@@ -1,79 +1,117 @@
-import { Prisma, SnoozedWatch, Watch } from "@prisma/client";
-import { CommandInteraction } from "discord.js";
-import { ButtonInteractionTypes } from "../content/buttons/buttonBuilder";
+import { Prisma, SnoozedWatch, Watch } from '@prisma/client';
+import { CommandInteraction } from 'discord.js';
+import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
 
-export function getInteractionArgs<T>(interaction: CommandInteraction, argNames: (keyof T)[]): T {
-    const result: Partial<T> = {};
+// helper type to map between argument names and their types
+type ArgType<T, K extends keyof T> = T[K];
 
-    for (const arg of argNames) {
-        const option = interaction.options.get(arg as string);
+type AllowedOptionValues = string | number | boolean;
 
-        if (option?.value) {
-            result[arg as keyof T] = option.value as any;
-        }
-    }
+export function getInteractionArgs<
+	T extends Record<string, AllowedOptionValues>,
+>(interaction: CommandInteraction, argNames: (keyof T)[]): T {
+	const result: Partial<T> = {};
 
-    for (const arg of argNames) {
-        if (result[arg] === undefined) {
-            throw new Error(`Missing required argument: ${String(arg)}`);
-        }
-    }
+	for (const arg of argNames) {
+		const option = interaction.options.get(arg as string);
 
-    return result as T;
+		if (option?.value && isAllowedOptionValue(option.value)) {
+			// Cast to correct type using our helper type
+			result[arg] = option.value as ArgType<T, typeof arg>;
+		}
+	}
+
+	for (const arg of argNames) {
+		if (result[arg] === undefined) {
+			throw new Error(`Missing required argument: ${String(arg)}`);
+		}
+	}
+
+	return result as T;
+}
+
+function isAllowedOptionValue(value: unknown): value is AllowedOptionValues {
+	return (
+		typeof value === 'string' ||
+		typeof value === 'number' ||
+		typeof value === 'boolean'
+	);
 }
 
 type WatchWithSnoozedWatches = Watch & {
-    snoozedWatches: SnoozedWatch[];
-  };
+	snoozedWatches: SnoozedWatch[];
+};
 
-export function formatTopLevelDbResponses(result: any, modelName: keyof typeof Prisma.ModelName) {
-    // Convert the first letter to lowercase
-    const formattedModelName = modelName.charAt(0).toLowerCase() + modelName.slice(1);
-    
-    const formattedResult: any = {
-        [formattedModelName]: {}
-    };
+// I knew typescript wouldn't like this, but I prefer to redefining table names
+export function formatTopLevelDbResponses(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	result: any,
+	modelName: keyof typeof Prisma.ModelName,
+) {
+	// Convert the first letter to lowercase
+	const formattedModelName =
+		modelName.charAt(0).toLowerCase() + modelName.slice(1);
 
-    // Loop over the result's keys
-    for (const key of Object.keys(result)) {
-        // If the key does not exist in the Prisma.ModelName, we nest it under the modelName.
-        // Otherwise, they are treated as related models and kept at the top level.
-        if (!(key in Prisma.ModelName)) {
-            formattedResult[formattedModelName][key] = result[key];
-        } else {
-            formattedResult[key] = result[key];
-        }
-    }
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const formattedResult: any = {
+		[formattedModelName]: {},
+	};
 
-    return formattedResult;
+	// Loop over the result's keys
+	for (const key of Object.keys(result)) {
+		// If the key does not exist in the Prisma.ModelName, we nest it under the modelName.
+		// Otherwise, they are treated as related models and kept at the top level.
+		if (!(key in Prisma.ModelName)) {
+			formattedResult[formattedModelName][key] = result[key];
+		} else {
+			formattedResult[key] = result[key];
+		}
+	}
+
+	return formattedResult;
 }
 
-export function formatSnoozedWatchResult(data: SnoozedWatch & { watch: Watch }): WatchWithSnoozedWatches {
-    console.log('data = ', data)
-    // Extracting the watch data from the response
-    const { watch, ...snoozedWatchData } = data;
-    console.log('snoozedWatchData =', snoozedWatchData)
-    // Constructing the new formatted result
-    const formattedResult: WatchWithSnoozedWatches = {
-        ...watch, // spreading watch data
-        snoozedWatches: Object.keys(snoozedWatchData).length ? [{ ...snoozedWatchData }] : []  // if empty obj, use empty array
-    };
+export function formatSnoozedWatchResult(
+	data: SnoozedWatch & { watch: Watch },
+): WatchWithSnoozedWatches {
+	// Extracting the watch data from the response
+	const { watch, ...snoozedWatchData } = data;
+	// Constructing the new formatted result
+	const formattedResult: WatchWithSnoozedWatches = {
+		...watch, // spreading watch data
+		snoozedWatches: Object.keys(snoozedWatchData).length
+			? [{ ...snoozedWatchData }]
+			: [], // if empty obj, use empty array
+	};
 
-    return formattedResult;
+	return formattedResult;
 }
 
-export function getEnumKeyByEnumValue(myEnum: typeof ButtonInteractionTypes, enumValue: string): ButtonInteractionTypes | null {
-    const keys = Object.values(myEnum).find(value => value === enumValue);
-    return keys ? keys as any as ButtonInteractionTypes : null;
+export function getEnumKeyByEnumValue(
+	myEnum: typeof ButtonInteractionTypes,
+	enumValue: string,
+): ButtonInteractionTypes | null {
+	const keys = Object.values(myEnum).find((value) => value === enumValue);
+	return keys ? (keys as ButtonInteractionTypes) : null;
 }
 
-export function removeSnoozedWatchDataFromDbResult(dbResult: any): any {
-    console.log('db result = ', dbResult)
-    const modifiedResult = { ...dbResult }; // Clone the object to avoid mutating the original
+type SnoozedWatchWithRelation = SnoozedWatch & {
+	watch: Watch;
+};
 
-    delete modifiedResult.id;
-    delete modifiedResult.watchId;
-    delete modifiedResult.endTimestamp;
+type ModifiedSnoozedWatch = Omit<
+	SnoozedWatchWithRelation,
+	'id' | 'watchId' | 'endTimestamp'
+>;
 
-    return modifiedResult;
+export function removeSnoozedWatchDataFromDbResult(
+	dbResult: SnoozedWatchWithRelation,
+): ModifiedSnoozedWatch {
+	const modifiedResult: Partial<SnoozedWatchWithRelation> = { ...dbResult };
+
+	delete modifiedResult.id;
+	delete modifiedResult.watchId;
+	delete modifiedResult.endTimestamp;
+
+	return modifiedResult as ModifiedSnoozedWatch;
 }
