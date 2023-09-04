@@ -3,10 +3,27 @@
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
+    "husky": {
+        "hooks": {
+          "pre-commit": "lint-staged"
+        }
+      },
+      "lint-staged": {
+        "*.{js,jsx}": [
+          "prettier --write",
+          "eslint --fix",
+          "git add"
+        ],
+        "*.{html,css,less,ejs}": [
+          "prettier --write",
+          "git add"
+        ]
+      },
     "scripts": {
         "start": "rd /s /q .\\build && tsc && cls && node .\\build\\index.js",
         "build": "tsc",
-        "prepare": "husky install"
+        "prepare": "husky install",
+        "lint:fix": "eslint --fix ."
     },
     "keywords": [],
     "author": "jamesjamail",
