@@ -6,7 +6,6 @@ import {
 	AutocompleteInteraction,
 	ChatInputCommandInteraction,
 } from 'discord.js';
-import mongoose from 'mongoose';
 
 export interface SlashCommand {
 	command: SlashCommandBuilder;
@@ -25,12 +24,6 @@ export interface Command {
 
 interface GuildOptions {
 	prefix: string;
-}
-
-export interface IGuild extends mongoose.Document {
-	guildID: string;
-	options: GuildOptions;
-	joinedAt: Date;
 }
 
 export type GuildOption = keyof GuildOptions;

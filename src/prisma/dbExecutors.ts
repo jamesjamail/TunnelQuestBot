@@ -1,10 +1,10 @@
 import { PrismaClient, Server, WatchType } from '@prisma/client';
 import { User } from 'discord.js';
-import { getExpirationTimestampForSnooze } from './datetime';
+import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
 import {
 	formatSnoozedWatchResult,
 	removeSnoozedWatchDataFromFormattedResult,
-} from './helpers';
+} from '../lib/helpers/helpers';
 
 const prisma = new PrismaClient();
 

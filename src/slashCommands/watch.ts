@@ -8,12 +8,12 @@ import {
 	priceCriteriaOptions,
 } from '../lib/content/commandOptions/commandOptions';
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
-import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonCollector';
+import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
 	CommandTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
-import { findOrCreateUser, upsertWatch } from '../lib/helpers/dbExecutors';
+import { findOrCreateUser, upsertWatch } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 
 type Args = {

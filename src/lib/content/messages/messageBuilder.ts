@@ -4,7 +4,7 @@ import {
 	formatSnoozeExpirationTimestamp,
 	formatWatchExpirationTimestamp,
 } from '../../helpers/datetime';
-import { getServerColorFromString } from '../colors';
+import { getServerColorFromString } from '../../helpers/colors';
 
 type WatchWithSnoozedWatches = Watch & {
 	snoozedWatches: SnoozedWatch[];

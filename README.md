@@ -1,17 +1,18 @@
 ## WIP - for local dev, run:
 
-`pscale connect tunnelquestbot main --port=3309 `
+`pscale connect tunnelquestbot main --port=3309`
+
 `npm run start`
 
-## push local changes upstream
+## push db local changes upstream
 
-npx prisma db push
+`npx prisma db push`
 
 ## connect to remote db
 
-pscale connect tunnelquestbot main --port=3309
+`pscale connect tunnelquestbot main --port=3309`
 
-Readme below is from the template adapted for this repo
+Readme below is from the template adapted for this repo...
 
 <h1 style="text-align:center;">Discord.js v14 Bot Template</h1>
 
