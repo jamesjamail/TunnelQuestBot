@@ -41,29 +41,49 @@ export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	return await prisma.watch.upsert({
-		where: {
-			discordUserId_itemName_server: {
+	// using transaction as we need multiple queries to handle unsnoozing watches on update
+	const transactionResults = await prisma.$transaction([
+		// delete the snoozedWatches associated with this watch
+		// let's do this first so we can return up to date data
+		prisma.snoozedWatch.deleteMany({
+			where: {
+				watch: {
+					discordUserId: discordUserId,
+					itemName: watchData.itemName,
+					server: watchData.server,
+					watchType: watchData.watchType,
+				},
+			},
+		}),
+		// Upsert the watch
+		prisma.watch.upsert({
+			where: {
+				discordUserId_itemName_server_watchType: {
+					discordUserId: discordUserId,
+					itemName: watchData.itemName,
+					server: watchData.server,
+					watchType: watchData.watchType,
+				},
+			},
+			update: {
+				itemName: watchData.itemName,
+				server: watchData.server,
+				active: true,
+				created: new Date(),
+			},
+			create: {
 				discordUserId: discordUserId,
 				itemName: watchData.itemName,
 				server: watchData.server,
+				watchType: watchData.watchType,
 			},
-		},
-		update: {
-			itemName: watchData.itemName,
-			server: watchData.server,
-			active: true,
-		},
-		create: {
-			discordUserId: discordUserId,
-			itemName: watchData.itemName,
-			server: watchData.server,
-			watchType: watchData.watchType,
-		},
-		include: {
-			snoozedWatches: true,
-		},
-	});
+			include: {
+				snoozedWatches: true,
+			},
+		}),
+	]);
+	// ignore the deleting results as we don't care about that data
+	return transactionResults[1];
 }
 
 type MetadataType = {
