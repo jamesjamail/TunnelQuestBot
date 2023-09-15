@@ -31,7 +31,6 @@ enum Server {
 enum WatchType {
   WTS
   WTB
-  ALL
 }
 
 model Watch {

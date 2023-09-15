@@ -7,7 +7,6 @@ export const watchTypeOptions = (option: SlashCommandStringOption) =>
 		.addChoices(
 			{ name: 'WTS', value: 'WTS' },
 			{ name: 'WTB', value: 'WTB' },
-			{ name: 'ALL', value: 'ALL' },
 		)
 		.setRequired(true);
 
@@ -28,4 +27,4 @@ export const serverOptions = (option: SlashCommandStringOption) =>
 		.setRequired(true);
 
 export const priceCriteriaOptions = (option: SlashCommandNumberOption) =>
-	option.setName('price').setDescription('enter optional maximum price');
+	option.setName('price').setDescription('enter optional price criteria');
