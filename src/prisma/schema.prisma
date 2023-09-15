@@ -51,7 +51,7 @@ model Watch {
   blockedWatches BlockedSellerByWatch[]
   snoozedWatches SnoozedWatch[]
 
-  @@unique([discordUserId, itemName, server])
+  @@unique([discordUserId, itemName, server, watchType])
 }
 
 
