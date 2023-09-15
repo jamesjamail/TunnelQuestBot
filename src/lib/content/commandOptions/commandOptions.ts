@@ -23,6 +23,7 @@ export const serverOptions = (option: SlashCommandStringOption) =>
 		.addChoices(
 			{ name: 'blue server', value: 'BLUE' },
 			{ name: 'green server', value: 'GREEN' },
+			{ name: 'red server', value: 'RED' },
 		)
 		.setRequired(true);
 

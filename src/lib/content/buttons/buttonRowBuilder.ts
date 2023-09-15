@@ -1,4 +1,3 @@
-/* eslint-disable no-case-declarations */
 import { ButtonInteractionTypes, buttonBuilder } from './buttonBuilder';
 
 export enum CommandTypes {
@@ -14,26 +13,68 @@ export enum CommandTypes {
 	watches,
 }
 
+const commandTypeButtonMappings: {
+	[key in CommandTypes]: {
+		active: ButtonInteractionTypes;
+		inactive: ButtonInteractionTypes;
+	}[];
+} = {
+	[CommandTypes.watch]: [
+		{
+			active: ButtonInteractionTypes.WatchSnoozeActive,
+			inactive: ButtonInteractionTypes.WatchSnoozeInactive,
+		},
+		{
+			active: ButtonInteractionTypes.UnwatchActive,
+			inactive: ButtonInteractionTypes.UnwatchInactive,
+		},
+		{
+			active: ButtonInteractionTypes.WatchRefreshActive,
+			inactive: ButtonInteractionTypes.WatchRefreshInactive,
+		},
+	],
+	[CommandTypes.list]: [
+		{
+			active: ButtonInteractionTypes.UserSnoozeActive,
+			inactive: ButtonInteractionTypes.UserSnoozeInactive,
+		},
+		{
+			active: ButtonInteractionTypes.GlobalRefreshActive,
+			inactive: ButtonInteractionTypes.GlobalRefreshInactive,
+		},
+	],
+	[CommandTypes.block]: [],
+	[CommandTypes.blocks]: [],
+	[CommandTypes.help]: [],
+	[CommandTypes.snooze]: [],
+	[CommandTypes.unblock]: [],
+	[CommandTypes.unsnooze]: [],
+	[CommandTypes.unwatch]: [],
+	[CommandTypes.watches]: [],
+};
+
+function getButtonType(
+	active: boolean,
+	mapping: {
+		active: ButtonInteractionTypes;
+		inactive: ButtonInteractionTypes;
+	},
+): ButtonInteractionTypes {
+	return active ? mapping.active : mapping.inactive;
+}
+
 export function buttonRowBuilder(
 	commandType: CommandTypes,
 	activeButtons = [false, false, false],
 ) {
-	switch (commandType) {
-		case CommandTypes.watch:
-			const buttonTypes = [
-				activeButtons[0]
-					? ButtonInteractionTypes.WatchSnoozeActive
-					: ButtonInteractionTypes.WatchSnoozeInactive,
-				activeButtons[1]
-					? ButtonInteractionTypes.UnwatchActive
-					: ButtonInteractionTypes.UnwatchInactive,
-				activeButtons[2]
-					? ButtonInteractionTypes.WatchRefreshActive
-					: ButtonInteractionTypes.WatchRefreshInactive,
-			];
-			return buttonBuilder(buttonTypes.map((type) => ({ type })));
-		case CommandTypes.blocks:
-		default:
-			throw new Error('Invalid command type.');
+	const mappings = commandTypeButtonMappings[commandType];
+	if (!mappings) {
+		throw new Error('Invalid command type.');
 	}
+
+	const buttonTypes = mappings.map((mapping, index) =>
+		getButtonType(activeButtons[index], mapping),
+	);
+
+	return buttonBuilder(buttonTypes.map((type) => ({ type })));
 }

@@ -5,12 +5,11 @@ import {
 	InteractionResponse,
 } from 'discord.js';
 import { ButtonInteractionTypes } from './buttonBuilder';
-import { Watch } from '@prisma/client';
 import * as handlers from './buttonInteractionHandlers/index';
 
-export async function collectButtonInteractionAndReturnResponse(
+export async function collectButtonInteractionAndReturnResponse<T>(
 	response: InteractionResponse,
-	metadata: Watch,
+	metadata: T,
 ) {
 	const collector: InteractionCollector<ButtonInteraction> =
 		response.createMessageComponentCollector({
@@ -19,43 +18,48 @@ export async function collectButtonInteractionAndReturnResponse(
 		});
 
 	collector.on('collect', async (interaction: ButtonInteraction) => {
-		switch (interaction.customId) {
-			case ButtonInteractionTypes[
-				ButtonInteractionTypes.WatchSnoozeInactive
-			]:
-				await handlers.handleWatchSnoozeInactive(interaction, metadata);
-				break;
-			case ButtonInteractionTypes[
-				ButtonInteractionTypes.WatchSnoozeActive
-			]:
-				await handlers.handleWatchSnoozeActive(interaction, metadata);
-				break;
-			case ButtonInteractionTypes[ButtonInteractionTypes.UnwatchInactive]:
-				await handlers.handleUnwatchInactive(interaction, metadata);
-				break;
-			case ButtonInteractionTypes[ButtonInteractionTypes.UnwatchActive]:
-				await handlers.handleUnwatchActive(interaction, metadata);
-				break;
-			case ButtonInteractionTypes[
-				ButtonInteractionTypes.WatchRefreshInactive
-			]:
-				await handlers.handleWatchRefreshInactive(
-					interaction,
-					metadata,
-				);
-				break;
-			case ButtonInteractionTypes[
-				ButtonInteractionTypes.WatchRefreshActive
-			]:
-				//  watch refresh is not a toggle state like other button commands.
-				//  we perform the same action regardless of active/inactive
-				await handlers.handleWatchRefreshInactive(
-					interaction,
-					metadata,
-				);
-				break;
-			default:
-				break;
+		// map interaction types to specific handler functions.
+		const handlerMapping: {
+			[key: string]: (
+				interaction: ButtonInteraction,
+				metadata: T,
+			) => Promise<void>;
+		} = {
+			[ButtonInteractionTypes.WatchSnoozeInactive]:
+				handlers.handleWatchSnoozeInactive,
+			[ButtonInteractionTypes.WatchSnoozeActive]:
+				handlers.handleWatchSnoozeActive,
+			[ButtonInteractionTypes.UnwatchActive]:
+				handlers.handleUnwatchActive,
+			[ButtonInteractionTypes.UnwatchInactive]:
+				handlers.handleUnwatchInactive,
+			[ButtonInteractionTypes.WatchRefreshInactive]:
+				//	since refresh button does not have a toggle state, we can use
+				//  the same handler for both states.
+				handlers.handleWatchRefreshInactive,
+			[ButtonInteractionTypes.WatchRefreshActive]:
+				handlers.handleWatchRefreshInactive,
+			[ButtonInteractionTypes.GlobalRefreshInactive]:
+				handlers.handleGlobalRefreshInactive,
+			[ButtonInteractionTypes.GlobalRefreshActive]:
+				//	since refresh button does not have a toggle state, we can use
+				//  the same handler for both states.
+				handlers.handleGlobalRefreshInactive,
+			[ButtonInteractionTypes.UserSnoozeInactive]:
+				handlers.handleUserSnoozeInactive,
+			[ButtonInteractionTypes.UserSnoozeActive]:
+				handlers.handleUserSnoozeActive,
+			// TODO: add other mappings
+		};
+
+		const handler =
+			handlerMapping[
+				ButtonInteractionTypes[
+					interaction.customId as keyof typeof ButtonInteractionTypes
+				]
+			];
+		if (handler) {
+			await handler(interaction, metadata);
 		}
 	});
 

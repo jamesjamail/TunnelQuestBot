@@ -71,4 +71,10 @@ export namespace messageCopy {
 
 	export const yourWatchHasBeenExtended =
 		'Your watch has been extended for another 7 days';
+
+	export const allYourWatchesHaveBeenSnoozed =
+		'All your watches have been snoozed for 6 hours';
+
+	export const globalSnoozeHasBeenRemoved =
+		'Global snooze has been been removed';
 }

@@ -5,11 +5,11 @@ import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
 
-export default async function handleUnwatchInactive(
+export default async function handleUnwatchInactive<T>(
 	interaction: ButtonInteraction,
-	metadata: Watch,
+	metadata: T,
 ) {
-	const data = await unwatch(metadata);
+	const data = await unwatch(metadata as Watch);
 	const isSnoozed = !!data.snoozedWatches.length;
 	const components = buttonRowBuilder(CommandTypes.watch, [
 		isSnoozed,

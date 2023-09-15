@@ -3,6 +3,9 @@ import handleWatchSnoozeActive from './watchSnoozeActive';
 import handleWatchSnoozeInactive from './watchSnoozeInactive';
 import handleUnwatchActive from './unwatchActive';
 import handleWatchRefreshInactive from './watchRefreshInactive';
+import handleGlobalRefreshInactive from './globalRefreshInactive';
+import handleUserSnoozeInactive from './userSnoozeInactive';
+import handleUserSnoozeActive from './userSnoozeActive';
 
 export {
 	handleWatchSnoozeInactive,
@@ -10,5 +13,8 @@ export {
 	handleUnwatchInactive,
 	handleUnwatchActive,
 	handleWatchRefreshInactive,
+	handleGlobalRefreshInactive,
+	handleUserSnoozeInactive,
+	handleUserSnoozeActive,
 	// ... import other handlers
 };
