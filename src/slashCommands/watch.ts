@@ -16,12 +16,6 @@ import {
 import { findOrCreateUser, upsertWatch } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 
-type Args = {
-	item: string;
-	server: Server;
-	type: WatchType;
-};
-
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('watch')
@@ -33,17 +27,16 @@ const command: SlashCommand = {
 			priceCriteriaOptions,
 		) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	execute: async (interaction) => {
-		// TODO: when a user upserts a watch, it should not be snoozed
-		const args: Args = getInteractionArgs(interaction, [
+		const args = getInteractionArgs(interaction, [
 			'server',
 			'item',
 			'type',
 		]);
 		const user = await findOrCreateUser(interaction.user);
 		const data = await upsertWatch(user.discordUserId, {
-			server: args.server,
-			itemName: args.item,
-			watchType: args.type,
+			server: args.server.value as Server,
+			itemName: args.item.value as string,
+			watchType: args.type.value as WatchType,
 		});
 
 		const embeds = [watchCommandResponseBuilder(data)];

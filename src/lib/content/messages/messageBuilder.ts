@@ -1,4 +1,4 @@
-import { Watch, SnoozedWatch, Server } from '@prisma/client';
+import { Watch, SnoozedWatch, Server, User, SnoozedUser } from '@prisma/client';
 import { EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
@@ -58,7 +58,9 @@ function formatCapitalCase(input: string): string {
 }
 export function listCommandResponseBuilder(
 	watches: WatchWithSnoozedWatches[],
-	// user: User & { snoozedUsers: SnoozedUser[] },
+	// TODO: add an embed above servers if global snooze is active
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	_user?: User & { snoozedUsers: SnoozedUser[] },
 ): EmbedBuilder[] {
 	// Group the watches by server
 	const watchesByServer: { [key: string]: WatchWithSnoozedWatches[] } = {};

@@ -6,7 +6,7 @@ import {
 	Watch,
 	SnoozedUser,
 } from '@prisma/client';
-import { User as DiscordUser } from 'discord.js';
+import { ChatInputCommandInteraction, User as DiscordUser } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
 import {
 	formatSnoozedWatchResult,
@@ -95,10 +95,21 @@ export async function upsertWatch(
 	});
 }
 
-export async function getWatchesByUser(user: User) {
+export async function getWatchesByUser(discordUserId: string) {
 	return prisma.watch.findMany({
 		where: {
-			discordUserId: user.discordUserId,
+			discordUserId,
+		},
+		include: {
+			snoozedWatches: true,
+		},
+	});
+}
+
+export async function getWatchesByDiscordUser(user: DiscordUser) {
+	return prisma.watch.findMany({
+		where: {
+			discordUserId: user.id,
 		},
 		include: {
 			snoozedWatches: true,
@@ -110,19 +121,19 @@ export type MetadataType = {
 	id: number;
 };
 
-export async function snoozeWatch(metadata: Watch) {
+export async function snoozeWatch(metadata: Watch, hours?: number) {
 	const result = await prisma.snoozedWatch.upsert({
 		where: {
 			watchId: metadata.id,
 		},
 		update: {
-			// technically, this will never get updated as we are
-			// responding to an inactive watch snooze event
-			endTimestamp: getExpirationTimestampForSnooze(),
+			endTimestamp: getExpirationTimestampForSnooze(hours),
 			watchId: metadata.id,
 		},
+		// technically, this will never get updated as we are
+		// responding to an inactive watch snooze event
 		create: {
-			endTimestamp: getExpirationTimestampForSnooze(),
+			endTimestamp: getExpirationTimestampForSnooze(hours),
 			watchId: metadata.id,
 		},
 		include: {
@@ -184,14 +195,14 @@ export async function extendWatch(metadata: MetadataType) {
 	return result;
 }
 
-export async function extendAllWatches(metadata: User) {
+export async function extendAllWatches(discordUserId: string) {
 	// extending all watches should end any global snooze if active
 	// rather than make an extra query, let's just try execute it
 	// and fail silently if it's the expected error
 	try {
 		await prisma.snoozedUser.delete({
 			where: {
-				discordUserId: metadata.discordUserId,
+				discordUserId: discordUserId,
 			},
 		});
 	} catch (error) {
@@ -209,7 +220,7 @@ export async function extendAllWatches(metadata: User) {
 	// Extend the watches for this user
 	await prisma.watch.updateMany({
 		where: {
-			discordUserId: metadata.discordUserId,
+			discordUserId: discordUserId,
 		},
 		data: {
 			created: new Date(),
@@ -217,21 +228,54 @@ export async function extendAllWatches(metadata: User) {
 		},
 	});
 
-	return getWatchesByUser(metadata);
+	return getWatchesByUser(discordUserId);
 }
 
-export async function snoozeAllWatches(metadata: User) {
+export async function snoozeAllWatches(discordUserId: string) {
 	await prisma.snoozedUser.upsert({
 		where: {
-			discordUserId: metadata.discordUserId,
+			discordUserId,
 		},
 		update: {
 			endTimestamp: getExpirationTimestampForSnooze(),
 		},
 		create: {
-			discordUserId: metadata.discordUserId,
+			discordUserId,
 			endTimestamp: getExpirationTimestampForSnooze(),
 		},
 	});
-	return getWatchesByUser(metadata);
+	return getWatchesByUser(discordUserId);
+}
+
+export async function snoozeWatchByItemName(
+	interaction: ChatInputCommandInteraction,
+	itemName: string,
+	hours?: number,
+) {
+	// First, find the watch by itemName - let's make a good faith
+	// effort to find a watch by name in case autocomplete fails for some reason
+	// it's technically possible a user could have multiple watches matching this
+	// criteria since we don't know about server or watchType
+	const foundWatch = await prisma.watch.findFirstOrThrow({
+		where: {
+			itemName: itemName,
+			discordUserId: interaction.user.id,
+		},
+	});
+
+	// Then, use the found watch's id for updating the snoozedWatch
+	const result = await prisma.snoozedWatch.update({
+		where: {
+			watchId: foundWatch.id,
+		},
+		data: {
+			endTimestamp: getExpirationTimestampForSnooze(hours),
+			watchId: foundWatch.id,
+		},
+		include: {
+			watch: true,
+		},
+	});
+
+	return formatSnoozedWatchResult(result);
 }

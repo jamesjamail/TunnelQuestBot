@@ -16,6 +16,21 @@ export const itemNameOptions = (option: SlashCommandStringOption) =>
 		.setDescription('the name of the item you want to watch')
 		.setRequired(true);
 
+export const autoCompleteWatchOptionsForSnooze = (
+	option: SlashCommandStringOption,
+) =>
+	option
+		.setName('watch')
+		.setDescription('the watch you want to snooze')
+		.setAutocomplete(true);
+
+export const snoozeHoursOptions = (option: SlashCommandNumberOption) =>
+	option
+		.setName('hours')
+		.setDescription('how many hours to snooze for')
+		.setMinValue(1)
+		.setMaxValue(168);
+
 export const serverOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('server')

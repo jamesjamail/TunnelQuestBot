@@ -60,10 +60,10 @@ export namespace messageCopy {
 		'For more information, try the `/help` command.\n\n\n' +
 		'**Welcome to the server!**';
 
-	export const yourWatchHasBeenSnoozed =
-		'Your watch has been snoozed for 6 hours';
+	export const yourWatchHasBeenSnoozed = (hours = 6) =>
+		`Your watch has been snoozed for ${hours} hours`;
 
-	export const yourWatchHasBeenUnoozed = 'Your watch has been unsnoozed';
+	export const yourWatchHasBeenUnsoozed = 'Your watch has been unsnoozed';
 
 	export const yourWatchHasBeenUnwatched = 'Your watch has been unwatched';
 
@@ -72,9 +72,14 @@ export namespace messageCopy {
 	export const yourWatchHasBeenExtended =
 		'Your watch has been extended for another 7 days';
 
-	export const allYourWatchesHaveBeenSnoozed =
-		'All your watches have been snoozed for 6 hours';
+	export const allYourWatchesHaveBeenSnoozed = (hours = 6) => {
+		return `All your watches have been snoozed for ${hours} hours.  Use the 💤 button below to unsnooze.`;
+	};
 
 	export const globalSnoozeHasBeenRemoved =
-		'Global snooze has been been removed';
+		'Global snooze has been been removed.  Your watches may still have individual snoozes applied.';
+
+	export const iCouldntFindAnyWatchesForItemName = (itemName: string) => {
+		return `I couldn't find any watches for item ${itemName}.  Try creating one with /watch.`;
+	};
 }

@@ -1,41 +1,57 @@
 import { Prisma, SnoozedWatch, Watch } from '@prisma/client';
 import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
-
-// helper type to map between argument names and their types
-type ArgType<T, K extends keyof T> = T[K];
+import { parseInput, prefixJSON } from './autocomplete';
 
 type AllowedOptionValues = string | number | boolean;
 
+// Define structure for a parsed argument
+type ParsedOption = {
+	value: AllowedOptionValues;
+	autoSuggestionMetaData?: Record<string, unknown>;
+	isAutoSuggestion: boolean;
+};
+
+// This will redefine ArgType to produce a type based on T, but with the above structure for each property.
+type ArgType<T extends Record<string, AllowedOptionValues>> = {
+	[K in keyof T]: ParsedOption;
+};
+
 export function getInteractionArgs<
 	T extends Record<string, AllowedOptionValues>,
->(interaction: CommandInteraction, argNames: (keyof T)[]): T {
-	const result: Partial<T> = {};
+>(
+	interaction: CommandInteraction,
+	mandatoryArgs: (keyof T)[],
+	optionalArgs: (keyof T)[] = [],
+): ArgType<T> {
+	const result: Partial<ArgType<T>> = {};
 
-	for (const arg of argNames) {
+	const allArgs = [...mandatoryArgs, ...optionalArgs];
+
+	// Collect values for both mandatory and optional arguments
+	for (const arg of allArgs) {
 		const option = interaction.options.get(arg as string);
 
-		if (option?.value && isAllowedOptionValue(option.value)) {
-			// Cast to correct type using our helper type
-			result[arg] = option.value as ArgType<T, typeof arg>;
+		if (option?.value) {
+			const parsed = parseInput(option.value as string);
+
+			// Assigning the parsed value with the desired structure
+			result[arg] = {
+				value: parsed.userSubmittedValue || '', // Ensuring there's always a value
+				autoSuggestionMetaData: parsed.autoSuggestedValue,
+				isAutoSuggestion: !!parsed.autoSuggestedValue,
+			};
 		}
 	}
 
-	for (const arg of argNames) {
+	// Check if all mandatory arguments have been provided
+	for (const arg of mandatoryArgs) {
 		if (result[arg] === undefined) {
 			throw new Error(`Missing required argument: ${String(arg)}`);
 		}
 	}
 
-	return result as T;
-}
-
-function isAllowedOptionValue(value: unknown): value is AllowedOptionValues {
-	return (
-		typeof value === 'string' ||
-		typeof value === 'number' ||
-		typeof value === 'boolean'
-	);
+	return result as ArgType<T>;
 }
 
 type WatchWithSnoozedWatches = Watch & {
@@ -116,4 +132,38 @@ export function removeSnoozedWatchDataFromFormattedResult(
 		...inaccurateData,
 		snoozedWatches: updatedSnoozedWatches,
 	};
+}
+
+export function parseWatchesForAutoSuggest(
+	watches: Watch[],
+): { name: string; value: string }[] {
+	// Check for unique servers and watchTypes
+	const uniqueServers = new Set(watches.map((watch) => watch.server));
+	const uniqueWatchTypes = new Set(watches.map((watch) => watch.watchType));
+
+	const isMultipleServers = uniqueServers.size > 1;
+	const isMultipleWatchTypes = uniqueWatchTypes.size > 1;
+
+	return watches.map((watch) => {
+		let itemName = watch.itemName;
+		const extraInfo = [];
+
+		if (isMultipleWatchTypes) {
+			extraInfo.push(watch.watchType);
+		}
+
+		if (isMultipleServers) {
+			extraInfo.push(watch.server);
+		}
+
+		if (extraInfo.length) {
+			itemName = `${watch.itemName} (${extraInfo.join(', ')})`;
+		}
+
+		return {
+			name: itemName,
+			// max length of value is 100, so only adding essential metadata
+			value: prefixJSON(JSON.stringify({ watch: { id: watch.id } })),
+		};
+	});
 }

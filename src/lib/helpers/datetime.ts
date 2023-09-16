@@ -32,7 +32,11 @@ export function formatSnoozeExpirationTimestamp(endTimestamp: Date) {
 
 // TODO: accept snooze default as optional ENV
 export function getExpirationTimestampForSnooze(hours: number = 6): Date {
+	let otherHours = hours;
+	if (!hours) {
+		otherHours = 6;
+	}
 	const currentDate = new Date();
-	currentDate.setHours(currentDate.getHours() + hours);
+	currentDate.setHours(currentDate.getHours() + otherHours);
 	return currentDate;
 }

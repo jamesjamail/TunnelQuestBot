@@ -14,7 +14,7 @@ const command: SlashCommand = {
 		.setDescription('list watches in a concise format'),
 	execute: async (interaction) => {
 		const user = await findOrCreateUser(interaction.user);
-		const watches = await getWatchesByUser(user);
+		const watches = await getWatchesByUser(interaction.user.id);
 
 		if (watches.length === 0) {
 			return await interaction.reply(
@@ -24,7 +24,7 @@ const command: SlashCommand = {
 
 		const globalSnoozeActive = user.snoozedUsers.length > 0;
 
-		const embeds = listCommandResponseBuilder(watches, user);
+		const embeds = listCommandResponseBuilder(watches);
 		const components = buttonRowBuilder(CommandTypes.list, [
 			globalSnoozeActive,
 			false,
