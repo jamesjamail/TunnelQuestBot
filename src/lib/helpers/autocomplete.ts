@@ -1,6 +1,8 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
 import { getWatchesByDiscordUser } from '../../prisma/dbExecutors';
 import { parseWatchesForAutoSuggest } from './helpers';
+import Fuse from 'fuse.js';
+import itemsData from '../content/gameData/items.json';
 
 const jsonPrefix = '::JSON::';
 
@@ -58,4 +60,37 @@ export async function autocompleteWatches(
 		choice.name.startsWith(focusedValue),
 	);
 	await interaction.respond(filtered);
+}
+
+export async function autocompleteItems(
+	interaction: AutocompleteInteraction<CacheType>,
+) {
+	const focusedValue = interaction.options.getFocused();
+
+	// Convert the JSON object keys to an array of item names
+	const itemNames = Object.keys(itemsData).map((key) => {
+		return { name: key };
+	});
+
+	// Configure Fuse.js options
+	const options = {
+		keys: ['name'],
+		includeScore: true,
+		threshold: 0.3, // Adjust as needed. Lower values make the search stricter.
+	};
+
+	const fuse = new Fuse(itemNames, options);
+
+	// Perform the fuzzy search
+	const results = fuse.search(focusedValue);
+
+	// Extract the top 25 results and map them to the desired format
+	const topResults = results.slice(0, 25).map((result) => {
+		return {
+			name: result.item.name,
+			value: result.item.name,
+		};
+	});
+
+	await interaction.respond(topResults);
 }

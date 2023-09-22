@@ -7,6 +7,7 @@ import {
 	CommandTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
+import { isSnoozed } from '../lib/helpers/helpers';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -22,7 +23,7 @@ const command: SlashCommand = {
 			);
 		}
 
-		const globalSnoozeActive = user.snoozedUsers.length > 0;
+		const globalSnoozeActive = isSnoozed(user.snoozedUntil);
 
 		const embeds = listCommandResponseBuilder(watches);
 		const components = buttonRowBuilder(CommandTypes.list, [

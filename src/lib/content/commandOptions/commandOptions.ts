@@ -16,6 +16,13 @@ export const itemNameOptions = (option: SlashCommandStringOption) =>
 		.setDescription('the name of the item you want to watch')
 		.setRequired(true);
 
+export const autoCompleteItemNameOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('item')
+		.setDescription('the name of the item you want to watch')
+		.setRequired(true)
+		.setAutocomplete(true);
+
 export const autoCompleteWatchOptionsForSnooze = (
 	option: SlashCommandStringOption,
 ) =>
@@ -31,7 +38,7 @@ export const snoozeHoursOptions = (option: SlashCommandNumberOption) =>
 		.setMinValue(1)
 		.setMaxValue(168);
 
-export const serverOptions = (option: SlashCommandStringOption) =>
+export const requiredsServerOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('server')
 		.setDescription('select a server')
@@ -44,3 +51,19 @@ export const serverOptions = (option: SlashCommandStringOption) =>
 
 export const priceCriteriaOptions = (option: SlashCommandNumberOption) =>
 	option.setName('price').setDescription('enter optional price criteria');
+
+export const playerNameOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('player')
+		.setDescription('the name of the player you want to block')
+		.setRequired(true);
+
+export const optionalServerOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('server')
+		.setDescription('select a server')
+		.addChoices(
+			{ name: 'blue server', value: 'BLUE' },
+			{ name: 'green server', value: 'GREEN' },
+			{ name: 'red server', value: 'RED' },
+		);

@@ -4,15 +4,15 @@ import { extendWatch } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { isSnoozed } from '../../../helpers/helpers';
 
 export default async function handleWatchRefreshInactive<T>(
 	interaction: ButtonInteraction,
 	metadata: T,
 ) {
 	const data = await extendWatch(metadata as Watch);
-	const isSnoozed = !!data.snoozedWatches.length;
 	const components = buttonRowBuilder(CommandTypes.watch, [
-		isSnoozed,
+		isSnoozed(data.snoozedUntil),
 		false,
 		true,
 	]);

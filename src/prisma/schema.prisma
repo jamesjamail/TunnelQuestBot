@@ -15,11 +15,11 @@ model User {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   discordUsername String   @db.VarChar(255)
+  snoozedUntil    DateTime?
 
-  watches               Watch[]
-  blockedSellersByWatch BlockedSellerByWatch[]
-  blockedSellers        BlockedSeller[]
-  snoozedUsers          SnoozedUser[]
+  watches             Watch[]
+  blockedPlayersByWatch BlockedPlayerByWatch[]
+  blockedPlayers        BlockedPlayer[]
 }
 
 enum Server {
@@ -41,59 +41,38 @@ model Watch {
   itemName             String    @db.VarChar(255)
   priceRequirement     Int?
   lastAlertedTimestamp DateTime?
-  // created is used in place of expiration timestamp- prisma does not support db.add for time manipulation
-  // within defaults, this does not use @updatedAt as we will only modify this column when extending watches
   created              DateTime  @default(now())
   active               Boolean   @default(true)
+  snoozedUntil         DateTime?
 
-  user           User                    @relation(fields: [discordUserId], references: [discordUserId])
-  blockedWatches BlockedSellerByWatch[]
-  snoozedWatches SnoozedWatch[]
+  // TODO: add field for notes
+  // TODO: add field for "opt-in for gnome-dome" on a per watch basis
+
+  user           User                @relation(fields: [discordUserId], references: [discordUserId])
+  blockedWatches BlockedPlayerByWatch[]
 
   @@unique([discordUserId, itemName, server, watchType])
 }
 
-
-model BlockedSellerByWatch {
+model BlockedPlayerByWatch {
   id            Int    @id @default(autoincrement())
   discordUserId String
   watchId       Int
-  seller        String @db.VarChar(255)
+  player        String @db.VarChar(255)
+  watch  Watch @relation(fields: [watchId], references: [id])
+  user   User  @relation(fields: [discordUserId], references: [discordUserId])
 
-  watch Watch @relation(fields: [watchId], references: [id])
-  user  User  @relation(fields: [discordUserId], references: [discordUserId])
-
-  @@unique([watchId, seller])
+  @@unique([watchId, player])
   @@index([discordUserId])
 }
 
-model BlockedSeller {
+model BlockedPlayer {
   id            Int    @id @default(autoincrement())
   discordUserId String
   server        Server
-  seller        String @db.VarChar(255)
+  player        String @db.VarChar(255)
 
   user User @relation(fields: [discordUserId], references: [discordUserId])
 
-  @@unique([discordUserId, server, seller])
-}
-
-model SnoozedWatch {
-  id           Int      @id @default(autoincrement())
-  watchId      Int
-  endTimestamp DateTime
-
-  watch Watch @relation(fields: [watchId], references: [id])
-
-  @@unique([watchId])
-}
-
-model SnoozedUser {
-  id            Int      @id @default(autoincrement())
-  discordUserId String
-  endTimestamp  DateTime
-
-  user User @relation(fields: [discordUserId], references: [discordUserId])
-
-  @@unique([discordUserId])
+  @@unique([discordUserId, server, player])
 }

@@ -1,7 +1,8 @@
-import { Prisma, SnoozedWatch, Watch } from '@prisma/client';
+import { Prisma, Watch } from '@prisma/client';
 import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
 import { parseInput, prefixJSON } from './autocomplete';
+import { isPast } from 'date-fns';
 
 type AllowedOptionValues = string | number | boolean;
 
@@ -54,10 +55,6 @@ export function getInteractionArgs<
 	return result as ArgType<T>;
 }
 
-type WatchWithSnoozedWatches = Watch & {
-	snoozedWatches: SnoozedWatch[];
-};
-
 // I knew typescript wouldn't like this, but I prefer to redefining table names
 export function formatTopLevelDbResponses(
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,22 +84,6 @@ export function formatTopLevelDbResponses(
 	return formattedResult;
 }
 
-export function formatSnoozedWatchResult(
-	data: SnoozedWatch & { watch: Watch },
-): WatchWithSnoozedWatches {
-	// Extracting the watch data from the response
-	const { watch, ...snoozedWatchData } = data;
-	// Constructing the new formatted result
-	const formattedResult: WatchWithSnoozedWatches = {
-		...watch, // spreading watch data
-		snoozedWatches: Object.keys(snoozedWatchData).length
-			? [{ ...snoozedWatchData }]
-			: [], // if empty obj, use empty array
-	};
-
-	return formattedResult;
-}
-
 export function getEnumKeyByEnumValue(
 	myEnum: typeof ButtonInteractionTypes,
 	enumValue: string,
@@ -111,28 +92,6 @@ export function getEnumKeyByEnumValue(
 	return keys ? (keys as ButtonInteractionTypes) : null;
 }
 
-type SnoozedWatchWithRelation = SnoozedWatch & {
-	watch: Watch;
-};
-
-export function removeSnoozedWatchDataFromFormattedResult(
-	dbResult: SnoozedWatchWithRelation,
-	inaccurateData: WatchWithSnoozedWatches,
-): WatchWithSnoozedWatches {
-	// Extract the ID of the deleted snoozedWatch
-	const deletedSnoozedWatchId = dbResult.id;
-
-	// Filter out the deleted snoozedWatch from the snoozedWatches array
-	const updatedSnoozedWatches = inaccurateData.snoozedWatches.filter(
-		(sw) => sw.id !== deletedSnoozedWatchId,
-	);
-
-	// Return the modified inaccurateData
-	return {
-		...inaccurateData,
-		snoozedWatches: updatedSnoozedWatches,
-	};
-}
 
 export function parseWatchesForAutoSuggest(
 	watches: Watch[],
@@ -166,4 +125,12 @@ export function parseWatchesForAutoSuggest(
 			value: prefixJSON(JSON.stringify({ watch: { id: watch.id } })),
 		};
 	});
+}
+
+export function isSnoozed(timestamp: Date | null) {
+	// null value indicates no snooze
+	if (!timestamp) return false;
+
+	const snoozedUntil = new Date(timestamp);
+	return isPast(snoozedUntil) as boolean;
 }

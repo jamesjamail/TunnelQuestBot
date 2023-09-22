@@ -1,4 +1,4 @@
-import { Watch, SnoozedWatch, Server, User, SnoozedUser } from '@prisma/client';
+import { Watch, Server, User, BlockedPlayer } from '@prisma/client';
 import { EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
@@ -6,13 +6,7 @@ import {
 } from '../../helpers/datetime';
 import { getServerColorFromString } from '../../helpers/colors';
 
-type WatchWithSnoozedWatches = Watch & {
-	snoozedWatches: SnoozedWatch[];
-};
-
-export function watchCommandResponseBuilder(
-	watchData: WatchWithSnoozedWatches,
-) {
+export function watchCommandResponseBuilder(watchData: Watch) {
 	const price = watchData.priceRequirement ?? 'No Price Criteria';
 	const formattedExpirationTimestamp = formatWatchExpirationTimestamp(
 		watchData.created,
@@ -31,11 +25,9 @@ export function watchCommandResponseBuilder(
 		},
 	];
 
-	if (watchData.snoozedWatches.length > 0) {
+	if (watchData.snoozedUntil) {
 		const formattedSnoozeExpirationTimestamp =
-			formatSnoozeExpirationTimestamp(
-				watchData.snoozedWatches[0].endTimestamp,
-			);
+			formatSnoozeExpirationTimestamp(watchData.snoozedUntil);
 		fields.push({
 			name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
 			value: `${formattedSnoozeExpirationTimestamp}`,
@@ -57,13 +49,13 @@ function formatCapitalCase(input: string): string {
 	return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
 }
 export function listCommandResponseBuilder(
-	watches: WatchWithSnoozedWatches[],
+	watches: Watch[],
 	// TODO: add an embed above servers if global snooze is active
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	_user?: User & { snoozedUsers: SnoozedUser[] },
+	_user?: User,
 ): EmbedBuilder[] {
 	// Group the watches by server
-	const watchesByServer: { [key: string]: WatchWithSnoozedWatches[] } = {};
+	const watchesByServer: { [key: string]: Watch[] } = {};
 
 	watches.forEach((watch) => {
 		if (!watchesByServer[watch.server]) {
@@ -95,15 +87,12 @@ export function listCommandResponseBuilder(
 						)}`,
 						inline: false,
 					});
-
-					if (
-						watch.snoozedWatches &&
-						watch.snoozedWatches.length > 0
-					) {
+					// TODO: check if snooze has not yet past
+					if (watch.snoozedUntil) {
 						watchFields.push({
 							name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
 							value: `${formatSnoozeExpirationTimestamp(
-								watch.snoozedWatches[0].endTimestamp,
+								watch.snoozedUntil,
 							)}`,
 							inline: false,
 						});
@@ -135,4 +124,28 @@ export function listCommandResponseBuilder(
 	);
 
 	return embeds;
+}
+
+export function blockCommandResponseBuilder(block: BlockedPlayer) {
+	// const fields = [
+	// 	{
+	// 		name: `${block.watchType}   |   ${price}`,
+	// 		// TODO: make this conditional based on watchType
+	// 		value: 'This watch will only trigger for WTS auctions',
+	// 		inline: false,
+	// 	},
+	// 	{
+	// 		name: `Project 1999 ${block.server} Server`,
+	// 		value: `${formattedExpirationTimestamp}`,
+	// 		inline: false,
+	// 	},
+	// ];
+
+	return new EmbedBuilder()
+		.setColor(getServerColorFromString(block.server))
+		.setAuthor({ name: 'Player Block' })
+		.setTitle(`--- ${block.player} ---`)
+		.setFooter({
+			text: 'To remove this block, click ❌',
+		});
 }

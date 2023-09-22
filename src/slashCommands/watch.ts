@@ -3,9 +3,10 @@ import { SlashCommand } from '../types';
 import { Server, WatchType } from '@prisma/client';
 import {
 	itemNameOptions,
-	serverOptions,
+	requiredsServerOptions,
 	watchTypeOptions,
 	priceCriteriaOptions,
+	autoCompleteItemNameOptions,
 } from '../lib/content/commandOptions/commandOptions';
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
@@ -15,25 +16,28 @@ import {
 } from '../lib/content/buttons/buttonRowBuilder';
 import { findOrCreateUser, upsertWatch } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
+import { autocompleteItems } from '../lib/helpers/autocomplete';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('watch')
 		.setDescription('add or modify a watch.')
 		.addStringOption(watchTypeOptions)
-		.addStringOption(itemNameOptions)
-		.addStringOption(serverOptions)
+		.addStringOption(autoCompleteItemNameOptions)
+		.addStringOption(requiredsServerOptions)
 		.addNumberOption(
 			priceCriteriaOptions,
 		) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
+	async autocomplete(interaction) {
+		await autocompleteItems(interaction);
+	},
 	execute: async (interaction) => {
 		const args = getInteractionArgs(interaction, [
 			'server',
 			'item',
 			'type',
 		]);
-		const user = await findOrCreateUser(interaction.user);
-		const data = await upsertWatch(user.discordUserId, {
+		const data = await upsertWatch(interaction.user.id, {
 			server: args.server.value as Server,
 			itemName: args.item.value as string,
 			watchType: args.type.value as WatchType,
