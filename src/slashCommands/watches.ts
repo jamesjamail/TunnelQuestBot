@@ -24,6 +24,8 @@ const command: SlashCommand = {
 			args?.filter?.value as string,
 		);
 
+		let lastDmChannelId = '';
+
 		await Promise.all(
 			data.map(async (watch) => {
 				const embeds = [watchCommandResponseBuilder(watch)];
@@ -33,6 +35,8 @@ const command: SlashCommand = {
 					embeds,
 					components,
 				});
+
+				lastDmChannelId = message.channelId;
 				await collectButtonInteractionAndReturnResponse(
 					message as unknown as InteractionResponse<boolean>,
 					watch,
@@ -40,13 +44,16 @@ const command: SlashCommand = {
 			}),
 		);
 
-		// If the command was executed from a DM don't inform users watches were sent via DM
+		// If the command was executed from a DM don't link to DM
 		if (!interaction.inGuild()) {
 			return await interaction.reply('Here you go...');
 		}
 
 		const response = await interaction.reply(
-			messageCopy.watchesHaveBeenDeliveredViaDm(data.length),
+			messageCopy.watchesHaveBeenDeliveredViaDm(
+				data.length,
+				lastDmChannelId,
+			),
 		);
 
 		// Set a timeout to delete the reply after 5 seconds

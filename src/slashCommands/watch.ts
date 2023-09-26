@@ -14,7 +14,7 @@ import {
 	CommandTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
-import { upsertWatch } from '../prisma/dbExecutors';
+import { findOrCreateUser, upsertWatch } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 import { autocompleteItems } from '../lib/helpers/autocomplete';
 
@@ -36,6 +36,9 @@ const command: SlashCommand = {
 			['server', 'item', 'type'],
 			['notes'],
 		);
+		// TODO: either ditch planetscale and a DB that respects FK at the db level in order to use the HoF that creates a user
+		// if a query fails, or ensure we are calling findOrCreateUser in all slash commands
+		await findOrCreateUser(interaction.user);
 		const data = await upsertWatch(interaction.user.id, {
 			server: args.server.value as Server,
 			itemName: args.item.value as string,

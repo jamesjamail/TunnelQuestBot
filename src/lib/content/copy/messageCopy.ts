@@ -86,10 +86,13 @@ export namespace messageCopy {
 		return `I couldn't find any watches for item ${itemName}.  Try creating one with /watch.`;
 	};
 
-	export const watchesHaveBeenDeliveredViaDm = (numberOfWatches: number) => {
+	export const watchesHaveBeenDeliveredViaDm = (
+		numberOfWatches: number,
+		channelId: string,
+	) => {
 		return `${numberOfWatches} watch${numberOfWatches > 1 ? 'es' : ''} ${
 			numberOfWatches > 1 ? 'have' : 'has'
-		} been delivered via DM`;
+		} been delivered via DM <#${channelId}>`;
 	};
 
 	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
