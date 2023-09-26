@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types';
-import { addPlayerBlock, findOrCreateUser } from '../prisma/dbExecutors';
+import { addPlayerBlock } from '../prisma/dbExecutors';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 import {
@@ -9,6 +9,10 @@ import {
 } from '../lib/content/commandOptions/commandOptions';
 import { blockCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { Server } from '@prisma/client';
+import {
+	CommandTypes,
+	buttonRowBuilder,
+} from '../lib/content/buttons/buttonRowBuilder';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -21,7 +25,6 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		const args = getInteractionArgs(interaction, ['player', 'server']);
 
-		console.log(args);
 		// TODO: would be nice to eventually allow server to be optional, and block
 		//  player on all servers if omitted
 		const block = await addPlayerBlock(
@@ -31,11 +34,11 @@ const command: SlashCommand = {
 		);
 
 		const embeds = [blockCommandResponseBuilder(block)];
-		// const components = buttonRowBuilder(CommandTypes.watch);
+		const components = buttonRowBuilder(CommandTypes.block);
 
 		const response = await interaction.reply({
 			embeds,
-			// components,
+			components,
 		});
 
 		return await collectButtonInteractionAndReturnResponse(response, block);

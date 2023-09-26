@@ -49,6 +49,10 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleUserSnoozeInactive,
 			[ButtonInteractionTypes.UserSnoozeActive]:
 				handlers.handleUserSnoozeActive,
+			[ButtonInteractionTypes.GlobalUnblockInactive]:
+				handlers.handleGlobalUnblockInactive,
+			[ButtonInteractionTypes.GlobalUnblockActive]:
+				handlers.handleGlobalUnblockActive,
 			// TODO: add other mappings
 		};
 

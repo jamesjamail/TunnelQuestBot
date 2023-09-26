@@ -35,6 +35,14 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 		});
 	}
 
+	if (watchData.notes) {
+		fields.push({
+			name: `Notes:`,
+			value: watchData.notes,
+			inline: false,
+		});
+	}
+
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor({ name: 'Auction Watch' })
@@ -43,6 +51,12 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 		.setFooter({
 			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻️',
 		});
+}
+
+export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
+	return dataForWatches.map((watchData) => {
+		return watchCommandResponseBuilder(watchData);
+	});
 }
 
 function formatCapitalCase(input: string): string {

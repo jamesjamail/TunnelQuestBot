@@ -40,9 +40,7 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
 		);
 
-		switch (
-			true // Using switch(true) to group together possible results
-		) {
+		switch (true) {
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'WatchSnooze',
 			):
@@ -58,6 +56,9 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 				break;
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'Unwatch',
+			):
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'GlobalUnblock',
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'WatchNotificationUnwatch',
@@ -77,9 +78,6 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'WatchNotificationWatchRefresh',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'GlobalUnblock',
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'WatchBlock',

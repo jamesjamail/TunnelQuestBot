@@ -67,3 +67,13 @@ export const optionalServerOptions = (option: SlashCommandStringOption) =>
 			{ name: 'green server', value: 'GREEN' },
 			{ name: 'red server', value: 'RED' },
 		);
+
+export const watchFilterOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('filter')
+		.setDescription('optional string to filter watches by');
+
+export const watchNotesOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('notes')
+		.setDescription('notes about this watch - only visible to you');

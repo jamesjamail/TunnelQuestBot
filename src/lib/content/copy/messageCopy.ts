@@ -1,3 +1,6 @@
+import { BlockedPlayer } from '@prisma/client';
+import { formatServerFromEnum } from '../../helpers/helpers';
+
 const COMMAND_CHANNEL = process.env.command_channel;
 const FEEDBACK_AND_IDEAS = process.env.feedback_and_ideas_channel;
 
@@ -81,5 +84,23 @@ export namespace messageCopy {
 
 	export const iCouldntFindAnyWatchesForItemName = (itemName: string) => {
 		return `I couldn't find any watches for item ${itemName}.  Try creating one with /watch.`;
+	};
+
+	export const watchesHaveBeenDeliveredViaDm = (numberOfWatches: number) => {
+		return `${numberOfWatches} watch${numberOfWatches > 1 ? 'es' : ''} ${
+			numberOfWatches > 1 ? 'have' : 'has'
+		} been delivered via DM`;
+	};
+
+	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
+		return `${block.player} has been blocked on ${formatServerFromEnum(
+			block.server,
+		)}`;
+	};
+
+	export const soAndSoHasBeenUnblocked = (block: BlockedPlayer) => {
+		return `${block.player} has been unblocked on ${formatServerFromEnum(
+			block.server,
+		)}`;
 	};
 }

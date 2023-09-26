@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Interaction } from 'discord.js';
 import { createUser } from './dbExecutors';
@@ -15,10 +16,10 @@ export async function ensureUserExistsAndExecute(
 	try {
 		return await action();
 	} catch (error) {
-        console.log('error = ', error)
+		console.log('error = ', error);
 
 		if (isForeignKeyViolationError(error)) {
-            console.log('isFkViolation')
+			console.log('isFkViolation');
 			await createUser(interaction.user).catch(console.error);
 			return await action();
 		}

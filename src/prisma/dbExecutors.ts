@@ -42,20 +42,22 @@ type CreateWatchInputArgs = {
 	itemName: string;
 	server: Server;
 	watchType: WatchType;
+	notes?: string;
 };
 
 export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
+	const { itemName, server, watchType, notes } = watchData;
 	// Upsert the watch
 	return await prisma.watch.upsert({
 		where: {
 			discordUserId_itemName_server_watchType: {
-				discordUserId: discordUserId,
-				itemName: watchData.itemName,
-				server: watchData.server,
-				watchType: watchData.watchType,
+				discordUserId,
+				itemName,
+				server,
+				watchType,
 			},
 		},
 		update: {
@@ -64,13 +66,27 @@ export async function upsertWatch(
 			active: true,
 			created: new Date(),
 			snoozedUntil: null,
+			notes,
 		},
 		create: {
-			discordUserId: discordUserId,
-			itemName: watchData.itemName,
-			server: watchData.server,
-			watchType: watchData.watchType,
+			discordUserId,
+			itemName,
+			server,
+			watchType,
 			snoozedUntil: null,
+			notes,
+		},
+	});
+}
+
+export async function setWatchActiveByWatchId(id: number) {
+	// update the watch
+	return await prisma.watch.update({
+		where: {
+			id,
+		},
+		data: {
+			active: true,
 		},
 	});
 }
@@ -79,6 +95,7 @@ export async function getWatchesByUser(discordUserId: string) {
 	return prisma.watch.findMany({
 		where: {
 			discordUserId,
+			active: true,
 		},
 	});
 }
@@ -87,8 +104,20 @@ export async function getWatchesByDiscordUser(user: DiscordUser) {
 	return prisma.watch.findMany({
 		where: {
 			discordUserId: user.id,
+			active: true,
 		},
 	});
+}
+
+export async function getWatchesByItemName(
+	discordUserId: string,
+	itemName = '',
+) {
+	const watches = await getWatchesByUser(discordUserId);
+	const filteredWatches = watches.filter((watch) => {
+		return watch.itemName.includes(itemName);
+	});
+	return filteredWatches;
 }
 
 export type MetadataType = {
@@ -188,7 +217,6 @@ export async function snoozeWatchByItemName(
 	itemName: string,
 	hours?: number,
 ) {
-
 	// First, find the watch by itemName - let's make a good faith
 	// effort to find a watch by name in case autocomplete fails for some reason
 	// it's technically possible a user could have multiple watches matching this
@@ -235,6 +263,36 @@ export async function addPlayerBlock(
 			discordUserId,
 			player,
 			server,
+		},
+	});
+}
+
+export async function removePlayerBlock(
+	discordUserId: string,
+	player: string,
+	server: Server,
+) {
+	return await prisma.blockedPlayer.update({
+		where: {
+			discordUserId_server_player: {
+				discordUserId,
+				player,
+				server,
+			},
+		},
+		data: {
+			active: false,
+		},
+	});
+}
+
+export async function removePlayerBlockById(id: number) {
+	return await prisma.blockedPlayer.update({
+		where: {
+			id,
+		},
+		data: {
+			active: false,
 		},
 	});
 }

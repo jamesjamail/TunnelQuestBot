@@ -44,15 +44,16 @@ model Watch {
   created              DateTime  @default(now())
   active               Boolean   @default(true)
   snoozedUntil         DateTime?
-
-  // TODO: add field for notes
-  // TODO: add field for "opt-in for gnome-dome" on a per watch basis
+  notes                String?   @db.Text
+  // allow other discord users to contact regarding item
+  isPublicallyTradeable Boolean  @default(true)
 
   user           User                @relation(fields: [discordUserId], references: [discordUserId])
   blockedWatches BlockedPlayerByWatch[]
 
   @@unique([discordUserId, itemName, server, watchType])
 }
+
 
 model BlockedPlayerByWatch {
   id            Int    @id @default(autoincrement())
@@ -71,6 +72,7 @@ model BlockedPlayer {
   discordUserId String
   server        Server
   player        String @db.VarChar(255)
+  active        Boolean   @default(true)
 
   user User @relation(fields: [discordUserId], references: [discordUserId])
 

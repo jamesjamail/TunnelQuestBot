@@ -1,4 +1,4 @@
-import { Prisma, Watch } from '@prisma/client';
+import { Prisma, Server, Watch } from '@prisma/client';
 import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
 import { parseInput, prefixJSON } from './autocomplete';
@@ -92,7 +92,6 @@ export function getEnumKeyByEnumValue(
 	return keys ? (keys as ButtonInteractionTypes) : null;
 }
 
-
 export function parseWatchesForAutoSuggest(
 	watches: Watch[],
 ): { name: string; value: string }[] {
@@ -133,4 +132,8 @@ export function isSnoozed(timestamp: Date | null) {
 
 	const snoozedUntil = new Date(timestamp);
 	return isPast(snoozedUntil) as boolean;
+}
+
+export function formatServerFromEnum(server: Server) {
+	return `Project 1999 ${server.toLowerCase()} server`;
 }

@@ -1,6 +1,6 @@
 import { Watch } from '@prisma/client';
 import { ButtonInteraction } from 'discord.js';
-import { upsertWatch } from '../../../../prisma/dbExecutors';
+import { setWatchActiveByWatchId } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
@@ -10,7 +10,8 @@ export default async function handleUnwatchActive<T>(
 	interaction: ButtonInteraction,
 	metadata: T,
 ) {
-	const data = await upsertWatch(interaction.user.id, metadata as Watch);
+	const { id } = metadata as Watch;
+	const data = await setWatchActiveByWatchId(id);
 	const components = buttonRowBuilder(CommandTypes.watch, [
 		isSnoozed(data.snoozedUntil),
 		false,

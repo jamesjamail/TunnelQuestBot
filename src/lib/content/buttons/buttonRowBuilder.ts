@@ -43,7 +43,12 @@ const commandTypeButtonMappings: {
 			inactive: ButtonInteractionTypes.GlobalRefreshInactive,
 		},
 	],
-	[CommandTypes.block]: [],
+	[CommandTypes.block]: [
+		{
+			active: ButtonInteractionTypes.GlobalUnblockActive,
+			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
+		},
+	],
 	[CommandTypes.blocks]: [],
 	[CommandTypes.help]: [],
 	[CommandTypes.snooze]: [],
