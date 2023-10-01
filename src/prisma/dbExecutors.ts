@@ -1,6 +1,11 @@
 import { PrismaClient, Server, WatchType, User, Watch } from '@prisma/client';
-import { ChatInputCommandInteraction, User as DiscordUser } from 'discord.js';
+import {
+	ChatInputCommandInteraction,
+	User as DiscordUser,
+	Interaction,
+} from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
+import { attemptAndCreateUserIfNeeded } from './higherOrderFunctions';
 
 const prisma = new PrismaClient();
 
@@ -77,6 +82,16 @@ export async function upsertWatch(
 			notes,
 		},
 	});
+}
+
+export async function upsertWatchSafely(
+	interaction: Interaction,
+	watchData: CreateWatchInputArgs,
+) {
+	return await attemptAndCreateUserIfNeeded(
+		interaction,
+		async () => await upsertWatch(interaction.user.id, watchData),
+	);
 }
 
 export async function setWatchActiveByWatchId(id: number) {
@@ -161,6 +176,30 @@ export async function unwatch(metadata: MetadataType) {
 	return result;
 }
 
+export async function unwatchByWatchName(
+	interaction: Interaction,
+	watchName: string,
+) {
+	const watch = await prisma.watch.findFirstOrThrow({
+		where: {
+			itemName: watchName,
+			discordUserId: interaction.user.id,
+		},
+	});
+
+	// Update the watch entry by setting active to false where itemName = itemName
+	const result = await prisma.watch.update({
+		where: {
+			id: watch.id,
+		},
+		data: {
+			active: false,
+		},
+	});
+
+	return result;
+}
+
 export async function extendWatch(metadata: MetadataType) {
 	const result = await prisma.watch.update({
 		where: {
@@ -175,7 +214,7 @@ export async function extendWatch(metadata: MetadataType) {
 	return result;
 }
 
-export async function extendAllWatches(discordUserId: string) {
+export async function extendAllWatchesAndReturnWatches(discordUserId: string) {
 	// extending all watches should end any global snooze if active
 	await prisma.user.update({
 		where: {
@@ -197,7 +236,36 @@ export async function extendAllWatches(discordUserId: string) {
 		},
 	});
 
-	return getWatchesByUser(discordUserId);
+	return await getWatchesByUser(discordUserId);
+}
+
+export async function extendAllWatchesAndReturnUserAndWatches(
+	discordUserId: string,
+) {
+	// extending all watches should end any global snooze if active
+	const user = await prisma.user.update({
+		where: {
+			discordUserId,
+		},
+		data: {
+			snoozedUntil: null,
+		},
+	});
+
+	// Extend the watches for this user
+	await prisma.watch.updateMany({
+		where: {
+			discordUserId: discordUserId,
+		},
+		data: {
+			created: new Date(),
+			active: true,
+		},
+	});
+
+	const watches = await getWatchesByUser(discordUserId);
+
+	return { watches, user };
 }
 
 export async function snoozeAllWatches(discordUserId: string) {
@@ -209,7 +277,24 @@ export async function snoozeAllWatches(discordUserId: string) {
 			snoozedUntil: getExpirationTimestampForSnooze(),
 		},
 	});
-	return getWatchesByUser(discordUserId);
+	return await getWatchesByUser(discordUserId);
+}
+
+export async function snoozeAllWatchesAndReturnWatchesAndUser(
+	discordUserId: string,
+) {
+	const user = await prisma.user.update({
+		where: {
+			discordUserId,
+		},
+		data: {
+			snoozedUntil: getExpirationTimestampForSnooze(),
+		},
+	});
+
+	const watches = await getWatchesByUser(discordUserId);
+
+	return { user, watches };
 }
 
 export async function snoozeWatchByItemName(

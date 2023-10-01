@@ -56,8 +56,8 @@ export async function autocompleteWatches(
 	const focusedValue = interaction.options.getFocused();
 	const watches = await getWatchesByDiscordUser(interaction.user);
 	const watchNames = parseWatchesForAutoSuggest(watches);
-	const filtered = watchNames.filter((choice) =>
-		choice.name.startsWith(focusedValue),
+	const filtered = watchNames.filter(
+		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
 	);
 	await interaction.respond(filtered);
 }

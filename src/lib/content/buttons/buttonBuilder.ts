@@ -2,6 +2,10 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 // eslint-disable-next-line no-shadow
 export enum ButtonInteractionTypes {
+	ConfirmActionActive,
+	ConfirmActionInactive,
+	CancelActionActive,
+	CancelActionInactive,
 	WatchSnoozeActive,
 	WatchSnoozeInactive,
 	UserSnoozeActive,
@@ -88,6 +92,26 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
 					.setLabel('♻️');
+				break;
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'ConfirmAction',
+			):
+				builder
+					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setLabel('Confirm')
+					.setStyle(
+						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
+					);
+				break;
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'CancelAction',
+			):
+				builder
+					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setLabel('Cancel')
+					.setStyle(
+						isActive ? ButtonStyle.Danger : ButtonStyle.Secondary,
+					);
 				break;
 			default:
 				throw new Error(

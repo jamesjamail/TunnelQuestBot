@@ -5,6 +5,8 @@ import {
 	formatWatchExpirationTimestamp,
 } from '../../helpers/datetime';
 import { getServerColorFromString } from '../../helpers/colors';
+import { EmbedField } from 'discord.js';
+import { isSnoozed } from '../../helpers/helpers';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const price = watchData.priceRequirement ?? 'No Price Criteria';
@@ -62,82 +64,108 @@ export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
 function formatCapitalCase(input: string): string {
 	return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
 }
+
 export function listCommandResponseBuilder(
 	watches: Watch[],
-	// TODO: add an embed above servers if global snooze is active
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	_user?: User,
+	user: User,
 ): EmbedBuilder[] {
-	// Group the watches by server
 	const watchesByServer: { [key: string]: Watch[] } = {};
+	const globalSnooze = isSnoozed(user.snoozedUntil);
+	const embeds: EmbedBuilder[] = [];
+	let totalFieldsCount = 0;
+
+	if (watches.length > 25) {
+		embeds.push(
+			createInfoEmbed(
+				'You have more watches than can be displayed in a single message. Some have been omitted.',
+			),
+		);
+		totalFieldsCount++; // Incremented here after pushing info embed
+	}
+
+	if (globalSnooze) {
+		embeds.push(
+			createSnoozeEmbed(
+				'Global snooze is active. None of your watches will trigger notifications while active.',
+			),
+		);
+		totalFieldsCount++; // Incremented here after pushing snooze embed
+	}
 
 	watches.forEach((watch) => {
-		if (!watchesByServer[watch.server]) {
-			watchesByServer[watch.server] = [];
-		}
+		if (!watchesByServer[watch.server]) watchesByServer[watch.server] = [];
 		watchesByServer[watch.server].push(watch);
 	});
 
 	const serverEntries = Object.entries(watchesByServer);
-	const totalServers = serverEntries.length;
+	serverEntries.forEach(([server, serverWatches], index) => {
+		let fields: EmbedField[] = [];
 
-	// Convert each grouped watches to an embed
-	const embeds: EmbedBuilder[] = serverEntries.map(
-		([server, serverWatches], index) => {
-			const fields = serverWatches
-				.map((watch) => {
-					const price = watch.priceRequirement
-						? `$${watch.priceRequirement}`
-						: 'no price criteria';
+		serverWatches.forEach((watch) => {
+			if (totalFieldsCount >= 25) return;
 
-					const watchFields = [];
+			const price = watch.priceRequirement
+				? `$${watch.priceRequirement}`
+				: 'no price criteria';
+			const snoozeEmoji = isSnoozed(watch.snoozedUntil) ? '💤 ' : '';
 
-					watchFields.push({
-						name: `\`${formatCapitalCase(
-							watch.itemName,
-						)}\` | \`${price}\``,
-						value: `${formatWatchExpirationTimestamp(
-							watch.created,
-						)}`,
-						inline: false,
-					});
-					// TODO: check if snooze has not yet past
-					if (watch.snoozedUntil) {
-						watchFields.push({
-							name: '💤 💤 💤 💤  💤  💤 💤 💤 💤 💤  💤',
-							value: `${formatSnoozeExpirationTimestamp(
-								watch.snoozedUntil,
-							)}`,
-							inline: false,
-						});
-					}
+			const watchFields: EmbedField[] = [
+				{
+					name: `\`${snoozeEmoji}${formatCapitalCase(
+						watch.itemName,
+					)}\` | \`${price}\``,
+					value: `${formatWatchExpirationTimestamp(watch.created)}`,
+					inline: false,
+				},
+			];
 
-					return watchFields;
-				})
-				.flat();
-
-			// const globalSnoozeActive = user.snoozedUsers.length > 0;
-			// TODO: if global snooze active, add a brief message above the list response
-			// informing global snooze active, watch snoozes are listed below
-			const embed = new EmbedBuilder()
-				.setAuthor({
-					name: `Project 1999 ${formatCapitalCase(server)} Server`,
-				})
-				.setColor(getServerColorFromString(server as Server))
-				.addFields(fields);
-
-			// If it's the last embed, set the footer
-			if (index === totalServers - 1) {
-				embed.setFooter({
-					text: 'To snooze all watches for 6 hours, click 💤\nTo extend all watches, click ♻️',
-				});
+			if (fields.length + watchFields.length + totalFieldsCount > 25) {
+				embeds.push(createEmbed(server, fields, false));
+				fields = [];
 			}
 
-			return embed;
-		},
-	);
+			fields.push(...watchFields);
+			totalFieldsCount++;
+		});
+
+		const isLastEmbed = index === serverEntries.length - 1; // Check if it's the last server entry
+		embeds.push(createEmbed(server, fields, isLastEmbed));
+	});
 
 	return embeds;
+}
+
+function createInfoEmbed(content: string): EmbedBuilder {
+	return new EmbedBuilder()
+		.setColor('#FF0000')
+		.addFields({ name: '\u200b', value: content, inline: false });
+}
+
+function createEmbed(
+	server: string,
+	fields: EmbedField[],
+	isLastEntry: boolean,
+): EmbedBuilder {
+	const embed = new EmbedBuilder()
+		.setAuthor({ name: `Project 1999 ${formatCapitalCase(server)} Server` })
+		.setColor(getServerColorFromString(server as Server))
+		.addFields(fields);
+
+	if (isLastEntry) {
+		embed.setFooter({
+			text: 'To snooze all watches for 6 hours, click 💤\nTo extend all watches, click ♻️',
+		});
+	}
+
+	return embed;
+}
+
+function createSnoozeEmbed(content: string): EmbedBuilder {
+	const embed = new EmbedBuilder()
+		.setColor('#FFA500') // You can choose your preferred color here
+		.addFields({ name: '\u200b', value: content, inline: false }); // Unicode '\u200b' represents a zero-width space
+
+	return embed;
 }
 
 export function blockCommandResponseBuilder(block: BlockedPlayer) {

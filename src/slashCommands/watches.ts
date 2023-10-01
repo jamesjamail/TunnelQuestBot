@@ -17,6 +17,8 @@ const command: SlashCommand = {
 		.setDescription('show watches')
 		.addStringOption(watchFilterOptions) as unknown as SlashCommandBuilder, //chaining commands confuses typescript...
 	execute: async (interaction) => {
+		// defer reply immediately as it may take a while to send watches
+		await interaction.deferReply();
 		const args = getInteractionArgs(interaction, [], ['filter']);
 
 		const data = await getWatchesByItemName(
@@ -46,20 +48,20 @@ const command: SlashCommand = {
 
 		// If the command was executed from a DM don't link to DM
 		if (!interaction.inGuild()) {
-			return await interaction.reply('Here you go...');
+			return await interaction.editReply('Here you go...');
 		}
 
-		const response = await interaction.reply(
+		const response = await interaction.editReply(
 			messageCopy.watchesHaveBeenDeliveredViaDm(
 				data.length,
 				lastDmChannelId,
 			),
 		);
 
-		// Set a timeout to delete the reply after 5 seconds
+		// Set a timeout to delete the reply after 10 seconds
 		return setTimeout(async () => {
 			await response.delete();
-		}, 5000);
+		}, 10000);
 	},
 	cooldown: 10,
 };

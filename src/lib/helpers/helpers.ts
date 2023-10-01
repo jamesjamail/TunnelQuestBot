@@ -131,7 +131,7 @@ export function isSnoozed(timestamp: Date | null) {
 	if (!timestamp) return false;
 
 	const snoozedUntil = new Date(timestamp);
-	return isPast(snoozedUntil) as boolean;
+	return !isPast(snoozedUntil) as boolean;
 }
 
 export function formatServerFromEnum(server: Server) {

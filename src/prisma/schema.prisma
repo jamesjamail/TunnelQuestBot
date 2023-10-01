@@ -1,13 +1,10 @@
-// https://stackoverflow.com/questions/74769279/prisma-next-auth-planetscale-foreign-key-constraints-are-not-allowed
-
 generator client {
   provider     = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
-  relationMode = "prisma"
 }
 
 model User {

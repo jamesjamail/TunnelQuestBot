@@ -25,7 +25,8 @@ const command: SlashCommand = {
 
 		const globalSnoozeActive = isSnoozed(user.snoozedUntil);
 
-		const embeds = listCommandResponseBuilder(watches);
+		const embeds = listCommandResponseBuilder(watches, user);
+
 		const components = buttonRowBuilder(CommandTypes.list, [
 			globalSnoozeActive,
 			false,
