@@ -1,6 +1,13 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
-import { getWatchesByDiscordUser } from '../../prisma/dbExecutors';
-import { parseWatchesForAutoSuggest } from './helpers';
+import {
+	getPlayerBlocks,
+	getSnoozedWatchesByDiscordUser,
+	getWatchesByDiscordUser,
+} from '../../prisma/dbExecutors';
+import {
+	parseBlockedPlayersForAutoSuggest,
+	parseWatchesForAutoSuggest,
+} from './helpers';
 import Fuse from 'fuse.js';
 import itemsData from '../content/gameData/items.json';
 
@@ -62,6 +69,19 @@ export async function autocompleteWatches(
 	await interaction.respond(filtered);
 }
 
+// TODO: handle for situations where users don't have any watches - or test if that is a problem
+export async function autocompleteSnoozedWatches(
+	interaction: AutocompleteInteraction<CacheType>,
+) {
+	const focusedValue = interaction.options.getFocused();
+	const watches = await getSnoozedWatchesByDiscordUser(interaction.user);
+	const watchNames = parseWatchesForAutoSuggest(watches);
+	const filtered = watchNames.filter(
+		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
+	);
+	await interaction.respond(filtered);
+}
+
 export async function autocompleteItems(
 	interaction: AutocompleteInteraction<CacheType>,
 ) {
@@ -93,4 +113,16 @@ export async function autocompleteItems(
 	});
 
 	await interaction.respond(topResults);
+}
+
+export async function autocompleteBlocks(
+	interaction: AutocompleteInteraction<CacheType>,
+) {
+	const focusedValue = interaction.options.getFocused();
+	const blocks = await getPlayerBlocks(interaction);
+	const blockNames = parseBlockedPlayersForAutoSuggest(blocks);
+	const filtered = blockNames.filter(
+		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
+	);
+	await interaction.respond(filtered);
 }

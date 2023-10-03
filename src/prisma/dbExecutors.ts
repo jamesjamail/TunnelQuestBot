@@ -124,6 +124,18 @@ export async function getWatchesByDiscordUser(user: DiscordUser) {
 	});
 }
 
+export async function getSnoozedWatchesByDiscordUser(user: DiscordUser) {
+	return prisma.watch.findMany({
+		where: {
+			discordUserId: user.id,
+			active: true,
+			snoozedUntil: {
+				gt: new Date(), //	expiration has not yet passed
+			},
+		},
+	});
+}
+
 export async function getWatchesByItemName(
 	discordUserId: string,
 	itemName = '',
@@ -155,6 +167,28 @@ export async function unsnoozeWatch(metadata: Watch) {
 	return await prisma.watch.update({
 		where: {
 			id: metadata.id,
+		},
+		data: {
+			snoozedUntil: null,
+		},
+	});
+}
+
+export async function unsnoozeWatchByItemName(
+	interaction: Interaction,
+	watchName: string,
+) {
+	const watch = await prisma.watch.findFirstOrThrow({
+		where: {
+			itemName: watchName,
+			discordUserId: interaction.user.id,
+		},
+	});
+
+	// Update the watch entry by setting snoozedUntil to null where itemName = itemName
+	return await prisma.watch.update({
+		where: {
+			id: watch.id,
 		},
 		data: {
 			snoozedUntil: null,
@@ -326,6 +360,24 @@ export async function snoozeWatchByItemName(
 	});
 }
 
+export async function getPlayerBlocks(
+	interaction: Interaction,
+	filter: string = '',
+) {
+	const blockedPlayers = await prisma.blockedPlayer.findMany({
+		where: {
+			discordUserId: interaction.user.id,
+			active: true,
+		},
+	});
+
+	if (filter) {
+		return blockedPlayers.filter((bp) => bp.player.includes(filter));
+	}
+
+	return blockedPlayers;
+}
+
 export async function addPlayerBlock(
 	discordUserId: string,
 	player: string,
@@ -364,6 +416,28 @@ export async function removePlayerBlock(
 				player,
 				server,
 			},
+		},
+		data: {
+			active: false,
+		},
+	});
+}
+
+export async function removePlayerBlockWithoutServer(
+	interaction: Interaction,
+	playerName: string,
+) {
+	const blockedPlayer = await prisma.blockedPlayer.findFirstOrThrow({
+		where: {
+			player: playerName,
+			discordUserId: interaction.user.id,
+		},
+	});
+
+	// Update the blockedPlayer entry by setting active to false where player = playerName
+	return await prisma.blockedPlayer.update({
+		where: {
+			id: blockedPlayer.id,
 		},
 		data: {
 			active: false,

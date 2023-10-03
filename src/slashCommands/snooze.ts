@@ -34,7 +34,9 @@ const command: SlashCommand = {
 		await autocompleteWatches(interaction);
 	},
 	execute: async (interaction) => {
-		const args = getInteractionArgs(interaction, [], ['watch', 'hours']);
+		// TODO: initially I had made watch optional as away to signify snooze all watches
+		// but i think it's more clear to auto suggest "all watches" and handle that condition accordingly
+		const args = getInteractionArgs(interaction, ['watch'], ['hours']);
 		const hours = args?.hours?.value;
 
 		// check if watch option is user submitted or from an auto suggestion

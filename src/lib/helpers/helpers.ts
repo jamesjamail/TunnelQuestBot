@@ -1,4 +1,4 @@
-import { Prisma, Server, Watch } from '@prisma/client';
+import { BlockedPlayer, Prisma, Server, Watch } from '@prisma/client';
 import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
 import { parseInput, prefixJSON } from './autocomplete';
@@ -122,6 +122,34 @@ export function parseWatchesForAutoSuggest(
 			name: itemName,
 			// max length of value is 100, so only adding essential metadata
 			value: prefixJSON(JSON.stringify({ watch: { id: watch.id } })),
+		};
+	});
+}
+
+export function parseBlockedPlayersForAutoSuggest(
+	blockedPlayers: BlockedPlayer[],
+): { name: string; value: string }[] {
+	// Check for unique servers
+	const uniqueServers = new Set(blockedPlayers.map((bp) => bp.server));
+
+	const isMultipleServers = uniqueServers.size > 1;
+
+	return blockedPlayers.map((bp) => {
+		let playerName = bp.player;
+		const extraInfo = [];
+
+		if (isMultipleServers) {
+			extraInfo.push(bp.server);
+		}
+
+		if (extraInfo.length) {
+			playerName = `${bp.player} (${extraInfo.join(', ')})`;
+		}
+
+		return {
+			name: playerName,
+			// max length of value is 100, so only adding essential metadata
+			value: prefixJSON(JSON.stringify({ blockedPlayer: { id: bp.id } })),
 		};
 	});
 }

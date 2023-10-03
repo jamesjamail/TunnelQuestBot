@@ -52,7 +52,12 @@ const commandTypeButtonMappings: {
 	[CommandTypes.blocks]: [],
 	[CommandTypes.help]: [],
 	[CommandTypes.snooze]: [],
-	[CommandTypes.unblock]: [],
+	[CommandTypes.unblock]: [
+		{
+			active: ButtonInteractionTypes.GlobalUnblockActive,
+			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
+		},
+	],
 	[CommandTypes.unsnooze]: [],
 	[CommandTypes.unwatch]: [],
 	[CommandTypes.watches]: [],

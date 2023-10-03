@@ -95,6 +95,15 @@ export namespace messageCopy {
 		} been delivered via DM <#${channelId}>`;
 	};
 
+	export const blocksHaveBeenDeliveredViaDm = (
+		numberOfBlocks: number,
+		channelId: string,
+	) => {
+		return `${numberOfBlocks} block${numberOfBlocks > 1 ? 's' : ''} ${
+			numberOfBlocks > 1 ? 'have' : 'has'
+		} been delivered via DM <#${channelId}>`;
+	};
+
 	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
 		return `${block.player} has been blocked on ${formatServerFromEnum(
 			block.server,

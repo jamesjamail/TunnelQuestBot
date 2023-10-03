@@ -107,6 +107,7 @@ export function listCommandResponseBuilder(
 			const price = watch.priceRequirement
 				? `$${watch.priceRequirement}`
 				: 'no price criteria';
+
 			const snoozeEmoji = isSnoozed(watch.snoozedUntil) ? '💤 ' : '';
 
 			const watchFields: EmbedField[] = [

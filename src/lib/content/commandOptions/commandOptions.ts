@@ -29,7 +29,8 @@ export const autoCompleteWatchOptionsForSnooze = (
 	option
 		.setName('watch')
 		.setDescription('the watch you want to snooze')
-		.setAutocomplete(true);
+		.setAutocomplete(true)
+		.setRequired(true);
 
 export const autoCompleteWatchOptionsForUnwatch = (
 	option: SlashCommandStringOption,
@@ -37,7 +38,8 @@ export const autoCompleteWatchOptionsForUnwatch = (
 	option
 		.setName('watch')
 		.setDescription('the watch you want to end')
-		.setAutocomplete(true);
+		.setAutocomplete(true)
+		.setRequired(true);
 
 export const snoozeHoursOptions = (option: SlashCommandNumberOption) =>
 	option
@@ -66,6 +68,15 @@ export const playerNameOptions = (option: SlashCommandStringOption) =>
 		.setDescription('the name of the player you want to block')
 		.setRequired(true);
 
+export const autoCompletePlayerNameOptions = (
+	option: SlashCommandStringOption,
+) =>
+	option
+		.setName('player')
+		.setDescription('the name of the player you want to unblock')
+		.setAutocomplete(true)
+		.setRequired(true);
+
 export const optionalServerOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('server')
@@ -85,3 +96,8 @@ export const watchNotesOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('notes')
 		.setDescription('notes about this watch - only visible to you');
+
+export const blockFilterOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('filter')
+		.setDescription('optional string to filter blocks by');

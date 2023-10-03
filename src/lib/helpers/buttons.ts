@@ -34,7 +34,7 @@ export async function deleteResponseIfNotModified(
 			}
 		} catch (error) {
 			// This will also catch the error if there is no reply to fetch, meaning it has already been deleted.
-			// not sure we should throw an error - let's log and check
+			// not sure we should throw an error - let's log for now
 			// eslint-disable-next-line no-console
 			console.error('Error in deleting the interaction response:', error);
 		}
@@ -51,10 +51,8 @@ export async function confirmButtonInteraction(
 	commandType: CommandTypes,
 ) {
 	const updatedComponents = buttonRowBuilder(commandType);
-
 	if (!interaction.isButton()) {
 		throw new Error('initial interaction is a button');
-		return;
 	}
 
 	// Build buttons using buttonBuilder
@@ -65,13 +63,11 @@ export async function confirmButtonInteraction(
 
 	// Defer reply and follow up with the message
 	await interaction.deferUpdate();
-	// let's make the unwatch button active while we follow up
-	const activeUnwatchBtnRow = buttonBuilder([
-		{ type: ButtonInteractionTypes.WatchSnoozeInactive },
-		{ type: ButtonInteractionTypes.UnwatchActive },
-		{ type: ButtonInteractionTypes.WatchRefreshInactive },
-	]);
-	await interaction.editReply({ components: activeUnwatchBtnRow });
+	// TODO: whatever button was clicked should be active
+	// we need a way to determine which buttons corelate to which button interactions
+	// probably easiest to accept ButtonInteractionTypes as extra argument
+	const ButtonRowWithActiveButton = buttonRowBuilder(commandType);
+	await interaction.editReply({ components: ButtonRowWithActiveButton });
 
 	const followUp = await interaction.followUp({
 		content: confirmationMessage,

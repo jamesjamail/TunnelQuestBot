@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types';
-import { autoCompleteWatchOptionsForSnooze } from '../lib/content/commandOptions/commandOptions';
+import { autoCompleteWatchOptionsForUnwatch } from '../lib/content/commandOptions/commandOptions';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 import { unwatch, unwatchByWatchName } from '../prisma/dbExecutors';
 import { Watch } from '@prisma/client';
@@ -16,12 +16,13 @@ import { autocompleteWatches } from '../lib/helpers/autocomplete';
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('unwatch')
-		.addStringOption(autoCompleteWatchOptionsForSnooze)
+		.addStringOption(autoCompleteWatchOptionsForUnwatch)
 		.setDescription('removes a watch'),
 	async autocomplete(interaction) {
 		await autocompleteWatches(interaction);
 	},
 	execute: async (interaction) => {
+		// TODO: add a "all watches" value first on the list and handle that accordingly
 		const args = getInteractionArgs(interaction, ['watch']);
 		if (args?.watch?.isAutoSuggestion) {
 			// unwatch watch by id
