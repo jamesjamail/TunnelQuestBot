@@ -455,3 +455,48 @@ export async function removePlayerBlockById(id: number) {
 		},
 	});
 }
+
+async function fetchActiveWatches() {
+	return await prisma.watch.findMany({
+		where: {
+			active: true,
+		},
+	});
+}
+export type GroupedWatchesType = {
+	[K in Server]: {
+		[L in WatchType]: Record<string, number[]>;
+	};
+};
+
+export const initializeGroupedWatches = (): GroupedWatchesType => {
+	const obj: Partial<GroupedWatchesType> = {};
+
+	for (const server of Object.values(Server)) {
+		obj[server] = {
+			WTB: {},
+			WTS: {},
+		};
+	}
+
+	return obj as GroupedWatchesType;
+};
+
+export async function getWatchesGroupedByServer() {
+	const watches = await fetchActiveWatches();
+	const groupedWatches = initializeGroupedWatches();
+
+	for (const watch of watches) {
+		const server = watch.server;
+		const watchType = watch.watchType;
+		const itemName = watch.itemName;
+
+		if (!groupedWatches[server][watchType][itemName]) {
+			groupedWatches[server][watchType][itemName] = [];
+		}
+
+		groupedWatches[server][watchType][itemName].push(watch.id);
+	}
+
+	return groupedWatches;
+}

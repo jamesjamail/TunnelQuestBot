@@ -2,11 +2,12 @@
 import { Client } from 'discord.js';
 import { BotEvent } from '../types';
 import { color } from '../functions';
+import { startLoggingAllServers } from '../lib/logParser';
 
 const event: BotEvent = {
 	name: 'ready',
 	once: true,
-	execute: (client: Client) => {
+	execute: async (client: Client) => {
 		console.log(
 			color(
 				'text',
@@ -16,6 +17,7 @@ const event: BotEvent = {
 				)}`,
 			),
 		);
+		await startLoggingAllServers();
 	},
 };
 
