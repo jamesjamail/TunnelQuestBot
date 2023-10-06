@@ -1,6 +1,10 @@
 import { Server } from '@prisma/client';
 import { itemTrie } from './trieSearch';
 import { state } from './state';
+import inGameItemNamesRaw from '../content/gameData/items.json';
+const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
+
+type InGameItemNamesType = { [key: string]: string };
 
 export function getLogFilePath(server: Server): string {
 	// Get the environment variable corresponding to the server
@@ -59,6 +63,12 @@ export function isFalsePositiveItemMatch(
 	potentialItem: string,
 	text: string,
 ): boolean {
+	// if the potential item is not an exact item name, allow substring matches
+	// for example, user could watch "banded" in hopes of getting hits on any banded armor pieces
+	if (!inGameItemNamesObject[potentialItem.toUpperCase()]) {
+		return false;
+	}
+
 	const potentialItems = extractPotentialItemsFromText(text);
 
 	// Remove the potentialItem from the list to not match with itself.
