@@ -1,15 +1,21 @@
 import { Server } from '@prisma/client';
 import { itemTrie } from './trieSearch';
 import { state } from './state';
+import * as path from 'path';
 import inGameItemNamesRaw from '../content/gameData/items.json';
 const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
 
 type InGameItemNamesType = { [key: string]: string };
 
 export function getLogFilePath(server: Server): string {
-	// Get the environment variable corresponding to the server
-	const envVarName = `servers.${server}.log_file_path`;
-	const logFilePath = process.env[envVarName];
+	let logFilePath: string | undefined;
+
+	if (process.env.NODE_ENV === 'development') {
+		logFilePath = path.join(__dirname, '..', 'fakeLogs', `${server}.log`);
+	} else {
+		const envVarName = `SERVERS_${server}_LOG_FILE_PATH`;
+		logFilePath = process.env[envVarName] as string;
+	}
 
 	if (!logFilePath) {
 		throw new Error(
@@ -27,16 +33,18 @@ export function getMatchingItemsFromText(
 	const WTB: string[] = [];
 	const WTS: string[] = [];
 
+	const uppercasedAuctionText = auctionText.toUpperCase();
+
 	// Checking for matches in WTB
-	for (const item of Object.keys(state.watchedItems[server])) {
-		if (auctionText.includes(item)) {
+	for (const item of Object.keys(state.watchedItems[server].WTB)) {
+		if (uppercasedAuctionText.includes(item.toUpperCase())) {
 			WTB.push(item);
 		}
 	}
 
 	// Checking for matches in WTS
-	for (const item of Object.keys(state.watchedItems[server])) {
-		if (auctionText.includes(item)) {
+	for (const item of Object.keys(state.watchedItems[server].WTS)) {
+		if (uppercasedAuctionText.includes(item.toUpperCase())) {
 			WTS.push(item);
 		}
 	}

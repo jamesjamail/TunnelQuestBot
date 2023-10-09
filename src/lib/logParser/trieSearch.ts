@@ -10,7 +10,7 @@ class TrieNode {
 	}
 }
 
-class Trie {
+export class Trie {
 	root: TrieNode;
 
 	constructor() {

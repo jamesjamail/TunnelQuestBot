@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "rd /s /q .\\build && tsc && cls && node .\\build\\index.js",
-    "build": "tsc",
+    "start": "cls && node .\\build\\index.js",
+    "build": "rd /s /q .\\build && tsc",
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "format": "prettier --write \"./**/*.ts\""
+    "format": "prettier --write \"./**/*.ts\"",
+    "dev": "cross-env NODE_ENV=development concurrently \"npm run fakeLogs\" \"npm run start\"",
+    "fakeLogs": "node ./build/lib/tests/logFaker.js"
   },
   "husky": {
     "hooks": {
@@ -34,11 +36,14 @@
     "date-fns": "^2.30.0",
     "discord.js": "14.13.0",
     "dotenv": "^16.0.2",
+    "fs": "^0.0.1-security",
     "fuse.js": "^6.6.2",
     "tail": "^2.2.6"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "concurrently": "^8.2.1",
+    "cross-env": "^7.0.3",
     "eslint": "^8.48.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-config-standard-with-typescript": "^39.0.0",
