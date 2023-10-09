@@ -1,15 +1,17 @@
-FROM node:latest
+FROM node:alpine
 
+# Set our working directory to /app
 WORKDIR /app
 
-# Copy over necessary source/configs
-COPY package*.json ./
-COPY .env ./
-COPY tsconfig.json ./
-COPY src/ ./src/
+# Copy only the package.json files to utilize layer cache
+COPY package*.json /app/
 
 # Install node dependencies
 RUN npm install
+
+# Copy over necessary source/configs
+COPY .env tsconfig.json /app/
+COPY src/ /app/src/
 
 # Generate the prisma interface
 RUN npx prisma generate
