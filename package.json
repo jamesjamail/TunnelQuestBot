@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "rd /s /q .\\build && tsc && cls && node .\\build\\index.js",
+    "dev": "rd /s /q .\\build && tsc && cls && node .\\build\\index.js",
+    "start": "npx prisma migrate dev && node ./build/index.js",
     "build": "tsc",
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "format": "prettier --write \"./**/*.ts\""
+    "format": "prettier --write \"./**/*.ts\"",
+    "clean": "rd /s /q .\\build"
   },
   "husky": {
     "hooks": {
@@ -56,6 +58,6 @@
     "discord-api-types": "0.37.20"
   },
   "prisma": {
-    "schema": ".\\src\\prisma\\schema.prisma"
+    "schema": "./src/prisma/schema.prisma"
   }
 }

@@ -1,3 +1,16 @@
+## Containerized local development
+
+Set up and run everything (database and app) nicely isolated in local
+docker containers with just one command!
+
+### How?
+* Install Docker Desktop with WSL2 via this guide:
+https://docs.docker.com/desktop/wsl/
+  * Or, install docker and docker-compose on your platform of choice.
+* Copy `.env.sample` to `.env` and configure your `TOKEN`/`CLIENT_ID` and log file paths.
+* Run `docker-compose up --build -d`
+  * Re-run this command any time you make code or config changes.
+
 ## WIP - for local dev, run:
 
 `pscale connect tunnelquestbot main --port=3309`
@@ -25,33 +38,3 @@ Readme below is from the template adapted for this repo...
 - 🏴 Detailed Permissions
 - 💪 Event & Command handlers
 - 🍃 MongoDB Support
-
-## Installation, Build and Run
-
-1. Clone the repository then create a file named `.env` and fill it out accordingly
-
-```js
-TOKEN=YOURTOKENHERE
-CLIENT_ID=BOTS CLIENT ID
-PREFIX=!
-MONGO_URI=YOUR MONGO CONNECTION STRING
-MONGO_DATABASE_NAME=YOUR DATABASE NAME
-```
-
-2. Install typescript, To install TypeScript, you can run the following command in your terminal, This will install the latest version of TypeScript globally on your computer. (You can skip this if you already have typescript installed)
-
-```ts
-npm install -g typescript
-```
-
-3. Compile your TypeScript code to JavaScript by running the following command:
-
-```js
-tsc;
-```
-
-4. Once the build is complete it will generated a folder named `build` that contains compiled version of your ts code to js. You can run the following command in your terminal to run the project:
-
-```js
-npm start
-```

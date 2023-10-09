@@ -1,0 +1,35 @@
+  version: "3.9"
+  services:
+    postgres:
+      image: postgres:latest
+      container_name: postgres
+      environment:
+        POSTGRES_USER: "${POSTGRES_USER}"
+        POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+        POSTGRES_DB: "${POSTGRES_DB}"
+      volumes:
+        - postgres-data:/var/lib/postgresql/data
+        - db-socket:/var/run/postgresql
+      restart: unless-stopped
+
+    tunnelquestbot:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      container_name: tunnelquestbot
+      depends_on:
+        - postgres
+      environment:
+        SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${BLUE_LOG_FILE}"
+        SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${GREEN_LOG_FILE}"
+        SERVERS_RED_LOG_FILE_PATH: "/logfiles/${RED_LOG_FILE}"
+      volumes:
+        - type: bind
+          source: "/run/desktop/mnt/host/${LOG_SOURCE_PATH}"
+          target: /logfiles
+        - "db-socket:${POSTGRES_SOCKET_DIR}"
+      restart: always
+
+  volumes:
+    postgres-data:
+    db-socket:
