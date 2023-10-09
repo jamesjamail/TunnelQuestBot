@@ -1,10 +1,6 @@
 import { Server } from '@prisma/client';
 import { Tail } from 'tail';
-import {
-	getLogFilePath,
-	getMatchingItemsFromText,
-	isFalsePositiveItemMatch,
-} from './helpers';
+import { getLogFilePath } from './helpers';
 import { state } from './state';
 import { Trie } from './trieSearch';
 import inGameItemsObject from '../content/gameData/items.json';
@@ -16,45 +12,8 @@ export function isAuctionOfInterest(
 	return Object.keys(watchedItems).some((item) => text.includes(item));
 }
 
-// function findMatchingItem(itemGroup: string): string | null {
-// 	if (isExactItemMatch(itemGroup.trim())) return itemGroup.trim();
-
-// 	const strippedItem = itemGroup
-// 		.replace(/\s*\d+(\.\d{1,2})?(pp|k)?\s*$/, '')
-// 		.trim();
-// 	if (isExactItemMatch(strippedItem)) return strippedItem;
-
-// 	// Split potential item group by space
-// 	const items = itemGroup.split(/\s+/);
-
-// 	// Progressively check larger item names for a match
-// 	for (let start = 0; start < items.length; start++) {
-// 		for (let end = start + 1; end <= items.length; end++) {
-// 			const itemName = items.slice(start, end).join(' ');
-// 			if (
-// 				itemTrie.search(itemName) &&
-// 				!isFalsePositiveItemMatch(itemName, itemGroup)
-// 			) {
-// 				return itemName;
-// 			}
-// 		}
-// 	}
-
-// 	return null;
-// }
-
 export class AuctionParser {
 	private itemTrie: Trie;
-	private delimiters = [',', '-', '/', '\\', '|'];
-	private auctionTypes = [
-		'WTS',
-		'WTB',
-		'want to sell',
-		'selling',
-		'want to buy',
-		'buying',
-	];
-	private priceRegex = /(\d+(\.\d{1,2})?(pp|k)?)$/;
 
 	constructor() {
 		this.itemTrie = new Trie();
@@ -63,148 +22,218 @@ export class AuctionParser {
 		}
 	}
 
-	private longestMatchFromTrie(s: string): string | null {
-		let word = '';
-		let temp = '';
-		for (const char of s) {
-			temp += char;
-			if (this.itemTrie.search(temp)) {
-				word = temp;
-			}
-		}
-		return word || null;
+	private preprocessMessage(msg: string): string {
+		return msg.replace(/PST[.,!]*\s*(to\s+\w+)?/gi, '').trim();
 	}
 
-	public parseAuction(auction: string) {
-		const buying: { item: string; price: string | null }[] = [];
-		const selling: { item: string; price: string | null }[] = [];
-
-		const parts: { type: string; text: string }[] = [];
-		let remainingAuction = auction;
-		for (const type of this.auctionTypes) {
-			const splitParts = remainingAuction.split(new RegExp(type, 'gi'));
-			if (splitParts.length > 1) {
-				parts.push({ type, text: splitParts[0].trim() });
-				remainingAuction = splitParts[1];
-			}
+	private determineAction(segment: string): string | null {
+		if (segment.includes('WTS')) {
+			return 'sell';
+		} else if (segment.includes('WTB')) {
+			return 'buy';
 		}
-		parts.push({ type: 'WTS', text: remainingAuction.trim() });
+		return null;
+	}
 
-		for (const part of parts) {
-			let segments = [part.text.trim()];
+	private extractPrice(
+		segment: string,
+	): { originalPrice: string; value: string; unit?: string } | null {
+		const pricePattern =
+			/ (\d+(\.\d+)?)(k(pp)?|pp)?(?=\s|\b|[|,/*\\\-_~])/i;
+		const priceMatch = segment.match(pricePattern);
 
-			while (segments.length) {
-				const currentSegment = segments.shift();
-				if (!currentSegment) {
-					continue; // Continue if currentSegment is undefined
-				}
-				let match = this.longestMatchFromTrie(currentSegment);
+		if (!priceMatch) return null;
 
-				let price: string | null = null;
-				const priceMatch = this.priceRegex.exec(currentSegment);
-				if (priceMatch) {
-					price = priceMatch[0];
-				}
+		const originalPrice = priceMatch[0];
 
-				if (match) {
-					const item = currentSegment.substr(0, match.length).trim();
-					const remaining = currentSegment
-						.substr(match.length)
-						.trim();
+		let priceValue: string = priceMatch[1];
+		let unit: string | undefined;
 
-					if (
-						part.type.includes('WTB') ||
-						part.type.includes('want to buy') ||
-						part.type.includes('buying')
-					) {
-						buying.push({ item, price });
-					} else {
-						selling.push({ item, price });
-					}
-
-					if (remaining) segments.push(remaining);
-				} else {
-					const delimiterIndex = this.delimiters
-						.map((d) => currentSegment.indexOf(d))
-						.filter((idx) => idx !== -1)
-						.filter((idx) => idx !== undefined) // Filtering out undefined values
-						.sort((a, b) => a! - b!)[0]; // Using the non-null assertion operator
-					if (delimiterIndex !== undefined) {
-						const unmatchedItem = currentSegment
-							.substring(0, delimiterIndex)
-							.trim();
-						const nextSegment = currentSegment
-							.substr(delimiterIndex + 1)
-							.trim();
-
-						if (
-							part.type.includes('WTB') ||
-							part.type.includes('want to buy') ||
-							part.type.includes('buying')
-						) {
-							buying.push({ item: unmatchedItem, price });
-						} else {
-							selling.push({ item: unmatchedItem, price });
-						}
-
-						if (nextSegment) segments.push(nextSegment);
-					} else {
-						if (
-							part.type.includes('WTB') ||
-							part.type.includes('want to buy') ||
-							part.type.includes('buying')
-						) {
-							buying.push({ item: currentSegment, price });
-						} else {
-							selling.push({ item: currentSegment, price });
-						}
-					}
-				}
-
-				// Normalize spaces for next iteration
-				segments = segments.map((s) => s.replace(/\s+/g, ' ').trim());
-			}
+		if (priceMatch[3] === 'k' || priceMatch[3] === 'kpp') {
+			unit = 'k';
+			priceValue = (parseFloat(priceValue) * 1000).toString();
+		} else if (priceMatch[3] === 'pp') {
+			unit = 'pp';
 		}
 
-		return { buying, selling };
+		if (priceValue && parseInt(priceValue) < 50 && !unit) {
+			return null;
+		}
+
+		return {
+			originalPrice,
+			value: priceValue,
+			unit: unit,
+		};
+	}
+
+	private longestItemMatch(segment: string): string | undefined {
+		let currentItem = '';
+		for (let i = 0; i < segment.length; i++) {
+			currentItem += segment[i];
+			if (this.itemTrie.search(currentItem.slice(0, i + 1))) {
+				continue;
+			} else {
+				currentItem = currentItem.slice(0, -1);
+				if (this.itemTrie.search(currentItem)) {
+					return currentItem;
+				}
+				currentItem = '';
+			}
+		}
+		if (this.itemTrie.search(currentItem)) {
+			return currentItem;
+		}
+		return undefined;
+	}
+
+	private parseSegment(segment: string, action: string) {
+		const newAction = this.determineAction(segment);
+		if (newAction) {
+			action = newAction;
+			segment = segment.replace(newAction, '').trim();
+		}
+
+		const priceDetails = this.extractPrice(segment);
+		const potentialPrice = priceDetails ? priceDetails.value : null;
+		let potentialItem = segment;
+
+		if (potentialPrice && priceDetails) {
+			potentialItem = this.removePriceFromSegment(
+				potentialItem,
+				priceDetails,
+			);
+		}
+
+		const itemMatch = this.longestItemMatch(potentialItem);
+		if (itemMatch) {
+			potentialItem = itemMatch;
+		}
+
+		return {
+			action,
+			item: potentialItem.trim(),
+			price: potentialPrice,
+		};
+	}
+
+	private removePriceFromSegment(
+		segment: string,
+		priceDetails: { originalPrice: string; value: string; unit?: string },
+	): string {
+		const { originalPrice } = priceDetails;
+		const pricePattern = new RegExp(`\\s?${originalPrice}\\s?`, 'i');
+		return segment.replace(pricePattern, '').trim();
+	}
+
+	private splitSegment(segment: string): string[] {
+		const delimiters = [
+			/[/]/,
+			/[-]/,
+			/[_]/,
+			/[|]/,
+			/[~]/,
+			/[*]/,
+			/[,]/,
+			/[\\]/,
+		];
+		const splitPattern = new RegExp(
+			delimiters.map((d) => d.source).join('|'),
+			'g',
+		);
+
+		const parts = segment.split(splitPattern);
+
+		for (let i = 0; i < parts.length; i++) {
+			if (!this.itemTrie.search(parts[i]) && i < parts.length - 1) {
+				const combined = (parts[i] + ' ' + parts[i + 1]).trim();
+				if (this.itemTrie.search(combined)) {
+					parts[i] = combined;
+					parts.splice(i + 1, 1);
+					i--;
+				}
+			}
+		}
+
+		return parts.filter((part) => part && part.trim() !== '');
+	}
+
+	private splitByAction(auctionMsg: string): { wts: string; wtb: string } {
+		const splitPoint = auctionMsg.indexOf('WTB');
+		if (splitPoint !== -1) {
+			return {
+				wts: auctionMsg
+					.substring(0, splitPoint)
+					.replace(/WTS/i, '')
+					.trim(),
+				wtb: auctionMsg
+					.substring(splitPoint)
+					.replace(/WTB/i, '')
+					.trim(),
+			};
+		} else {
+			return {
+				wts: auctionMsg.replace(/WTS/i, '').trim(),
+				wtb: '',
+			};
+		}
+	}
+
+	public parseAuction(auctionMsg: string) {
+		auctionMsg = this.preprocessMessage(auctionMsg);
+		const { wts, wtb } = this.splitByAction(auctionMsg);
+
+		const buying: { item: string; price?: string | null }[] = [];
+		const selling: { item: string; price?: string | null }[] = [];
+
+		const wtsSegmentsRaw = wts.split(/[/\-_|~*,]|\s{2,}/);
+		let wtsSegments: string[] = [];
+		for (const segment of wtsSegmentsRaw) {
+			wtsSegments = wtsSegments.concat(this.splitSegment(segment));
+		}
+
+		const wtbSegmentsRaw = wtb.split(/[/\-_|~*,]/);
+		let wtbSegments: string[] = [];
+		for (const segment of wtbSegmentsRaw) {
+			wtbSegments = wtbSegments.concat(this.splitSegment(segment));
+		}
+
+		for (const segment of wtsSegments) {
+			const result = this.parseSegment(segment.trim(), 'sell');
+			selling.push({
+				item: result.item,
+				price: result.price,
+			});
+		}
+
+		for (const segment of wtbSegments) {
+			const result = this.parseSegment(segment.trim(), 'buy');
+			buying.push({
+				item: result.item,
+				price: result.price,
+			});
+		}
+
+		return {
+			buying,
+			selling,
+		};
 	}
 }
 
 const parser = new AuctionParser();
-
-// function addToBuyOrSell(
-// 	type: string,
-// 	item: string,
-// 	price: string | null,
-// 	buying: { item: string; price: string | null }[],
-// 	selling: { item: string; price: string | null }[],
-// ) {
-// 	if (type && type.toLowerCase().includes('buy')) {
-// 		buying.push({ item, price });
-// 	} else {
-// 		selling.push({ item, price });
-// 	}
-// }
-
-// // Check if item is an exact match from JSON
-// function isExactItemMatch(item: string): boolean {
-// 	return !!inGameItemsObject[
-// 		item.toUpperCase() as keyof typeof inGameItemsObject
-// 	];
-// }
 
 export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
 	const tail = new Tail(logFilePath);
 
 	tail.on('line', function (data) {
-		console.log(data);
 		const auctionMatch = data.match(/(\w+) auctions, '(.+)'/);
 		if (!auctionMatch) return;
 
 		const [, playerName, auctionText] = auctionMatch;
+		console.log(playerName, auctionText);
 		const auctionData = parser.parseAuction(auctionText);
-		console.log(auctionText);
 		console.log('auctionData = ', auctionData);
 
 		// const matchingItemsFromAuction = getMatchingItemsFromText(

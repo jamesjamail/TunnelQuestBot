@@ -40,7 +40,7 @@ function generatePrice(): string {
 
 	const currency = isK ? 'k' : 'pp';
 
-	return amount + currency;
+	return ' ' + amount + currency; // Always add space at the start of the price
 }
 
 function generateLogLine() {
@@ -62,13 +62,13 @@ function generateLogLine() {
 		// Append price to item with 25% chance
 		if (Math.random() < 0.5) {
 			const price = generatePrice();
-			const withSpace = Math.random() < 0.5;
-			randomItem += withSpace ? ` ${price}` : price;
+			randomItem += price;
 		}
 
 		selectedItems.push(randomItem);
 	}
-	const itemText = selectedItems.join(getRandomElement(delimiters) + ' ');
+	const delimiter = getRandomElement(delimiters);
+	const itemText = selectedItems.join(delimiter + (delimiter.trim() ? '' : ' '));
 	const rawTimestamp = new Date();
 	const options: Intl.DateTimeFormatOptions = {
 		weekday: 'short',
