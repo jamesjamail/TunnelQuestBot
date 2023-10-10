@@ -1,9 +1,9 @@
 import { Server } from '@prisma/client';
 import { Tail } from 'tail';
 import { getLogFilePath } from './helpers';
-import { state } from './state';
 import { Trie } from './trieSearch';
 import inGameItemsObject from '../content/gameData/items.json';
+import { streamAuctionToAllStreamChannels } from '../content/streams/streamAuction';
 
 export function isAuctionOfInterest(
 	text: string,
@@ -227,14 +227,21 @@ export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
 	const tail = new Tail(logFilePath);
 
-	tail.on('line', function (data) {
+	tail.on('line', async function (data) {
 		const auctionMatch = data.match(/(\w+) auctions, '(.+)'/);
 		if (!auctionMatch) return;
 
 		const [, playerName, auctionText] = auctionMatch;
-		console.log(playerName, auctionText);
+		// console.log(playerName, auctionText);
 		const auctionData = parser.parseAuction(auctionText);
-		console.log('auctionData = ', auctionData);
+		// console.log('auctionData = ', auctionData);
+
+		await streamAuctionToAllStreamChannels(
+			playerName,
+			server,
+			auctionText,
+			auctionData,
+		);
 
 		// const matchingItemsFromAuction = getMatchingItemsFromText(
 		// 	auctionText,

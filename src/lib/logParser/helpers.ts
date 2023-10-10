@@ -5,7 +5,7 @@ import * as path from 'path';
 import inGameItemNamesRaw from '../content/gameData/items.json';
 const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
 
-type InGameItemNamesType = { [key: string]: string };
+export type InGameItemNamesType = { [key: string]: string };
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;

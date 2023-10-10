@@ -7,6 +7,9 @@ import {
 import { getServerColorFromString } from '../../helpers/colors';
 import { EmbedField } from 'discord.js';
 import { isSnoozed } from '../../helpers/helpers';
+import { AuctionData } from '../streams/streamAuction';
+import { findWikiData } from '../../helpers/wikiScraper';
+import { consolidatedItems } from '../gameData/consolidatedItems';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const price = watchData.priceRequirement ?? 'No Price Criteria';
@@ -191,4 +194,71 @@ export function blockCommandResponseBuilder(block: BlockedPlayer) {
 		.setFooter({
 			text: 'To remove this block, click ❌',
 		});
+}
+
+const BASE_WIKI_URL = 'https://wiki.project1999.com';
+
+export async function embeddedAuctionStreamMessageBuilder(
+	player: string,
+	server: Server,
+	auctionText: string,
+	auctionData: AuctionData,
+): Promise<EmbedBuilder[]> {
+	// Return type updated to Promise<EmbedBuilder[]>
+	const embeds: EmbedBuilder[] = [];
+	const timestamp = new Date();
+
+	// Fetch the wiki data for the items in the auction
+	const wikiData = await findWikiData(auctionData, server);
+
+	let title = '';
+	const buyingFields = auctionData.buying.map((buyItem) => {
+		// If the wiki has data on this item, append to its value
+		const wikiLink =
+			wikiData[
+				BASE_WIKI_URL + consolidatedItems[buyItem.item.toUpperCase()]
+			]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
+
+		return {
+			name: buyItem.price ? `Price: ${buyItem.price}` : '-',
+			value: `${buyItem.item} ${wikiLink}`, // appended wiki data here
+			inline: true,
+		};
+	});
+
+	const sellingFields = auctionData.selling.map((sellItem) => {
+		// If the wiki has data on this item, append to its value
+		const wikiLink =
+			wikiData[
+				BASE_WIKI_URL + consolidatedItems[sellItem.item.toUpperCase()]
+			]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
+
+		return {
+			name: sellItem.price ? `Price: ${sellItem.price}` : '-',
+			value: `${sellItem.item} ${wikiLink}`, // appended wiki data here
+			inline: true,
+		};
+	});
+
+	if (auctionData.buying.length > 0 && auctionData.selling.length > 0) {
+		title += 'WTS/WTB';
+	} else if (auctionData.buying.length > 0) {
+		title += 'WTB';
+	} else if (auctionData.selling.length > 0) {
+		title += 'WTS';
+	}
+
+	const combinedFields = [...buyingFields, ...sellingFields];
+
+	embeds.push(
+		new EmbedBuilder()
+			.setColor(getServerColorFromString(server))
+			.setAuthor({ name: `[ ${title} ]   ${player}` })
+			.setTitle(`\`\`\`${auctionText}\`\`\``)
+			.addFields(combinedFields)
+			.setFooter({ text: `Project 1999 ${formatCapitalCase(server)}` })
+			.setTimestamp(timestamp),
+	);
+
+	return embeds;
 }

@@ -1,7 +1,7 @@
 import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
 const { Guilds, MessageContent, GuildMessages, GuildMembers, DirectMessages } =
 	GatewayIntentBits;
-const client = new Client({
+export const client = new Client({
 	intents: [
 		Guilds,
 		MessageContent,
