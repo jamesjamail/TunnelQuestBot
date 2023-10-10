@@ -4,14 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "cls && node .\\build\\index.js",
     "build": "rd /s /q .\\build && tsc && xcopy /I /E src\\lib\\certificates build\\lib\\certificates",
+    "start": "npx prisma migrate dev && node ./build/index.js",
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write \"./**/*.ts\"",
     "dev": "cross-env NODE_ENV=development concurrently \"npm run fakeLogs\" \"npm run start\"",
-    "fakeLogs": "node ./build/lib/tests/logFaker.js"
+    "fakeLogs": "node ./build/lib/tests/logFaker.js",
+    "clean": "rd /s /q .\\build"
   },
   "husky": {
     "hooks": {
@@ -68,6 +69,6 @@
     "discord-api-types": "0.37.20"
   },
   "prisma": {
-    "schema": ".\\src\\prisma\\schema.prisma"
+    "schema": "./src/prisma/schema.prisma"
   }
 }
