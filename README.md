@@ -11,30 +11,16 @@ https://docs.docker.com/desktop/wsl/
 * Run `docker-compose up --build -d`
   * Re-run this command any time you make code or config changes.
 
-## WIP - for local dev, run:
+## Local Development
 
-`pscale connect tunnelquestbot main --port=3309`
+If you'd prefer not to run everquest clients for the log files, you can tell the app the fake them:
 
-`npm run start`
+`$env:FAKE_LOGS='true'; docker-compose up --build -d`
 
-## push db local changes upstream
+Note: this is for powershell, your syntax could vary.
 
-`npx prisma db push`
+This runs `npm run dev` in the container, which runs logFaker.ts in paralell
 
-## connect to remote db
+## Running In Production
 
-`pscale connect tunnelquestbot main --port=3309`
-
-Readme below is from the template adapted for this repo...
-
-<h1 style="text-align:center;">Discord.js v14 Bot Template</h1>
-
-## Features
-
-- 🟦 Typescript
-- 🔥 Slash commands (supports auto complete!)
-- ✉️ Message commands
-- 🕛 Cooldowns
-- 🏴 Detailed Permissions
-- 💪 Event & Command handlers
-- 🍃 MongoDB Support
+running `docker-compose up --build -d` defaults to production.
