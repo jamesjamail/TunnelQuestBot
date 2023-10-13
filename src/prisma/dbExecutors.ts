@@ -179,6 +179,17 @@ export async function authPlayerLink(
 	}
 }
 
+export async function getPlayerLink(player: string, server: Server) {
+	return prisma.playerLink.findUnique({
+		where: {
+			server_player: {
+				server: server,
+				player: player,
+			},
+		},
+	});
+}
+
 export async function setWatchActiveByWatchId(id: number) {
 	// update the watch
 	return await prisma.watch.update({

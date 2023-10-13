@@ -54,7 +54,10 @@ export async function streamAuctionToAllStreamChannels(
 			auctionData,
 		);
 
-		await embeddedChannel.send({ embeds });
+		await embeddedChannel.send({
+			embeds: embeds,
+			allowedMentions: { users: [] },
+		});
 	} catch (err) {
 		// eslint-disable-next-line no-console
 		console.error(err);
