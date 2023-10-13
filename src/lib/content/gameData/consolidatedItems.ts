@@ -3,8 +3,13 @@ import inGameItemNamesRaw from './items.json';
 import inGameSpellNamesRaw from './spells.json';
 import inGameAliasesRaw from './aliases.json';
 
-export const consolidatedItems: InGameItemNamesType = {
+export const consolidatedItemsAndAliases: InGameItemNamesType = {
 	...inGameItemNamesRaw,
 	...inGameSpellNamesRaw,
 	...inGameAliasesRaw,
+};
+
+export const consolidatedItems: InGameItemNamesType = {
+	...inGameItemNamesRaw,
+	...inGameSpellNamesRaw,
 };

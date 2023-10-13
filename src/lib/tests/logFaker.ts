@@ -68,7 +68,9 @@ function generateLogLine() {
 		selectedItems.push(randomItem);
 	}
 	const delimiter = getRandomElement(delimiters);
-	const itemText = selectedItems.join(delimiter + (delimiter.trim() ? '' : ' '));
+	const itemText = selectedItems.join(
+		delimiter + (delimiter.trim() ? '' : ' '),
+	);
 	const rawTimestamp = new Date();
 	const options: Intl.DateTimeFormatOptions = {
 		weekday: 'short',

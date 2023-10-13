@@ -1,5 +1,5 @@
 import { Watch, Server, User, BlockedPlayer } from '@prisma/client';
-import { EmbedBuilder } from 'discord.js';
+import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
 	formatWatchExpirationTimestamp,
@@ -8,23 +8,28 @@ import { getServerColorFromString } from '../../helpers/colors';
 import { EmbedField } from 'discord.js';
 import { isSnoozed } from '../../helpers/helpers';
 import { AuctionData } from '../streams/streamAuction';
-import { findWikiData } from '../../helpers/wikiScraper';
-import { consolidatedItems } from '../gameData/consolidatedItems';
+import { getImageUrlForItem } from '../../helpers/images';
+import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
+	const imgUrl = getImageUrlForItem(watchData.itemName);
+	const wikiUrl = getWikiUrlFromItem(watchData.itemName);
+
 	const price = watchData.priceRequirement ?? 'No Price Criteria';
 	const formattedExpirationTimestamp = formatWatchExpirationTimestamp(
 		watchData.created,
 	);
 	const fields = [
 		{
-			name: `${watchData.watchType}   |   ${price}`,
+			name: `${price}`,
 			// TODO: make this conditional based on watchType
-			value: 'This watch will only trigger for WTS auctions',
+			value: `This watch will trigger for all ${watchData.watchType} auctions`,
 			inline: false,
 		},
 		{
-			name: `Project 1999 ${watchData.server} Server`,
+			name: `Project 1999 ${formatserverEnumToReadableString(
+				watchData.server,
+			)} Server`,
 			value: `${formattedExpirationTimestamp}`,
 			inline: false,
 		},
@@ -48,10 +53,22 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 		});
 	}
 
+	const authorProperties: EmbedAuthorOptions = {
+		name: watchData.itemName, //	itemName is intentionally left uppercase as a heading
+	};
+
+	if (imgUrl) {
+		authorProperties.iconURL = imgUrl;
+	}
+
+	if (wikiUrl) {
+		authorProperties.url = wikiUrl;
+	}
+
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
-		.setAuthor({ name: 'Auction Watch' })
-		.setTitle(`--- ${watchData.itemName} ---`)
+		.setAuthor(authorProperties)
+		.setTitle(`${watchData.watchType} Auction Watch`)
 		.addFields(fields)
 		.setFooter({
 			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻️',
@@ -66,6 +83,10 @@ export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
 
 function formatCapitalCase(input: string): string {
 	return input.charAt(0).toUpperCase() + input.slice(1).toLowerCase();
+}
+
+export function formatserverEnumToReadableString(server: Server) {
+	return server[0] + server.slice(1).toLowerCase();
 }
 
 export function listCommandResponseBuilder(
@@ -196,8 +217,6 @@ export function blockCommandResponseBuilder(block: BlockedPlayer) {
 		});
 }
 
-const BASE_WIKI_URL = 'https://wiki.project1999.com';
-
 export async function embeddedAuctionStreamMessageBuilder(
 	player: string,
 	server: Server,
@@ -208,37 +227,36 @@ export async function embeddedAuctionStreamMessageBuilder(
 	const embeds: EmbedBuilder[] = [];
 	const timestamp = new Date();
 
-	// Fetch the wiki data for the items in the auction
-	const wikiData = await findWikiData(auctionData, server);
+	// TODO: historical pricing
 
 	let title = '';
-	const buyingFields = auctionData.buying.map((buyItem) => {
-		// If the wiki has data on this item, append to its value
-		const wikiLink =
-			wikiData[
-				BASE_WIKI_URL + consolidatedItems[buyItem.item.toUpperCase()]
-			]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
+	// const buyingFields = auctionData.buying.map((buyItem) => {
+	// 	// If the wiki has data on this item, append to its value
+	// 	const wikiLink =
+	// 		wikiData[
+	// 			BASE_WIKI_URL + consolidatedItems[buyItem.item.toUpperCase()]
+	// 		]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
 
-		return {
-			name: buyItem.price ? `Price: ${buyItem.price}` : '-',
-			value: `${buyItem.item} ${wikiLink}`, // appended wiki data here
-			inline: true,
-		};
-	});
+	// 	return {
+	// 		name: buyItem.price ? `Price: ${buyItem.price}` : '-',
+	// 		value: `${buyItem.item} ${wikiLink}`, // appended wiki data here
+	// 		inline: true,
+	// 	};
+	// });
 
-	const sellingFields = auctionData.selling.map((sellItem) => {
-		// If the wiki has data on this item, append to its value
-		const wikiLink =
-			wikiData[
-				BASE_WIKI_URL + consolidatedItems[sellItem.item.toUpperCase()]
-			]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
+	// const sellingFields = auctionData.selling.map((sellItem) => {
+	// 	// If the wiki has data on this item, append to its value
+	// 	const wikiLink =
+	// 		wikiData[
+	// 			BASE_WIKI_URL + consolidatedItems[sellItem.item.toUpperCase()]
+	// 		]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
 
-		return {
-			name: sellItem.price ? `Price: ${sellItem.price}` : '-',
-			value: `${sellItem.item} ${wikiLink}`, // appended wiki data here
-			inline: true,
-		};
-	});
+	// 	return {
+	// 		name: sellItem.price ? `Price: ${sellItem.price}` : '-',
+	// 		value: `${sellItem.item} ${wikiLink}`, // appended wiki data here
+	// 		inline: true,
+	// 	};
+	// });
 
 	if (auctionData.buying.length > 0 && auctionData.selling.length > 0) {
 		title += 'WTS/WTB';
@@ -248,7 +266,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 		title += 'WTS';
 	}
 
-	const combinedFields = [...buyingFields, ...sellingFields];
+	const combinedFields: APIEmbedField | APIEmbedField[] = [];
 
 	embeds.push(
 		new EmbedBuilder()
