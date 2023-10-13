@@ -1,4 +1,11 @@
-import { PrismaClient, Server, WatchType, User, Watch } from '@prisma/client';
+import {
+	PrismaClient,
+	Prisma,
+	Server,
+	WatchType,
+	User,
+	Watch,
+} from '@prisma/client';
 import {
 	ChatInputCommandInteraction,
 	User as DiscordUser,
@@ -6,6 +13,8 @@ import {
 } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
 import { attemptAndCreateUserIfNeeded } from './higherOrderFunctions';
+import { randomUUID } from 'crypto';
+import { add } from 'date-fns';
 
 const prisma = new PrismaClient();
 
@@ -92,6 +101,82 @@ export async function upsertWatchSafely(
 		interaction,
 		async () => await upsertWatch(interaction.user.id, watchData),
 	);
+}
+
+export async function insertPlayerLinkSafely(interaction: Interaction) {
+	return await attemptAndCreateUserIfNeeded(interaction, async () =>
+		insertPlayerLink(interaction.user.id),
+	);
+}
+
+export async function insertPlayerLink(discord_id: string) {
+	const linkCode = randomUUID();
+	await prisma.playerLink.create({
+		data: {
+			discordUserId: discord_id,
+			linkCode: linkCode,
+			linkCodeExpiry: add(new Date(), { hours: 1 }),
+		},
+	});
+	return linkCode;
+}
+
+export async function runPlayerLinkHousekeeping() {
+	return prisma.playerLink.deleteMany({
+		where: {
+			linkCodeExpiry: { lt: new Date() },
+			player: { not: null },
+		},
+	});
+}
+
+export async function authPlayerLink(
+	player: string,
+	server: Server,
+	linkCode: string,
+) {
+	try {
+		const linkEntry = await prisma.playerLink.findFirstOrThrow({
+			where: {
+				linkCode: linkCode,
+			},
+		});
+		return await prisma.playerLink.update({
+			where: {
+				id: linkEntry.id,
+			},
+			data: {
+				server: server,
+				player: player,
+				linkCode: null,
+				linkCodeExpiry: null,
+			},
+		});
+	} catch (e) {
+		if (e instanceof Prisma.PrismaClientKnownRequestError) {
+			if (e.code == 'P2002') {
+				// Unique Constraint Violation
+				// eslint-disable-next-line no-console
+				console.log(
+					`Player \`${server}.${player}\` tried to use a new linkCode, but is already linked.`,
+				);
+			} else if (e.code == 'P2025') {
+				// Record Not Found
+				// eslint-disable-next-line no-console
+				console.log(
+					`Player \`${server}.${player}\` attempted to link with invalid linkCode \`${linkCode}\``,
+				);
+			} else {
+				// eslint-disable-next-line no-console
+				console.log(e);
+			}
+		} else {
+			// eslint-disable-next-line no-console
+			console.log(
+				`Unknown Error when player \`${server}.${player}\` attempted to link with linkCode \`${linkCode}\`: ${e}`,
+			);
+		}
+	}
 }
 
 export async function setWatchActiveByWatchId(id: number) {

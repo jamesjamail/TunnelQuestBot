@@ -25,6 +25,6 @@ function isForeignKeyViolationError(error: any): boolean {
 	// Check if the error is related to a foreign key violation on our user table
 	return (
 		error.code === 'P2003' &&
-		error.meta?.field_name?.includes('Watch_discordUserId_fkey')
+		error.meta?.field_name?.includes('discordUserId_fkey')
 	);
 }
