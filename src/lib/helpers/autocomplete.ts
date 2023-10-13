@@ -10,6 +10,7 @@ import {
 } from './helpers';
 import Fuse from 'fuse.js';
 import itemsData from '../content/gameData/items.json';
+import { toTitleCase } from './titleCase';
 
 const jsonPrefix = '::JSON::';
 
@@ -87,6 +88,15 @@ export async function autocompleteItems(
 ) {
 	const focusedValue = interaction.options.getFocused();
 
+	if (focusedValue.length === 0) {
+		return await interaction.respond([
+			{
+				name: 'Start typing an item name for suggestions. You may enter a value that does not appear on the list if desired.',
+				value: '',
+			},
+		]);
+	}
+
 	// Convert the JSON object keys to an array of item names
 	const itemNames = Object.keys(itemsData).map((key) => {
 		return { name: key };
@@ -107,7 +117,7 @@ export async function autocompleteItems(
 	// Extract the top 25 results and map them to the desired format
 	const topResults = results.slice(0, 25).map((result) => {
 		return {
-			name: result.item.name,
+			name: toTitleCase(result.item.name),
 			value: result.item.name,
 		};
 	});
