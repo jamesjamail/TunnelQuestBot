@@ -1,5 +1,5 @@
 generator client {
-  provider     = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  discordUserId   String   @id @unique
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  discordUsername String   @db.VarChar(255)
+  discordUserId   String    @id @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  discordUsername String    @db.VarChar(255)
   snoozedUntil    DateTime?
 
-  watches             Watch[]
+  watches               Watch[]
   blockedPlayersByWatch BlockedPlayerByWatch[]
   blockedPlayers        BlockedPlayer[]
+  linkedPlayers         PlayerLink[]
 }
 
 enum Server {
@@ -31,47 +32,60 @@ enum WatchType {
 }
 
 model Watch {
-  id                   Int       @id @default(autoincrement())
-  discordUserId        String
-  server               Server
-  watchType            WatchType
-  itemName             String    @db.VarChar(255)
-  priceRequirement     Int?
-  lastAlertedTimestamp DateTime?
-  created              DateTime  @default(now())
-  active               Boolean   @default(true)
-  snoozedUntil         DateTime?
-  notes                String?   @db.Text
+  id                    Int       @id @default(autoincrement())
+  discordUserId         String
+  server                Server
+  watchType             WatchType
+  itemName              String    @db.VarChar(255)
+  priceRequirement      Int?
+  lastAlertedTimestamp  DateTime?
+  created               DateTime  @default(now())
+  active                Boolean   @default(true)
+  snoozedUntil          DateTime?
+  notes                 String?   @db.Text
   // allow other discord users to contact regarding item
-  isPublicallyTradeable Boolean  @default(true)
+  isPublicallyTradeable Boolean   @default(true)
 
-  user           User                @relation(fields: [discordUserId], references: [discordUserId])
+  user           User                   @relation(fields: [discordUserId], references: [discordUserId])
   blockedWatches BlockedPlayerByWatch[]
 
   @@unique([discordUserId, itemName, server, watchType])
 }
-
 
 model BlockedPlayerByWatch {
   id            Int    @id @default(autoincrement())
   discordUserId String
   watchId       Int
   player        String @db.VarChar(255)
-  watch  Watch @relation(fields: [watchId], references: [id])
-  user   User  @relation(fields: [discordUserId], references: [discordUserId])
+  watch         Watch  @relation(fields: [watchId], references: [id])
+  user          User   @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([watchId, player])
   @@index([discordUserId])
 }
 
 model BlockedPlayer {
-  id            Int    @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   discordUserId String
   server        Server
-  player        String @db.VarChar(255)
-  active        Boolean   @default(true)
+  player        String  @db.VarChar(255)
+  active        Boolean @default(true)
 
   user User @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([discordUserId, server, player])
+}
+
+model PlayerLink {
+  id             Int       @id @default(autoincrement())
+  discordUserId  String
+  server         Server?
+  player         String?   @db.VarChar(255)
+  linkCode       String?   @db.Uuid
+  linkCodeExpiry DateTime?
+
+  user User @relation(fields: [discordUserId], references: [discordUserId])
+
+  @@unique([server, player])
+  @@index([server, player])
 }

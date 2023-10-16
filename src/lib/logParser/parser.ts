@@ -1,6 +1,6 @@
 import { Server } from '@prisma/client';
 import { Tail } from 'tail';
-import { getLogFilePath } from './helpers';
+import { getLogFilePath, handleLinkMatch } from './helpers';
 import { Trie } from './trieSearch';
 import inGameItemsObject from '../content/gameData/items.json';
 import { streamAuctionToAllStreamChannels } from '../content/streams/streamAuction';
@@ -225,23 +225,40 @@ const parser = new AuctionParser();
 
 export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
-	const tail = new Tail(logFilePath);
+	// eslint-disable-next-line no-console
+	console.log(
+		'Starting log monitoring for server ' + server + ': ' + logFilePath,
+	);
+	const tail = new Tail(logFilePath, {
+		follow: true,
+		flushAtEOF: true,
+		useWatchFile: true,
+	});
 
 	tail.on('line', async function (data) {
-		const auctionMatch = data.match(/(\w+) auctions, '(.+)'/);
-		if (!auctionMatch) return;
-
-		const [, playerName, auctionText] = auctionMatch;
-		// console.log(playerName, auctionText);
-		const auctionData = parser.parseAuction(auctionText);
-		// console.log('auctionData = ', auctionData);
-
-		await streamAuctionToAllStreamChannels(
-			playerName,
-			server,
-			auctionText,
-			auctionData,
+		const auctionMatch = data.match(/(\w+) auctions?, '(.+)'/);
+		const linkMatch = data.match(
+			/(\w+) says? out of character, 'Link me: ([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})'/,
 		);
+
+		if (auctionMatch) {
+			const [, playerName, auctionText] = auctionMatch;
+			// console.log(playerName, auctionText);
+			const auctionData = parser.parseAuction(auctionText);
+			// console.log('auctionData = ', auctionData);
+
+			await streamAuctionToAllStreamChannels(
+				playerName,
+				server,
+				auctionText,
+				auctionData,
+			);
+		} else if (linkMatch) {
+			const [, playerName, linkCode] = linkMatch;
+			// console.log(playerName, linkMatch);
+
+			await handleLinkMatch(playerName, server, linkCode);
+		}
 
 		// const matchingItemsFromAuction = getMatchingItemsFromText(
 		// 	auctionText,

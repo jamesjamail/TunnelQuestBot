@@ -2,7 +2,9 @@ import { Server } from '@prisma/client';
 import { itemTrie } from './trieSearch';
 import { state } from './state';
 import * as path from 'path';
+import { client } from '../..';
 import inGameItemNamesRaw from '../content/gameData/items.json';
+import { authPlayerLink } from '../../prisma/dbExecutors';
 const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
 
 export type InGameItemNamesType = { [key: string]: string };
@@ -91,4 +93,26 @@ export function isFalsePositiveItemMatch(
 		}
 	}
 	return false; // The potentialItem is not a substring of any other valid item.
+}
+
+export async function handleLinkMatch(
+	player: string,
+	server: Server,
+	linkCode: string,
+) {
+	const link = await authPlayerLink(player, server, linkCode);
+	if (link) {
+		const message = `Linked to player \`${player}\` on \`${server}\`.`;
+		const user = await client.users
+			.fetch(link.discordUserId)
+			.catch(() => null);
+		if (user) {
+			await user.send(message).catch(() => {
+				// console.log("User has DMs closed or has no mutual servers with the bot.");
+			});
+			// console.log("Player link successful.")
+		}
+	} else {
+		// console.log("Link attempt failed.")
+	}
 }

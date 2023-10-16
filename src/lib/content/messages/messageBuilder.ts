@@ -10,6 +10,7 @@ import { isSnoozed } from '../../helpers/helpers';
 import { AuctionData } from '../streams/streamAuction';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
+import { getPlayerLink } from '../../../prisma/dbExecutors';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);
@@ -266,12 +267,19 @@ export async function embeddedAuctionStreamMessageBuilder(
 		title += 'WTS';
 	}
 
+	// Get discord user if one is linked
+	const playerLink = await getPlayerLink(player, server);
+	let playerHighlight = '';
+	if (playerLink) {
+		playerHighlight = ` / <@${playerLink.discordUserId}>`;
+	}
+
 	const combinedFields: APIEmbedField | APIEmbedField[] = [];
 
 	embeds.push(
 		new EmbedBuilder()
 			.setColor(getServerColorFromString(server))
-			.setAuthor({ name: `[ ${title} ]   ${player}` })
+			.setAuthor({ name: `[ ${title} ]   ${player}${playerHighlight}` })
 			.setTitle(`\`\`\`${auctionText}\`\`\``)
 			.addFields(combinedFields)
 			.setFooter({ text: `Project 1999 ${formatCapitalCase(server)}` })
