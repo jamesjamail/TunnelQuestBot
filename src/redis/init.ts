@@ -1,14 +1,11 @@
 /* eslint-disable no-console */
 import Redis from 'ioredis';
 import { color } from '../functions';
+import { join } from 'path';
 
-const REDIS_HOST = process.env.REDIS_HOST || 'redis';
-const REDIS_PORT = Number(process.env.REDIS_PORT) || 6379;
+const REDIS_SOCKET = join(process.env.REDIS_SOCKET_DIR || '/tmp', 'redis.sock');
 
-const redis = new Redis({
-	host: REDIS_HOST,
-	port: REDIS_PORT,
-});
+const redis = new Redis(REDIS_SOCKET);
 
 redis.on('connect', () => {
 	console.log(

@@ -12,6 +12,20 @@
         - db-socket:/var/run/postgresql
       restart: unless-stopped
 
+    redis:
+      image: redis:alpine
+      container_name: redis
+      environment:
+        REDIS_CONFIG: |
+          unixsocket /var/run/redis/redis.sock
+          unixsocketperm 777
+      command:
+        sh -c "echo \"$$REDIS_CONFIG\" > /etc/redis.conf && redis-server /etc/redis.conf"
+      volumes:
+        - redis-data:/data
+        - redis-socket:/var/run/redis
+      restart: unless-stopped
+
     tunnelquestbot:
       build:
         context: .
@@ -19,28 +33,23 @@
       container_name: tunnelquestbot
       depends_on:
         - postgres
+        - redis
       environment:
         SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${BLUE_LOG_FILE}"
         SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${GREEN_LOG_FILE}"
         SERVERS_RED_LOG_FILE_PATH: "/logfiles/${RED_LOG_FILE}"
+        REDIS_SOCKET_DIR: "${REDIS_SOCKET_DIR}"
         FAKE_LOGS: "${FAKE_LOGS:-false}"
       volumes:
         - type: bind
           source: "/run/desktop/mnt/host/${LOG_SOURCE_PATH}"
           target: /logfiles
-        - "db-socket:${POSTGRES_SOCKET_DIR}"
+        - "db-socket:${DB_SOCKET_DIR}"
+        - "redis-socket:${REDIS_SOCKET_DIR}"
       restart: always
-
-    redis:
-      image: redis:latest
-      container_name: redis
-      ports:
-        - "6379:6379"  # You can modify this if you want to bind Redis to another port on your host
-      volumes:
-        - redis-data:/data
-      restart: unless-stopped
 
   volumes:
     postgres-data:
     db-socket:
+    redis-socket:
     redis-data:
