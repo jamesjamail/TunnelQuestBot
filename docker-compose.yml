@@ -31,6 +31,16 @@
         - "db-socket:${POSTGRES_SOCKET_DIR}"
       restart: always
 
+    redis:
+      image: redis:latest
+      container_name: redis
+      ports:
+        - "6379:6379"  # You can modify this if you want to bind Redis to another port on your host
+      volumes:
+        - redis-data:/data
+      restart: unless-stopped
+
   volumes:
     postgres-data:
     db-socket:
+    redis-data:

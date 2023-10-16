@@ -1,4 +1,4 @@
-import { PrismaClient, Server, WatchType, User, Watch } from '@prisma/client';
+import { Server, WatchType, User, Watch } from '@prisma/client';
 import {
 	ChatInputCommandInteraction,
 	User as DiscordUser,
@@ -6,8 +6,7 @@ import {
 } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
 import { attemptAndCreateUserIfNeeded } from './higherOrderFunctions';
-
-const prisma = new PrismaClient();
+import { prisma } from './init';
 
 export async function createUser(discordUser: DiscordUser) {
 	return await prisma.user.create({

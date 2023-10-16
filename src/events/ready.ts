@@ -3,6 +3,7 @@ import { Client } from 'discord.js';
 import { BotEvent } from '../types';
 import { color } from '../functions';
 import { startLoggingAllServers } from '../lib/logParser';
+import { initializePrisma } from '../prisma/init';
 
 const event: BotEvent = {
 	name: 'ready',
@@ -17,6 +18,7 @@ const event: BotEvent = {
 				)}`,
 			),
 		);
+		await initializePrisma();
 		await startLoggingAllServers();
 	},
 };
