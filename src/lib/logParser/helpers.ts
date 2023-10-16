@@ -11,7 +11,7 @@ export type InGameItemNamesType = { [key: string]: string };
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
-	if (process.env.NODE_ENV === 'development') {
+	if ((process.env.FAKE_LOGS || 'false').match(/^[tT]/)) {
 		logFilePath = path.join(__dirname, '..', 'fakeLogs', `${server}.log`);
 	} else {
 		const envVarName = `SERVERS_${server}_LOG_FILE_PATH`;
