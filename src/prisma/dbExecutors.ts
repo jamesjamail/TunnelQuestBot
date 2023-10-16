@@ -1,4 +1,4 @@
-import { Server, WatchType, User, Watch } from '@prisma/client';
+import { Server, WatchType, User, Watch, Prisma } from '@prisma/client';
 import {
 	ChatInputCommandInteraction,
 	User as DiscordUser,
