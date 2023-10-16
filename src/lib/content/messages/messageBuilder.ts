@@ -267,19 +267,21 @@ export async function embeddedAuctionStreamMessageBuilder(
 		title += 'WTS';
 	}
 
+	const combinedFields: APIEmbedField | APIEmbedField[] = [];
+
 	// Get discord user if one is linked
 	const playerLink = await getPlayerLink(player, server);
-	let playerHighlight = '';
 	if (playerLink) {
-		playerHighlight = ` / <@${playerLink.discordUserId}>`;
+		combinedFields.push({
+			name: 'Discord User',
+			value: `<@${playerLink.discordUserId}>`,
+		});
 	}
-
-	const combinedFields: APIEmbedField | APIEmbedField[] = [];
 
 	embeds.push(
 		new EmbedBuilder()
 			.setColor(getServerColorFromString(server))
-			.setAuthor({ name: `[ ${title} ]   ${player}${playerHighlight}` })
+			.setAuthor({ name: `[ ${title} ]   ${player}` })
 			.setTitle(`\`\`\`${auctionText}\`\`\``)
 			.addFields(combinedFields)
 			.setFooter({ text: `Project 1999 ${formatCapitalCase(server)}` })
