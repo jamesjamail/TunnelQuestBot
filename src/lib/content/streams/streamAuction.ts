@@ -22,6 +22,11 @@ export type AuctionData = {
 	}[];
 };
 
+export type ItemType = {
+	item: string;
+	price?: string | null | undefined;
+};
+
 export async function streamAuctionToAllStreamChannels(
 	player: string,
 	server: Server,

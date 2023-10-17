@@ -7,10 +7,11 @@ import {
 import { getServerColorFromString } from '../../helpers/colors';
 import { EmbedField } from 'discord.js';
 import { isSnoozed } from '../../helpers/helpers';
-import { AuctionData } from '../streams/streamAuction';
+import { AuctionData, ItemType, getEnvironmentVariable } from '../streams/streamAuction';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
 import { getPlayerLink } from '../../../prisma/dbExecutors';
+import { fetchHistoricalPricingForItems } from '../../helpers/fetchHistoricalPricing';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);
@@ -218,47 +219,94 @@ export function blockCommandResponseBuilder(block: BlockedPlayer) {
 		});
 }
 
+type HistoricalData = {
+	eQitemId: number;
+	itemName: string;
+	server: number;
+	lastWTBSeen: string | null;
+	lastWTSSeen: string | null;
+	totalWTSAuctionCount: number;
+	totalWTSAuctionAverage: number;
+	totalWTSLast30DaysCount: number;
+	totalWTSLast30DaysAverage: number;
+	totalWTSLast60DaysCount: number;
+	totalWTSLast60DaysAverage: number;
+	totalWTSLast90DaysCount: number;
+	totalWTSLast90DaysAverage: number;
+	totalWTSLast6MonthsCount: number;
+	totalWTSLast6MonthsAverage: number;
+	totalWTSLastYearCount: number;
+	totalWTSLastYearAverage: number;
+	totalWTBAuctionCount: number;
+	totalWTBAuctionAverage: number;
+	totalWTBLast30DaysCount: number;
+	totalWTBLast30DaysAverage: number;
+	totalWTBLast60DaysCount: number;
+	totalWTBLast60DaysAverage: number;
+	totalWTBLast90DaysCount: number;
+	totalWTBLast90DaysAverage: number;
+	totalWTBLast6MonthsCount: number;
+	totalWTBLast6MonthsAverage: number;
+	totalWTBLastYearCount: number;
+	totalWTBLastYearAverage: number;
+};
+
 export async function embeddedAuctionStreamMessageBuilder(
 	player: string,
 	server: Server,
 	auctionText: string,
 	auctionData: AuctionData,
 ): Promise<EmbedBuilder[]> {
-	// Return type updated to Promise<EmbedBuilder[]>
 	const embeds: EmbedBuilder[] = [];
 	const timestamp = new Date();
 
-	// TODO: historical pricing
+	const historicalPricing = await fetchHistoricalPricingForItems(
+		auctionData,
+		server,
+	);
+
+	const generateHoverText = (
+		historicalData: HistoricalData,
+		type: 'buying' | 'selling', //	TODO: use watchType enum isntead of fragile string
+	) => {
+		const prefix = type === 'buying' ? 'WTB' : 'WTS';
+		const avg30 = historicalData[`total${prefix}Last30DaysAverage`] || '-';
+		const avg60 = historicalData[`total${prefix}Last60DaysAverage`] || '-';
+		const avg90 = historicalData[`total${prefix}Last90DaysAverage`] || '-';
+		const count30 = historicalData[`total${prefix}Last30DaysCount`] || '0';
+		const count60 = historicalData[`total${prefix}Last60DaysCount`] || '0';
+		const count90 = historicalData[`total${prefix}Last90DaysCount`] || '0';
+
+		return `30 Day Avg: ${avg30} (of ${count30})\n 60 Day Avg: ${avg60} (of ${count60})\n 90 Day Avg: ${avg90} (of ${count90})`;
+	};
+
+	const generateItemFields = (
+		items: ItemType[],
+		type: 'buying' | 'selling',
+	) => {
+		return items.map((item) => {
+			const priceField = item.price
+				? `Price: ${item.price}`
+				: 'No Price Listed';
+			const historicalData = historicalPricing[item.item] || {};
+			const wikiLink = getWikiUrlFromItem(item.item) || '';
+			const hoverText = historicalData
+				? generateHoverText(historicalData, type)
+				: `Could not find wiki data for item ${item.item}`;
+			const valueField = formatHoverText(item.item, wikiLink, hoverText);
+
+			return {
+				name: priceField,
+				value: valueField,
+				inline: true,
+			};
+		});
+	};
+
+	const buyingFields = generateItemFields(auctionData.buying, 'buying');
+	const sellingFields = generateItemFields(auctionData.selling, 'selling');
 
 	let title = '';
-	// const buyingFields = auctionData.buying.map((buyItem) => {
-	// 	// If the wiki has data on this item, append to its value
-	// 	const wikiLink =
-	// 		wikiData[
-	// 			BASE_WIKI_URL + consolidatedItems[buyItem.item.toUpperCase()]
-	// 		]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
-
-	// 	return {
-	// 		name: buyItem.price ? `Price: ${buyItem.price}` : '-',
-	// 		value: `${buyItem.item} ${wikiLink}`, // appended wiki data here
-	// 		inline: true,
-	// 	};
-	// });
-
-	// const sellingFields = auctionData.selling.map((sellItem) => {
-	// 	// If the wiki has data on this item, append to its value
-	// 	const wikiLink =
-	// 		wikiData[
-	// 			BASE_WIKI_URL + consolidatedItems[sellItem.item.toUpperCase()]
-	// 		]?.[1]?.[30] || ''; // This takes the 30-day average price. Adjust as necessary.
-
-	// 	return {
-	// 		name: sellItem.price ? `Price: ${sellItem.price}` : '-',
-	// 		value: `${sellItem.item} ${wikiLink}`, // appended wiki data here
-	// 		inline: true,
-	// 	};
-	// });
-
 	if (auctionData.buying.length > 0 && auctionData.selling.length > 0) {
 		title += 'WTS/WTB';
 	} else if (auctionData.buying.length > 0) {
@@ -267,9 +315,8 @@ export async function embeddedAuctionStreamMessageBuilder(
 		title += 'WTS';
 	}
 
-	const combinedFields: APIEmbedField | APIEmbedField[] = [];
+	const combinedFields: APIEmbedField[] = [];
 
-	// Get discord user if one is linked
 	const playerLink = await getPlayerLink(player, server);
 	if (playerLink) {
 		combinedFields.push({
@@ -277,6 +324,8 @@ export async function embeddedAuctionStreamMessageBuilder(
 			value: `<@${playerLink.discordUserId}>`,
 		});
 	}
+
+	combinedFields.push(...buyingFields, ...sellingFields);
 
 	embeds.push(
 		new EmbedBuilder()
@@ -289,4 +338,18 @@ export async function embeddedAuctionStreamMessageBuilder(
 	);
 
 	return embeds;
+}
+
+export function formatHoverText(
+	displayText: string,
+	wikiUrl: string = getEnvironmentVariable('WIKI_BASE_URL'),
+	hoverText: string = '',
+): string {
+	if (wikiUrl && hoverText) {
+		return `[${displayText}](${wikiUrl} "${hoverText}")`;
+	}
+	if (wikiUrl) {
+		return `[${displayText}](${wikiUrl})`;
+	}
+	return displayText;
 }
