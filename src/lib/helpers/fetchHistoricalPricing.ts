@@ -32,6 +32,7 @@ export async function fetchHistoricalPricingForItem(
 		}
 
 		if (!res.ok) {
+			// eslint-disable-next-line no-console
 			console.error(res.status);
 			return null;
 		}
@@ -50,7 +51,7 @@ export async function fetchHistoricalPricingForItems(
 	auctionData: AuctionData,
 	server: Server,
 ) {
-	const results: { [key: string]: any } = {};
+	const results: { [key: string]: unknown } = {};
 
 	for (const buyingItem of auctionData.buying) {
 		const itemName = buyingItem.item;

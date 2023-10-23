@@ -7,7 +7,11 @@ import {
 import { getServerColorFromString } from '../../helpers/colors';
 import { EmbedField } from 'discord.js';
 import { isSnoozed } from '../../helpers/helpers';
-import { AuctionData, ItemType, getEnvironmentVariable } from '../streams/streamAuction';
+import {
+	AuctionData,
+	ItemType,
+	getEnvironmentVariable,
+} from '../streams/streamAuction';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
 import { getPlayerLink } from '../../../prisma/dbExecutors';
@@ -288,7 +292,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 			const priceField = item.price
 				? `Price: ${item.price}`
 				: 'No Price Listed';
-			const historicalData = historicalPricing[item.item] || {};
+			const historicalData = historicalPricing[item.item] || null;
 			const wikiLink = getWikiUrlFromItem(item.item) || '';
 			const hoverText = historicalData
 				? generateHoverText(historicalData, type)
@@ -342,14 +346,9 @@ export async function embeddedAuctionStreamMessageBuilder(
 
 export function formatHoverText(
 	displayText: string,
-	wikiUrl: string = getEnvironmentVariable('WIKI_BASE_URL'),
+	wikiUrl: string,
 	hoverText: string = '',
 ): string {
-	if (wikiUrl && hoverText) {
-		return `[${displayText}](${wikiUrl} "${hoverText}")`;
-	}
-	if (wikiUrl) {
-		return `[${displayText}](${wikiUrl})`;
-	}
-	return displayText;
+	const defaultWikiUrl = getEnvironmentVariable('WIKI_BASE_URL');
+	return `[${displayText}](${wikiUrl || defaultWikiUrl} "${hoverText}")`;
 }
