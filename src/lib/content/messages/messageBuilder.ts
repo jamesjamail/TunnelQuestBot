@@ -292,7 +292,8 @@ export async function embeddedAuctionStreamMessageBuilder(
 			const priceField = item.price
 				? `Price: ${item.price}`
 				: 'No Price Listed';
-			const historicalData = historicalPricing[item.item] || null;
+			const historicalData =
+				(historicalPricing[item.item] as HistoricalData) || null;
 			const wikiLink = getWikiUrlFromItem(item.item) || '';
 			const hoverText = historicalData
 				? generateHoverText(historicalData, type)

@@ -15,32 +15,13 @@ function getRandomElement(arr: string[]) {
 	return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function manipulateItemName(item: string): string {
-	const operation = Math.random() > 0.5 ? 'add' : 'remove';
-	const index = Math.floor(Math.random() * item.length);
-	if (operation === 'add') {
-		return (
-			item.slice(0, index) +
-			getRandomElement([...'abcdefghijklmnopqrstuvwxyz']) +
-			item.slice(index)
-		);
-	} else {
-		return item.slice(0, index) + item.slice(index + 1);
-	}
-}
-
 function generatePrice(): string {
-	// Determine the currency (pp or k)
 	const isK = Math.random() < 0.5;
-
-	// Determine the amount
 	const amount = isK
 		? parseFloat((Math.random() * 10).toFixed(1)) // for k up to 10k with 1 decimal
 		: Math.floor(Math.random() * 1000); // for pp
-
 	const currency = isK ? 'k' : 'pp';
-
-	return ' ' + amount + currency; // Always add space at the start of the price
+	return ' ' + amount + currency;
 }
 
 function generateLogLine() {
@@ -55,11 +36,6 @@ function generateLogLine() {
 			randomItem = getRandomElement(items);
 		} while (selectedItems.includes(randomItem));
 
-		if (Math.random() < 0.25) {
-			randomItem = manipulateItemName(randomItem);
-		}
-
-		// Append price to item with 25% chance
 		if (Math.random() < 0.5) {
 			const price = generatePrice();
 			randomItem += price;
@@ -113,11 +89,7 @@ function appendFakeLogs() {
 		const logs = generateLogs(1);
 		fs.appendFileSync(logPath, logs, 'utf-8');
 	});
-	// console.log('Fake logs appended.');
 }
 
-// Call once to start
 appendFakeLogs();
-
-// Then set the interval for subsequent appends
 setInterval(appendFakeLogs, 1000);

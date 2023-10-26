@@ -13,3 +13,5 @@ export const consolidatedItems: InGameItemNamesType = {
 	...inGameItemNamesRaw,
 	...inGameSpellNamesRaw,
 };
+
+export const consolidatedItemsList = Object.keys(consolidatedItems);

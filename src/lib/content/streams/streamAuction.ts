@@ -12,19 +12,13 @@ export function getEnvironmentVariable(name: string): string {
 }
 
 export type AuctionData = {
-	buying: {
-		item: string;
-		price?: string | null | undefined;
-	}[];
-	selling: {
-		item: string;
-		price?: string | null | undefined;
-	}[];
+	buying: ItemType[];
+	selling: ItemType[];
 };
 
 export type ItemType = {
 	item: string;
-	price?: string | null | undefined;
+	price?: string | undefined;
 };
 
 export async function streamAuctionToAllStreamChannels(
