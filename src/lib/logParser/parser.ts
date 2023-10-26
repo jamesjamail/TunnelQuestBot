@@ -3,7 +3,10 @@ import { Tail } from 'tail';
 import { getLogFilePath, handleLinkMatch } from './helpers';
 import { Trie } from './trieSearch';
 import inGameItemsObject from '../content/gameData/items.json';
-import { streamAuctionToAllStreamChannels } from '../content/streams/streamAuction';
+import {
+	AuctionData,
+	streamAuctionToAllStreamChannels,
+} from '../content/streams/streamAuction';
 
 export function isAuctionOfInterest(
 	text: string,
@@ -179,12 +182,12 @@ export class AuctionParser {
 		}
 	}
 
-	public parseAuction(auctionMsg: string) {
+	public parseAuction(auctionMsg: string): AuctionData {
 		auctionMsg = this.preprocessMessage(auctionMsg);
 		const { wts, wtb } = this.splitByAction(auctionMsg);
 
-		const buying: { item: string; price?: string | null }[] = [];
-		const selling: { item: string; price?: string | null }[] = [];
+		const buying: { item: string; price?: string }[] = [];
+		const selling: { item: string; price?: string }[] = [];
 
 		const wtsSegmentsRaw = wts.split(/[/\-_|~*,]|\s{2,}/);
 		let wtsSegments: string[] = [];
@@ -202,7 +205,7 @@ export class AuctionParser {
 			const result = this.parseSegment(segment.trim(), 'sell');
 			selling.push({
 				item: result.item,
-				price: result.price,
+				price: result.price as string,
 			});
 		}
 
@@ -210,7 +213,7 @@ export class AuctionParser {
 			const result = this.parseSegment(segment.trim(), 'buy');
 			buying.push({
 				item: result.item,
-				price: result.price,
+				price: result.price as string,
 			});
 		}
 
