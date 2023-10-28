@@ -113,11 +113,31 @@ export async function insertPlayerLink(discord_id: string) {
 	return linkCode;
 }
 
+export async function removePlayerLink(
+	user_id: string,
+	player: string,
+	server: Server,
+) {
+	try {
+		await prisma.playerLink.delete({
+			where: {
+				server_player: { server: server, player: player },
+				discordUserId: user_id,
+			},
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export async function runPlayerLinkHousekeeping() {
 	return prisma.playerLink.deleteMany({
 		where: {
-			linkCodeExpiry: { lt: new Date() },
-			player: { not: null },
+			linkCodeExpiry: {
+				lt: new Date(),
+				not: null,
+			},
 		},
 	});
 }
@@ -178,6 +198,14 @@ export async function getPlayerLink(player: string, server: Server) {
 				server: server,
 				player: player,
 			},
+		},
+	});
+}
+
+export async function getPlayerLinksForUser(user_id: string) {
+	return prisma.playerLink.findMany({
+		where: {
+			discordUserId: user_id,
 		},
 	});
 }

@@ -95,6 +95,17 @@ export namespace messageCopy {
 		} been delivered via DM <#${channelId}>`;
 	};
 
+	export const linksHaveBeenDeliveredViaDm = (
+		numberOfLinks: number,
+		channelId: string,
+	) => {
+		return `${numberOfLinks} character link${
+			numberOfLinks > 1 ? 's' : ''
+		} ${
+			numberOfLinks > 1 ? 'have' : 'has'
+		} been delivered via DM <#${channelId}>`;
+	};
+
 	export const blocksHaveBeenDeliveredViaDm = (
 		numberOfBlocks: number,
 		channelId: string,

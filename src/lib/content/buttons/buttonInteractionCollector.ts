@@ -53,6 +53,10 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleGlobalUnblockInactive,
 			[ButtonInteractionTypes.GlobalUnblockActive]:
 				handlers.handleGlobalUnblockActive,
+			[ButtonInteractionTypes.UnlinkCharacterInactive]:
+				handlers.handleUnlinkCharacterInactive,
+			[ButtonInteractionTypes.UnlinkCharacterActive]:
+				handlers.handleUnlinkCharacterActive,
 			// TODO: add other mappings
 		};
 

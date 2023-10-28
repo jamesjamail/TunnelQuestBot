@@ -65,7 +65,7 @@ export const priceCriteriaOptions = (option: SlashCommandNumberOption) =>
 export const playerNameOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('player')
-		.setDescription('the name of the player you want to block')
+		.setDescription('the name of a player')
 		.setRequired(true);
 
 export const autoCompletePlayerNameOptions = (

@@ -1,4 +1,4 @@
-import { Watch, Server, User, BlockedPlayer } from '@prisma/client';
+import { Watch, Server, User, BlockedPlayer, PlayerLink } from '@prisma/client';
 import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
@@ -85,6 +85,14 @@ export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
 	return dataForWatches.map((watchData) => {
 		return watchCommandResponseBuilder(watchData);
 	});
+}
+
+export function playerlinkCommandResponseBuilder(linkData: PlayerLink) {
+	if (linkData.server != null) {
+		return new EmbedBuilder()
+			.setColor(getServerColorFromString(linkData.server))
+			.setTitle(`${linkData.player} [${linkData.server}]`);
+	}
 }
 
 function formatCapitalCase(input: string): string {

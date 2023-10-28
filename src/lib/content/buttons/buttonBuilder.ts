@@ -28,6 +28,8 @@ export enum ButtonInteractionTypes {
 	WatchNotificationUnwatchInactive,
 	WatchNotificationWatchRefreshActive,
 	WatchNotificationWatchRefreshInactive,
+	UnlinkCharacterActive,
+	UnlinkCharacterInactive,
 }
 
 type ButtonConfig = {
@@ -111,6 +113,16 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 					.setLabel('Cancel')
 					.setStyle(
 						isActive ? ButtonStyle.Danger : ButtonStyle.Secondary,
+					);
+				break;
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'UnlinkCharacter',
+			):
+				builder
+					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setLabel('Unlink')
+					.setStyle(
+						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);
 				break;
 			default:

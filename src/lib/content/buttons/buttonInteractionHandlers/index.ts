@@ -8,6 +8,8 @@ import handleUserSnoozeInactive from './userSnoozeInactive';
 import handleUserSnoozeActive from './userSnoozeActive';
 import handleGlobalUnblockActive from './globalUnblockActive';
 import handleGlobalUnblockInactive from './globalUnblockInactive';
+import handleUnlinkCharacterActive from './unlinkCharacterActive';
+import handleUnlinkCharacterInactive from './unlinkCharacterInactive';
 
 export {
 	handleWatchSnoozeInactive,
@@ -20,5 +22,7 @@ export {
 	handleUserSnoozeActive,
 	handleGlobalUnblockInactive,
 	handleGlobalUnblockActive,
+	handleUnlinkCharacterInactive,
+	handleUnlinkCharacterActive,
 	// ... import other handlers
 };

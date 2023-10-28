@@ -11,6 +11,7 @@ export enum CommandTypes {
 	unwatch,
 	watch,
 	watches,
+	link,
 }
 
 const commandTypeButtonMappings: {
@@ -61,6 +62,12 @@ const commandTypeButtonMappings: {
 	[CommandTypes.unsnooze]: [],
 	[CommandTypes.unwatch]: [],
 	[CommandTypes.watches]: [],
+	[CommandTypes.link]: [
+		{
+			active: ButtonInteractionTypes.UnlinkCharacterActive,
+			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
+		},
+	],
 };
 
 function getButtonType(

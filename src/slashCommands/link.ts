@@ -5,7 +5,7 @@ import { insertPlayerLinkSafely } from '../prisma/dbExecutors';
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('link')
-		.setDescription('link a character to your discord ID.'),
+		.setDescription('link a character to your discord user'),
 	execute: async (interaction) => {
 		const linkCode = await insertPlayerLinkSafely(interaction);
 		// console.log(`Auth code generated for user ${interaction.user.id}: ${linkCode}`)
@@ -17,7 +17,7 @@ const command: SlashCommand = {
 			ephemeral: true,
 		});
 	},
-	cooldown: 10,
+	cooldown: 60 * 5,
 };
 
 export default command;
