@@ -91,7 +91,7 @@ export function playerlinkCommandResponseBuilder(linkData: PlayerLink) {
 	if (linkData.server != null) {
 		return new EmbedBuilder()
 			.setColor(getServerColorFromString(linkData.server))
-			.setTitle(`${linkData.player} [${linkData.server}]`);
+			.setTitle(`${linkData.player} (${linkData.server})`);
 	}
 }
 

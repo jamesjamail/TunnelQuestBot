@@ -1,12 +1,13 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types';
-import { Server } from '@prisma/client';
+import { PlayerLink, Server } from '@prisma/client';
 import {
 	playerNameOptions,
 	requiredsServerOptions,
 } from '../lib/content/commandOptions/commandOptions';
 import { removePlayerLink } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
+import { messageCopy } from '../lib/content/copy/messageCopy';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -28,9 +29,15 @@ const command: SlashCommand = {
 		// console.log(`Character ${server}.${player_name} unlinked from ${interaction.user.username}`)
 		let user_message;
 		if (success) {
-			user_message = `Successfully unlinked character ${server}.${player_name} from your discord user.`;
+			user_message = messageCopy.soAndSoHasBeenUnlinked({
+				server: server,
+				player: player_name,
+			} as PlayerLink);
 		} else {
-			user_message = `No such character link exists to your discord user.`;
+			user_message = messageCopy.soAndSoHasFailedToBeUnlinked({
+				server: server,
+				player: player_name,
+			} as PlayerLink);
 		}
 		await interaction.reply({
 			content: user_message,

@@ -120,7 +120,13 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
-					.setLabel('Unlink')
+					.setLabel(
+						ButtonInteractionTypes[buttonConfig.type].endsWith(
+							'Active',
+						)
+							? 'Relink'
+							: 'Unlink',
+					)
 					.setStyle(
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);

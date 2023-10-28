@@ -1,4 +1,11 @@
-import { Server, WatchType, User, Watch, Prisma } from '@prisma/client';
+import {
+	Server,
+	WatchType,
+	User,
+	Watch,
+	Prisma,
+	PlayerLink,
+} from '@prisma/client';
 import {
 	ChatInputCommandInteraction,
 	User as DiscordUser,
@@ -11,7 +18,7 @@ import { add } from 'date-fns';
 import { prisma } from './init';
 
 export async function createUser(discordUser: DiscordUser) {
-	return await prisma.user.create({
+	return prisma.user.create({
 		data: {
 			discordUserId: discordUser.id,
 			discordUsername: discordUser.username,
@@ -19,8 +26,8 @@ export async function createUser(discordUser: DiscordUser) {
 	});
 }
 
-// perhaps there is a way to skip this step, since we have users id'ed by their discordUserId
-// find a way to catch the error if their id doesnt exist, then findOrCreate and try again.
+// perhaps there is a way to skip this step, since we have users identified by their discordUserId
+// find a way to catch the error if their id doesn't exist, then findOrCreate and try again.
 export async function findOrCreateUser(
 	discordUser: DiscordUser,
 ): Promise<User> {
@@ -34,14 +41,12 @@ export async function findOrCreateUser(
 		return user;
 	}
 
-	const createdUser = await prisma.user.create({
+	return prisma.user.create({
 		data: {
 			discordUserId: discordUser.id,
 			discordUsername: discordUser.username,
 		},
 	});
-
-	return createdUser;
 }
 
 type CreateWatchInputArgs = {
@@ -57,7 +62,7 @@ export async function upsertWatch(
 ) {
 	const { itemName, server, watchType, notes } = watchData;
 	// Upsert the watch
-	return await prisma.watch.upsert({
+	return prisma.watch.upsert({
 		where: {
 			discordUserId_itemName_server_watchType: {
 				discordUserId,
@@ -113,6 +118,12 @@ export async function insertPlayerLink(discord_id: string) {
 	return linkCode;
 }
 
+export async function insertPlayerLinkFull(link: PlayerLink) {
+	return prisma.playerLink.create({
+		data: link,
+	});
+}
+
 export async function removePlayerLink(
 	user_id: string,
 	player: string,
@@ -123,6 +134,19 @@ export async function removePlayerLink(
 			where: {
 				server_player: { server: server, player: player },
 				discordUserId: user_id,
+			},
+		});
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export async function removePlayerLinkById(id: number) {
+	try {
+		await prisma.playerLink.delete({
+			where: {
+				id: id,
 			},
 		});
 		return true;
@@ -212,7 +236,7 @@ export async function getPlayerLinksForUser(user_id: string) {
 
 export async function setWatchActiveByWatchId(id: number) {
 	// update the watch
-	return await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id,
 		},
@@ -257,10 +281,9 @@ export async function getWatchesByItemName(
 	itemName = '',
 ) {
 	const watches = await getWatchesByUser(discordUserId);
-	const filteredWatches = watches.filter((watch) => {
+	return watches.filter((watch) => {
 		return watch.itemName.includes(itemName);
 	});
-	return filteredWatches;
 }
 
 export type MetadataType = {
@@ -269,7 +292,7 @@ export type MetadataType = {
 
 export async function snoozeWatch(metadata: Watch, hours?: number) {
 	// intentionally an update as this function is used to interact with existing watches
-	return await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -280,7 +303,7 @@ export async function snoozeWatch(metadata: Watch, hours?: number) {
 }
 
 export async function unsnoozeWatch(metadata: Watch) {
-	return await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -302,7 +325,7 @@ export async function unsnoozeWatchByItemName(
 	});
 
 	// Update the watch entry by setting snoozedUntil to null where itemName = itemName
-	return await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: watch.id,
 		},
@@ -314,7 +337,7 @@ export async function unsnoozeWatchByItemName(
 
 export async function unwatch(metadata: MetadataType) {
 	// Update the watch entry by setting active to false where the id matches metadata.id
-	const result = await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -322,8 +345,6 @@ export async function unwatch(metadata: MetadataType) {
 			active: false,
 		},
 	});
-
-	return result;
 }
 
 export async function unwatchByWatchName(
@@ -338,7 +359,7 @@ export async function unwatchByWatchName(
 	});
 
 	// Update the watch entry by setting active to false where itemName = itemName
-	const result = await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: watch.id,
 		},
@@ -346,12 +367,10 @@ export async function unwatchByWatchName(
 			active: false,
 		},
 	});
-
-	return result;
 }
 
 export async function extendWatch(metadata: MetadataType) {
-	const result = await prisma.watch.update({
+	return prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -360,8 +379,6 @@ export async function extendWatch(metadata: MetadataType) {
 			active: true,
 		},
 	});
-
-	return result;
 }
 
 export async function extendAllWatchesAndReturnWatches(discordUserId: string) {
@@ -386,7 +403,7 @@ export async function extendAllWatchesAndReturnWatches(discordUserId: string) {
 		},
 	});
 
-	return await getWatchesByUser(discordUserId);
+	return getWatchesByUser(discordUserId);
 }
 
 export async function extendAllWatchesAndReturnUserAndWatches(
@@ -427,7 +444,7 @@ export async function snoozeAllWatches(discordUserId: string) {
 			snoozedUntil: getExpirationTimestampForSnooze(),
 		},
 	});
-	return await getWatchesByUser(discordUserId);
+	return getWatchesByUser(discordUserId);
 }
 
 export async function snoozeAllWatchesAndReturnWatchesAndUser(
@@ -455,7 +472,7 @@ export async function snoozeWatchByItemName(
 	// First, find the watch by itemName - let's make a good faith
 	// effort to find a watch by name in case autocomplete fails for some reason
 	// it's technically possible a user could have multiple watches matching this
-	// criteria since we don't know about server or watchType, but that's ok.
+	// criterion since we don't know about server or watchType, but that's ok.
 
 	// why not use updateMany? because the response is a mere record count.
 	const foundWatch = await prisma.watch.findFirstOrThrow({
@@ -465,8 +482,8 @@ export async function snoozeWatchByItemName(
 		},
 	});
 
-	// Then, use the found watch's id to update it's snooze
-	return await prisma.watch.update({
+	// Then, use the found watch's id to update its snooze
+	return prisma.watch.update({
 		where: {
 			id: foundWatch.id,
 		},
@@ -499,7 +516,7 @@ export async function addPlayerBlock(
 	player: string,
 	server: Server,
 ) {
-	return await prisma.blockedPlayer.upsert({
+	return prisma.blockedPlayer.upsert({
 		where: {
 			discordUserId_server_player: {
 				discordUserId,
@@ -525,7 +542,7 @@ export async function removePlayerBlock(
 	player: string,
 	server: Server,
 ) {
-	return await prisma.blockedPlayer.update({
+	return prisma.blockedPlayer.update({
 		where: {
 			discordUserId_server_player: {
 				discordUserId,
@@ -551,7 +568,7 @@ export async function removePlayerBlockWithoutServer(
 	});
 
 	// Update the blockedPlayer entry by setting active to false where player = playerName
-	return await prisma.blockedPlayer.update({
+	return prisma.blockedPlayer.update({
 		where: {
 			id: blockedPlayer.id,
 		},
@@ -562,7 +579,7 @@ export async function removePlayerBlockWithoutServer(
 }
 
 export async function removePlayerBlockById(id: number) {
-	return await prisma.blockedPlayer.update({
+	return prisma.blockedPlayer.update({
 		where: {
 			id,
 		},
@@ -573,7 +590,7 @@ export async function removePlayerBlockById(id: number) {
 }
 
 async function fetchActiveWatches() {
-	return await prisma.watch.findMany({
+	return prisma.watch.findMany({
 		where: {
 			active: true,
 		},

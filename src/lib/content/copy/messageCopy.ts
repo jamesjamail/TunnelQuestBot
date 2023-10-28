@@ -1,4 +1,4 @@
-import { BlockedPlayer } from '@prisma/client';
+import { BlockedPlayer, PlayerLink } from '@prisma/client';
 import { formatServerFromEnum } from '../../helpers/helpers';
 
 const COMMAND_CHANNEL = process.env.command_channel;
@@ -125,5 +125,17 @@ export namespace messageCopy {
 		return `${block.player} has been unblocked on ${formatServerFromEnum(
 			block.server,
 		)}`;
+	};
+
+	export const soAndSoHasBeenLinked = (link: PlayerLink) => {
+		return `\`${link.player}\` on \`${link.server}\` has been linked to your discord user.`;
+	};
+
+	export const soAndSoHasBeenUnlinked = (link: PlayerLink) => {
+		return `\`${link.player}\` on \`${link.server}\` has been unlinked from your discord user.`;
+	};
+
+	export const soAndSoHasFailedToBeUnlinked = (link: PlayerLink) => {
+		return `No such character link (\`${link.player}\` on \`${link.server}\`) exists for your discord user.`;
 	};
 }

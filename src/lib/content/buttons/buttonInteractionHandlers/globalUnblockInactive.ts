@@ -21,7 +21,7 @@ export default async function handleGlobalUnblockInactive<T>(
 				components: [],
 			});
 		},
-		'are you sure wish to unblock?',
+		'Are you sure wish to unblock?',
 		CommandTypes.unblock,
 	);
 }

@@ -12,6 +12,7 @@ export enum CommandTypes {
 	watch,
 	watches,
 	link,
+	unlink,
 }
 
 const commandTypeButtonMappings: {
@@ -63,6 +64,12 @@ const commandTypeButtonMappings: {
 	[CommandTypes.unwatch]: [],
 	[CommandTypes.watches]: [],
 	[CommandTypes.link]: [
+		{
+			active: ButtonInteractionTypes.UnlinkCharacterActive,
+			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
+		},
+	],
+	[CommandTypes.unlink]: [
 		{
 			active: ButtonInteractionTypes.UnlinkCharacterActive,
 			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,

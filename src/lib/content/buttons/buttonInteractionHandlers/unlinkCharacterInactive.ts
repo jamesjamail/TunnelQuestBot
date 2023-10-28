@@ -1,25 +1,43 @@
-// import { ButtonInteraction } from 'discord.js';
-// import { snoozeWatch } from '../../../../prisma/dbExecutors';
-// import { messageCopy } from '../../copy/messageCopy';
-// import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
-// import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
-// import { Watch } from '@prisma/client';
+import { ButtonInteraction, EmbedBuilder } from 'discord.js';
+import { confirmButtonInteraction } from '../../../helpers/buttons';
+import { PlayerLink } from '@prisma/client';
+import { removePlayerLinkById } from '../../../../prisma/dbExecutors';
+import { messageCopy } from '../../copy/messageCopy';
+import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
 
-export default async function handleUnlinkCharacterInactive() {
-	//<T>
-	// interaction: ButtonInteraction,
-	// metadata: T,
+export default async function handleUnlinkCharacterInactive<T>(
+	interaction: ButtonInteraction,
+	metadata: T,
+) {
 	// TODO: This should "unlink" a player from a discord user.
-	// const data = await snoozeWatch(metadata as Watch);
-	// const components = buttonRowBuilder(CommandTypes.watch, [
-	// 	true,
-	// 	false,
-	// 	false,
-	// ]);
-	// const embeds = [watchCommandResponseBuilder(data)];
-	// await interaction.update({
-	// 	content: messageCopy.yourWatchHasBeenSnoozed(),
-	// 	embeds,
-	// 	components,
-	// });
+	return await confirmButtonInteraction(
+		interaction,
+		async (followUpMessage) => {
+			const link = metadata as PlayerLink;
+			const success = await removePlayerLinkById(link.id);
+			await followUpMessage.delete();
+			let new_embed = playerlinkCommandResponseBuilder(
+				link,
+			) as EmbedBuilder;
+			if (success) {
+				new_embed = new_embed
+					.setColor('NotQuiteBlack')
+					.setTitle(`⛓️‍💥 ${new_embed.data.title}`);
+				await interaction.editReply({
+					content: messageCopy.soAndSoHasBeenUnlinked(link),
+					embeds: [new_embed],
+					components: buttonRowBuilder(CommandTypes.link, [true]),
+				});
+			} else {
+				await interaction.editReply({
+					content: messageCopy.soAndSoHasFailedToBeUnlinked(link),
+					embeds: [new_embed],
+					components: buttonRowBuilder(CommandTypes.link, [false]),
+				});
+			}
+		},
+		'Are you sure wish to unlink this character?',
+		CommandTypes.unlink,
+	);
 }
