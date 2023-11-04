@@ -277,7 +277,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 		server,
 	);
 
-	const generateHoverText = (
+	const formatHistoricalPricingInfo = (
 		historicalData: HistoricalData,
 		type: 'buying' | 'selling', //	TODO: use watchType enum isntead of fragile string
 	) => {
@@ -304,7 +304,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 				(historicalPricing[item.item] as HistoricalData) || null;
 			const wikiLink = getWikiUrlFromItem(item.item) || '';
 			const hoverText = historicalData
-				? generateHoverText(historicalData, type)
+				? formatHistoricalPricingInfo(historicalData, type)
 				: `Could not find wiki data for item ${item.item}`;
 			const valueField = formatHoverText(item.item, wikiLink, hoverText);
 
@@ -356,7 +356,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 export function formatHoverText(
 	displayText: string,
 	wikiUrl: string,
-	hoverText: string = '',
+	hoverText: string = ' ',
 ): string {
 	const defaultWikiUrl = getEnvironmentVariable('WIKI_BASE_URL');
 	return `[${displayText}](${wikiUrl || defaultWikiUrl} "${hoverText}")`;

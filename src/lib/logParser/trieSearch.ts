@@ -17,24 +17,57 @@ export class Trie {
 		this.root = new TrieNode();
 	}
 
-	insert(word: string): void {
+	insert(itemName: string): void {
 		let node = this.root;
-		for (const char of word) {
-			if (!node.children[char]) {
-				node.children[char] = new TrieNode();
+		// Split the itemName into words
+		const words = itemName.split(' ');
+		for (const word of words) {
+			if (!node.children[word]) {
+				node.children[word] = new TrieNode();
 			}
-			node = node.children[char];
+			node = node.children[word];
 		}
 		node.isEndOfWord = true;
 	}
 
-	search(word: string): boolean {
+	search(itemName: string): boolean {
 		let node = this.root;
-		for (const char of word) {
-			if (!node.children[char]) return false;
-			node = node.children[char];
+		// Split the itemName into words
+		const words = itemName.split(' ');
+		for (const word of words) {
+			if (!node.children[word]) return false;
+			node = node.children[word];
 		}
 		return node.isEndOfWord;
+	}
+
+	findMatchStartingWithFirstWord(
+		words: string[],
+	): { match: string; endIndex: number } | null {
+		let node = this.root;
+		let currentMatch = '';
+		let longestMatch = '';
+		let longestEndIndex = -1;
+
+		for (let i = 0; i < words.length; i++) {
+			const word = words[i];
+
+			if (!node.children[word]) {
+				break; // Stop searching if a word is not found in the trie
+			}
+
+			node = node.children[word];
+			currentMatch += (currentMatch ? ' ' : '') + word;
+
+			if (node.isEndOfWord) {
+				longestMatch = currentMatch;
+				longestEndIndex = i;
+			}
+		}
+
+		return longestMatch
+			? { match: longestMatch, endIndex: longestEndIndex }
+			: null;
 	}
 }
 

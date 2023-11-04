@@ -13,7 +13,7 @@ https://docs.docker.com/desktop/wsl/
 
 ## Local Development
 
-If you'd prefer not to run everquest clients for the log files, you can tell the app the fake them:
+If you'd prefer not to run everquest clients for the log files, you can tell the app to fake them:
 
 `$env:FAKE_LOGS='true'; docker-compose up --build -d`
 
