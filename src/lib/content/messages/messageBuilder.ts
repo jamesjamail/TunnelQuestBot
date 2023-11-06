@@ -3,26 +3,23 @@ import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
 	formatWatchExpirationTimestamp,
-} from '../../helpers/datetime';
-import { getServerColorFromString } from '../../helpers/colors';
+} from '@helpers/datetime';
+import { getServerColorFromString } from '@helpers/colors';
 import { EmbedField } from 'discord.js';
-import {
-	formatPriceNumberToReadableString,
-	isSnoozed,
-} from '../../helpers/helpers';
+import { formatPriceNumberToReadableString, isSnoozed } from '@helpers/helpers';
 import {
 	AuctionData,
 	ItemType,
 	getEnvironmentVariable,
 } from '../streams/streamAuction';
-import { getImageUrlForItem } from '../../helpers/images';
-import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
-import { getPlayerLink } from '../../../prisma/dbExecutors';
+import { getImageUrlForItem } from '@helpers/images';
+import { getWikiUrlFromItem } from '@helpers/wikiLinks';
+import { getPlayerLink } from '@src/prisma/dbExecutors';
 import {
 	fetchHistoricalPricingForItem,
 	fetchHistoricalPricingForItems,
-} from '../../helpers/fetchHistoricalPricing';
-import { toTitleCase } from '../../helpers/titleCase';
+} from '@helpers/fetchHistoricalPricing';
+import { toTitleCase } from '@helpers/titleCase';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);

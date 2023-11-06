@@ -3,7 +3,7 @@ import {
 	BlockedPlayerByWatch,
 	PlayerLink,
 } from '@prisma/client';
-import { formatServerFromEnum } from '../../helpers/helpers';
+import { formatServerFromEnum } from '@helpers/helpers';
 
 const COMMAND_CHANNEL = process.env.command_channel;
 const FEEDBACK_AND_IDEAS = process.env.feedback_and_ideas_channel;

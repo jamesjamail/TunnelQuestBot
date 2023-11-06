@@ -9,7 +9,7 @@ import {
 	parseWatchesForAutoSuggest,
 } from './helpers';
 import Fuse from 'fuse.js';
-import itemsData from '../content/gameData/items.json';
+import itemsData from '@gameData/items.json';
 import { toTitleCase } from './titleCase';
 
 const jsonPrefix = '::JSON::';

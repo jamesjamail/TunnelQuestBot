@@ -1,7 +1,7 @@
-import { InGameItemNamesType } from '../../logParser/helpers';
-import inGameItemNamesRaw from './items.json';
-import inGameSpellNamesRaw from './spells.json';
-import inGameAliasesRaw from './aliases.json';
+import { InGameItemNamesType } from '@src/lib/logParser/helpers';
+import inGameItemNamesRaw from '@gameData/items.json';
+import inGameSpellNamesRaw from '@gameData/spells.json';
+import inGameAliasesRaw from '@gameData/aliases.json';
 
 export const consolidatedItemsAndAliases: InGameItemNamesType = {
 	...inGameItemNamesRaw,
