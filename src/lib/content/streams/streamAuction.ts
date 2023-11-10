@@ -18,7 +18,7 @@ export type AuctionData = {
 
 export type ItemType = {
 	item: string;
-	price?: string | undefined;
+	price?: number | undefined;
 };
 
 export async function streamAuctionToAllStreamChannels(

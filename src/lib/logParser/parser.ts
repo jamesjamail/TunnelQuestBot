@@ -31,8 +31,15 @@ export class AuctionParser {
 	}
 
 	private preprocessMessage(msg: string): string {
-		// TODO: replace WTT with WTS as it's essentially the same thing
-		return msg.replace(/PST[.,!]*\s*(to\s+\w+)?/gi, '').trim();
+		// Replace 'WTT' with 'WTS'
+		let processedMsg = msg.replace(/\bWTT\b/g, 'WTS');
+		// Remove '/WTT' from messages
+		processedMsg = processedMsg.replace(/\/WTT\b/g, '');
+		// Omit the word 'asking'
+		processedMsg = processedMsg.replace(/\basking\b/gi, '');
+		// Existing PST replacement
+		// TODO: omit exclamation marks
+		return processedMsg.replace(/PST[.,!]*\s*(to\s+\w+)?/gi, '').trim();
 	}
 
 	private wordIsAuctionType(word: string) {
@@ -47,6 +54,51 @@ export class AuctionParser {
 		}
 
 		return false;
+	}
+
+	private parsePrice(
+		words: string[],
+		startIndex: number,
+	): { price: number | undefined; newIndex: number } {
+		// Find the end index of the price string
+		let endIndex = startIndex;
+		while (
+			endIndex < words.length &&
+			!/^[a-zA-Z]+$/.test(words[endIndex])
+		) {
+			endIndex++;
+		}
+
+		// Create the substring for the price
+		const priceSubstring = words.slice(startIndex, endIndex).join(' ');
+
+		// Split the substring into number groups (potentially with 'k' or 'kpp')
+		const priceGroups = priceSubstring.match(/\d+(\.\d+)?k?(pp)?/gi);
+		if (!priceGroups || priceGroups.length === 0) {
+			return { price: undefined, newIndex: endIndex };
+		}
+
+		const firstGroup = priceGroups[0];
+		const firstGroupIndex = priceSubstring.indexOf(firstGroup);
+
+		// Check if the first group is the start of a known item
+		if (this.itemTrie.search(firstGroup)) {
+			// Known item, no price to extract
+			return {
+				price: undefined,
+				newIndex: startIndex + firstGroupIndex,
+			};
+		}
+
+		// Extract numerical value from the first group
+		let price = parseFloat(firstGroup.replace(/[^0-9.]/g, ''));
+
+		// Check for 'k' or 'kpp' in the first group
+		if (/k(pp)?$/i.test(firstGroup)) {
+			price *= 1000; // Multiply by 1000 if 'k' or 'kpp' is found
+		}
+
+		return { price, newIndex: endIndex };
 	}
 
 	public parseAuctionMessage(message: string): {
@@ -69,7 +121,7 @@ export class AuctionParser {
 				? alphabeticalCharactersMatch.join('')
 				: '';
 
-			//  unknown item names that have less than 3 alphabetical are not likely items
+			//  unknown item names that have less than 3 alphabetical chars are not likely items
 			if (alphabeticalCharacters.length > 2) {
 				if (currentAuctionType === AuctionTypes.WTS) {
 					selling.push({ item: unknownItemString });
@@ -85,7 +137,7 @@ export class AuctionParser {
 		while (index < words.length) {
 			const newAuctionType = this.wordIsAuctionType(words[index]);
 			//  if the word is an auction type (WTS/WTB)
-			// 	be explicit - 'WTS' enum is 0!
+			// 	be explicit in this conditional - 'WTS' enum is 0!
 			if (newAuctionType !== false) {
 				//  TODO: parse price from unknownItemString
 				// 	TODO: attempt to split unknownItemString by delimiters and/or numbers to separate multiple items
@@ -104,12 +156,17 @@ export class AuctionParser {
 					);
 
 				if (matchInfo) {
-					// Found a match, add to the appropriate list
-					// TODO: parse price
-					// 		create a substring from the first char after the known item to the next letter
-					//  	filter our numbers, keep track of if they include k or kpp after them
-					// 		parse the value based on the unit
+					//	found match, let's prepare it for results arrays
 					const item: ItemType = { item: matchInfo.match };
+
+					// Parse price after the end of the matched item
+					const priceInfo = this.parsePrice(
+						words,
+						index + matchInfo.endIndex + 1,
+					);
+					item.price = priceInfo.price; // Add price to the item
+
+					// Found a match, add to the appropriate list
 					if (currentAuctionType === AuctionTypes.WTS) {
 						selling.push(item);
 					} else {

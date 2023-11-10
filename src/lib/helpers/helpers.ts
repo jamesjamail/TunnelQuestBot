@@ -165,3 +165,23 @@ export function isSnoozed(timestamp: Date | null) {
 export function formatServerFromEnum(server: Server) {
 	return `Project 1999 ${server.toLowerCase()} server`;
 }
+
+export function formatPriceNumberToReadableString(price: number): string {
+	if (price < 1000) {
+		// Price is less than 1000
+		return price + 'pp';
+	} else {
+		// Calculate price in thousands with two decimal places
+		const priceInThousands = price / 1000;
+		const roundedPrice = Math.round(priceInThousands * 100) / 100; // Round to two decimal places
+
+		if (roundedPrice * 1000 === price) {
+			// If rounded value multiplied by 1000 equals the original price, use the 'k' format
+			return roundedPrice + 'k';
+		} else {
+			// Otherwise, format with commas and append 'pp'
+			const formattedPrice = price.toLocaleString('en-US');
+			return formattedPrice + 'pp';
+		}
+	}
+}

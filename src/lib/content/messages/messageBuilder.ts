@@ -6,7 +6,10 @@ import {
 } from '../../helpers/datetime';
 import { getServerColorFromString } from '../../helpers/colors';
 import { EmbedField } from 'discord.js';
-import { isSnoozed } from '../../helpers/helpers';
+import {
+	formatPriceNumberToReadableString,
+	isSnoozed,
+} from '../../helpers/helpers';
 import {
 	AuctionData,
 	ItemType,
@@ -298,7 +301,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 	) => {
 		return items.map((item) => {
 			const priceField = item.price
-				? `Price: ${item.price}`
+				? `${formatPriceNumberToReadableString(item.price)}`
 				: 'No Price Listed';
 			const historicalData =
 				(historicalPricing[item.item] as HistoricalData) || null;
@@ -306,7 +309,11 @@ export async function embeddedAuctionStreamMessageBuilder(
 			const hoverText = historicalData
 				? formatHistoricalPricingInfo(historicalData, type)
 				: `Could not find wiki data for item ${item.item}`;
-			const valueField = formatHoverText(item.item, wikiLink, hoverText);
+			const valueField = formatHoverText(
+				formatCapitalCase(item.item),
+				wikiLink,
+				hoverText,
+			);
 
 			return {
 				name: priceField,
