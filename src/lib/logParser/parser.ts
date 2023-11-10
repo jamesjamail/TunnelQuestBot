@@ -36,10 +36,15 @@ export class AuctionParser {
 		// Remove '/WTT' from messages
 		processedMsg = processedMsg.replace(/\/WTT\b/g, '');
 		// Omit the word 'asking'
-		processedMsg = processedMsg.replace(/\basking\b/gi, '');
-		// Existing PST replacement
-		// TODO: omit exclamation marks
-		return processedMsg.replace(/PST[.,!]*\s*(to\s+\w+)?/gi, '').trim();
+		processedMsg = processedMsg.replace(/\bASKING\b/gi, '');
+		// Omit the phrases 'OBO', 'Offers', 'Or Best Offer'
+		processedMsg = processedMsg.replace(/\bOBO\b/gi, '');
+		processedMsg = processedMsg.replace(/\bOFFERS\b/gi, '');
+		processedMsg = processedMsg.replace(/\bOR BEST OFFER\b/gi, '');
+		// Omit exclamation marks
+		processedMsg = processedMsg.replace(/!/g, '');
+		// Omit PST
+		return processedMsg.replace(/\bPST\b/gi, '').trim();
 	}
 
 	private wordIsAuctionType(word: string) {
@@ -114,23 +119,49 @@ export class AuctionParser {
 		let unknownItemString = '';
 
 		function addUnknownItemToResultsAndReset() {
-			// Extract only alphabetical characters from the unknownItemString
-			const alphabeticalCharactersMatch =
-				unknownItemString.match(/[a-zA-Z]+/g);
-			const alphabeticalCharacters = alphabeticalCharactersMatch
-				? alphabeticalCharactersMatch.join('')
-				: '';
-
-			//  unknown item names that have less than 3 alphabetical chars are not likely items
-			if (alphabeticalCharacters.length > 2) {
-				if (currentAuctionType === AuctionTypes.WTS) {
-					selling.push({ item: unknownItemString });
-				} else {
-					buying.push({ item: unknownItemString });
-				}
+			// Check if unknownItemString contains more than 2 alphabetical characters excluding 'PP' or 'KPP'
+			if (
+				!/[a-zA-Z]{3,}/.test(
+					unknownItemString.replace(/\bPP\b|\bKPP\b/g, ''),
+				)
+			) {
+				// If not, reset unknownItemString and return early
+				unknownItemString = '';
+				return;
 			}
 
-			// Reset unknown item string after adding item to resulting buying or selling array
+			// if there is actualy content to parse, split the unknownItemString by delimiters
+			const sections = unknownItemString.split(/[,./|\-_+~<>]/);
+			sections.forEach((section) => {
+				// Trim any whitespace from the section
+				const trimmedSection = section.trim();
+				if (!trimmedSection) return;
+
+				// Attempt to parse the price from the last word in the section
+				const words = trimmedSection.split(/\s+/);
+				const lastWord = words[words.length - 1];
+				let price = undefined;
+				let item = trimmedSection;
+
+				// Check if last word is a number possibly followed by k or kpp
+				if (/^\d+(\.\d+)?k?(pp)?$/.test(lastWord)) {
+					price = parseFloat(lastWord.replace(/[^0-9.]/g, ''));
+					if (/k(pp)?$/.test(lastWord)) {
+						price *= 1000;
+					}
+					// Remove the price part from the item string
+					item = words.slice(0, -1).join(' ');
+				}
+
+				// Add to buying or selling array
+				if (currentAuctionType === AuctionTypes.WTS) {
+					selling.push({ item, price });
+				} else {
+					buying.push({ item, price });
+				}
+			});
+
+			// Reset unknownItemString
 			unknownItemString = '';
 		}
 
