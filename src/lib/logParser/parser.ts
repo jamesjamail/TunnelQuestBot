@@ -32,19 +32,17 @@ export class AuctionParser {
 
 	private preprocessMessage(msg: string): string {
 		// Replace 'WTT' with 'WTS'
-		let processedMsg = msg.replace(/\bWTT\b/g, 'WTS');
-		// Remove '/WTT' from messages
-		processedMsg = processedMsg.replace(/\/WTT\b/g, '');
-		// Omit the word 'asking'
-		processedMsg = processedMsg.replace(/\bASKING\b/gi, '');
-		// Omit the phrases 'OBO', 'Offers', 'Or Best Offer'
-		processedMsg = processedMsg.replace(/\bOBO\b/gi, '');
-		processedMsg = processedMsg.replace(/\bOFFERS\b/gi, '');
-		processedMsg = processedMsg.replace(/\bOR BEST OFFER\b/gi, '');
-		// Omit exclamation marks
-		processedMsg = processedMsg.replace(/!/g, '');
-		// Omit PST
-		return processedMsg.replace(/\bPST\b/gi, '').trim();
+		let processedMsg = msg.replace(/\bWTT\b/gi, 'WTS');
+
+		// Remove specific patterns and exclamation marks
+		processedMsg = processedMsg
+			.replace(
+				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|PST)\b|!/gi,
+				'',
+			)
+			.trim();
+
+		return processedMsg;
 	}
 
 	private wordIsAuctionType(word: string) {
