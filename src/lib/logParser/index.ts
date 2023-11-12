@@ -11,8 +11,8 @@ export async function startLoggingAllServers() {
 	const allWatchedItems = await getWatchesGroupedByServer();
 	state.watchedItems = allWatchedItems;
 
-	// Initialize log parsing
-	for (const server of Object.keys(allWatchedItems)) {
+	// Initialize log parsing for each server
+	for (const server of Object.keys(Server)) {
 		monitorLogFile(server as Server);
 	}
 

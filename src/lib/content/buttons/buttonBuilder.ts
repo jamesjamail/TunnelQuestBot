@@ -30,6 +30,7 @@ export enum ButtonInteractionTypes {
 	WatchNotificationWatchRefreshInactive,
 	UnlinkCharacterActive,
 	UnlinkCharacterInactive,
+	watchNotification,
 }
 
 type ButtonConfig = {
@@ -131,6 +132,17 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);
 				break;
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'watchBlock',
+			):
+				builder
+					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setLabel('🔕')
+					.setStyle(
+						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
+					);
+				break;
+
 			default:
 				throw new Error(
 					`No button type defined for: ${

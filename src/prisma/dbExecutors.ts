@@ -5,6 +5,7 @@ import {
 	Watch,
 	Prisma,
 	PlayerLink,
+	BlockedPlayerByWatch,
 } from '@prisma/client';
 import {
 	ChatInputCommandInteraction,
@@ -494,12 +495,12 @@ export async function snoozeWatchByItemName(
 }
 
 export async function getPlayerBlocks(
-	interaction: Interaction,
+	discordUserId: string,
 	filter: string = '',
 ) {
 	const blockedPlayers = await prisma.blockedPlayer.findMany({
 		where: {
-			discordUserId: interaction.user.id,
+			discordUserId,
 			active: true,
 		},
 	});
@@ -632,4 +633,40 @@ export async function getWatchesGroupedByServer() {
 	}
 
 	return groupedWatches;
+}
+
+export type WatchWithUserAndBlockedWatches = Watch & {
+	user: User;
+	blockedWatches: BlockedPlayerByWatch[];
+};
+
+export async function getWatchByWatchIdsForWatchNotification(
+	watchId: number,
+): Promise<WatchWithUserAndBlockedWatches> {
+	const data = await prisma.watch.findUnique({
+		where: {
+			id: watchId,
+		},
+		include: {
+			user: true, // Include related User data
+			blockedWatches: true, // Include related BlockedPlayerByWatch data
+		},
+	});
+
+	if (!data) {
+		throw new Error(`Error querying db for watch id ${watchId}`);
+	}
+
+	return data;
+}
+
+export async function updateWatchLastNotifiedTimestamp(watchId: number) {
+	return await prisma.watch.update({
+		where: {
+			id: watchId,
+		},
+		data: {
+			lastAlertedTimestamp: new Date(),
+		},
+	});
 }

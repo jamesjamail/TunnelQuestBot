@@ -13,6 +13,7 @@ export enum CommandTypes {
 	watches,
 	link,
 	unlink,
+	watchNotification,
 }
 
 const commandTypeButtonMappings: {
@@ -75,6 +76,24 @@ const commandTypeButtonMappings: {
 			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
 		},
 	],
+	[CommandTypes.watchNotification]: [
+		{
+			active: ButtonInteractionTypes.WatchSnoozeActive,
+			inactive: ButtonInteractionTypes.WatchSnoozeInactive,
+		},
+		{
+			active: ButtonInteractionTypes.UnwatchActive,
+			inactive: ButtonInteractionTypes.UnwatchInactive,
+		},
+		{
+			active: ButtonInteractionTypes.WatchBlockActive,
+			inactive: ButtonInteractionTypes.WatchBlockInactive,
+		},
+		{
+			active: ButtonInteractionTypes.WatchRefreshActive,
+			inactive: ButtonInteractionTypes.WatchRefreshInactive,
+		},
+	],
 };
 
 function getButtonType(
@@ -99,6 +118,8 @@ export function buttonRowBuilder(
 	const buttonTypes = mappings.map((mapping, index) =>
 		getButtonType(activeButtons[index], mapping),
 	);
+
+	console.log('buttonTypes = ', buttonTypes)
 
 	return buttonBuilder(buttonTypes.map((type) => ({ type })));
 }

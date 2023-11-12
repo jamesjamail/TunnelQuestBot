@@ -1,6 +1,8 @@
+/* eslint-disable prettier/prettier */
 import { Server } from '@prisma/client';
 import { redis } from '../../redis/init';
 import { AuctionData } from '../content/streams/streamAuction';
+import { HistoricalData } from '../content/messages/messageBuilder';
 
 // Helper function to generate a Redis key based on item name and server
 function generateRedisKey(itemName: string, server: Server) {
@@ -43,7 +45,7 @@ export async function fetchHistoricalPricingForItem(
 		historicalPrice = JSON.parse(historicalPrice);
 	}
 
-	return historicalPrice;
+	return historicalPrice as HistoricalData | null;
 }
 
 // Fetch historical pricing for multiple items from AuctionData
@@ -70,4 +72,16 @@ export async function fetchHistoricalPricingForItems(
 	}
 
 	return results;
+}
+
+export async function fetchHistoricalPricingForWatchNotification(
+	item: string,
+	server: Server,
+) {
+
+	return await fetchHistoricalPricingForItem(
+		item,
+		server,
+	);
+
 }

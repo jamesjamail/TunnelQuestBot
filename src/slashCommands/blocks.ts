@@ -22,7 +22,7 @@ const command: SlashCommand = {
 		const args = getInteractionArgs(interaction, [], ['filter']);
 
 		const data = await getPlayerBlocks(
-			interaction,
+			interaction.user.id,
 			args?.filter?.value as string,
 		);
 

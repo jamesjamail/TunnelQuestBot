@@ -7,6 +7,8 @@ import {
 	ItemType,
 	streamAuctionToAllStreamChannels,
 } from '../content/streams/streamAuction';
+import { state } from './state';
+import { triggerFoundWatchedItems } from '../helpers/watchNotification';
 
 export function isAuctionOfInterest(
 	text: string,
@@ -232,6 +234,7 @@ export function monitorLogFile(server: Server) {
 		flushAtEOF: true,
 		useWatchFile: true,
 	});
+	const watchedItemsForThisServer = state.watchedItems[server];
 
 	tail.on('line', async function (data) {
 		// filter for log lines that start with "soAndSo auctions,"
@@ -247,6 +250,7 @@ export function monitorLogFile(server: Server) {
 			const auctionData = parser.parseAuctionMessage(
 				auctionText.toUpperCase(),
 			);
+
 			// console.log('auctionData = ', auctionData);
 
 			await streamAuctionToAllStreamChannels(
@@ -255,6 +259,34 @@ export function monitorLogFile(server: Server) {
 				auctionText,
 				auctionData,
 			);
+
+			auctionData.selling.forEach(async (item) => {
+				if (watchedItemsForThisServer.WTS[item.item]) {
+					await triggerFoundWatchedItems(
+						watchedItemsForThisServer.WTS[item.item],
+						playerName,
+						item.price,
+						auctionText,
+					);
+				}
+			});
+
+			// Iterate over auctionData.buying array and check against watchedItems.WTB
+			auctionData.buying.forEach(async (item) => {
+				if (watchedItemsForThisServer.WTB[item.item]) {
+					// TODO: if any of the watchedItems for this server and auctionType are not
+					// known item names, check each auctionData to see if it includes the
+					// watchedItem.  For example "banded armor" isn't a known item and should
+					// trigger if an item "various banded armor pieces" is auctioned.  this involves
+					// refactoring state into known items and unknown items
+					await triggerFoundWatchedItems(
+						watchedItemsForThisServer.WTB[item.item],
+						playerName,
+						item.price,
+						auctionText,
+					);
+				}
+			});
 		} else if (linkMatch) {
 			const [, playerName, linkCode] = linkMatch;
 			// console.log(playerName, linkMatch);

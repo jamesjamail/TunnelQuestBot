@@ -18,7 +18,10 @@ import {
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
 import { getPlayerLink } from '../../../prisma/dbExecutors';
-import { fetchHistoricalPricingForItems } from '../../helpers/fetchHistoricalPricing';
+import {
+	fetchHistoricalPricingForItem,
+	fetchHistoricalPricingForItems,
+} from '../../helpers/fetchHistoricalPricing';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);
@@ -88,6 +91,92 @@ export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
 	return dataForWatches.map((watchData) => {
 		return watchCommandResponseBuilder(watchData);
 	});
+}
+
+export async function watchNotificationBuilder(
+	watchData: Watch,
+	player: string,
+	auctionedPrice: number | undefined,
+	auctionMessage: string,
+) {
+	const imgUrl = getImageUrlForItem(watchData.itemName);
+	const wikiUrl = getWikiUrlFromItem(watchData.itemName);
+
+	const historicalPricing = await fetchHistoricalPricingForItem(
+		watchData.itemName,
+		watchData.server,
+	);
+
+	console.log('historicalPricing = ', historicalPricing);
+
+	const fields = [];
+
+	if (watchData.notes) {
+		fields.push({
+			name: `Notes:`,
+			value: `\`\`${watchData.notes}\`\``,
+			inline: false,
+		});
+	}
+
+	if (historicalPricing) {
+		// Add fields for historical data
+		fields.push({
+			name: 'Historical Pricing (WTS)',
+			value:
+				`Last 30 Days Avg: ${historicalPricing.totalWTSLast30DaysAverage} (Count: ${historicalPricing.totalWTSLast30DaysCount})\n` +
+				`Last 60 Days Avg: ${historicalPricing.totalWTSLast60DaysAverage} (Count: ${historicalPricing.totalWTSLast60DaysCount})\n` +
+				`Last 90 Days Avg: ${historicalPricing.totalWTSLast90DaysAverage} (Count: ${historicalPricing.totalWTSLast90DaysCount})\n` +
+				`Last 6 Months Avg: ${historicalPricing.totalWTSLast6MonthsAverage} (Count: ${historicalPricing.totalWTSLast6MonthsCount})\n` +
+				`Last Year Avg: ${historicalPricing.totalWTSLastYearAverage} (Count: ${historicalPricing.totalWTSLastYearCount})`,
+			inline: true,
+		});
+
+		fields.push({
+			name: 'Historical Pricing (WTB)',
+			value:
+				`Last 30 Days Avg: ${historicalPricing.totalWTBLast30DaysAverage} (Count: ${historicalPricing.totalWTBLast30DaysCount})\n` +
+				`Last 60 Days Avg: ${historicalPricing.totalWTBLast60DaysAverage} (Count: ${historicalPricing.totalWTBLast60DaysCount})\n` +
+				`Last 90 Days Avg: ${historicalPricing.totalWTBLast90DaysAverage} (Count: ${historicalPricing.totalWTBLast90DaysCount})\n` +
+				`Last 6 Months Avg: ${historicalPricing.totalWTBLast6MonthsAverage} (Count: ${historicalPricing.totalWTBLast6MonthsCount})\n` +
+				`Last Year Avg: ${historicalPricing.totalWTBLastYearAverage} (Count: ${historicalPricing.totalWTBLastYearCount})`,
+			inline: true,
+		});
+	}
+
+	const authorProperties: EmbedAuthorOptions = {
+		name: watchData.itemName, //	itemName is intentionally left uppercase as a heading
+	};
+
+	if (imgUrl) {
+		authorProperties.iconURL = imgUrl;
+	}
+
+	if (wikiUrl) {
+		authorProperties.url = wikiUrl;
+	}
+
+	return new EmbedBuilder()
+		.setColor(getServerColorFromString(watchData.server))
+		.setAuthor(authorProperties)
+		.setTitle(
+			`Watch Notification - ${formatCapitalCase(watchData.itemName)}`,
+		)
+		.setDescription(
+			`\n\n\n**${player}** is currently selling **${
+				watchData.itemName
+			}** ${
+				watchData.priceRequirement
+					? 'for **' + auctionedPrice + '**'
+					: ''
+			} on **Project 1999 ${formatserverEnumToReadableString(
+				watchData.server,
+			)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`,
+		)
+		.addFields(fields)
+		.setFooter({
+			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ingore auctions by this player, click 🔕\nTo extend this watch, click ♻️',
+		});
 }
 
 export function playerlinkCommandResponseBuilder(linkData: PlayerLink) {
@@ -234,7 +323,7 @@ export function blockCommandResponseBuilder(block: BlockedPlayer) {
 		});
 }
 
-type HistoricalData = {
+export type HistoricalData = {
 	eQitemId: number;
 	itemName: string;
 	server: number;

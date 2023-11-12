@@ -91,7 +91,7 @@ export async function autocompleteItems(
 	if (focusedValue.length === 0) {
 		return await interaction.respond([
 			{
-				name: 'Start typing an item name for suggestions. You may enter a value that does not appear on the list if desired.',
+				name: 'Start typing an item name for suggestions.',
 				value: '',
 			},
 		]);
@@ -129,7 +129,7 @@ export async function autocompleteBlocks(
 	interaction: AutocompleteInteraction<CacheType>,
 ) {
 	const focusedValue = interaction.options.getFocused();
-	const blocks = await getPlayerBlocks(interaction);
+	const blocks = await getPlayerBlocks(interaction.user.id);
 	const blockNames = parseBlockedPlayersForAutoSuggest(blocks);
 	const filtered = blockNames.filter(
 		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
