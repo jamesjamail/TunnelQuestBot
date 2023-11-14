@@ -148,4 +148,12 @@ export namespace messageCopy {
 	export const soAndSoHasFailedToBeUnlinked = (link: PlayerLink) => {
 		return `No such character link (\`${link.player}\` on \`${link.server}\`) exists for your discord user.`;
 	};
+
+	export const youDontHaveAnyBlocks = (filter: string) => {
+		if (filter) {
+			return `You don't have any blocks that contain **${filter}**.`;
+		}
+
+		return `You don't have any blocks.  Add some with \`\`/block\`\``;
+	};
 }

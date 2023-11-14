@@ -1,4 +1,4 @@
-import { BlockedPlayer, WatchType } from '@prisma/client';
+import { BlockedPlayer, Watch, WatchType } from '@prisma/client';
 import {
 	WatchWithUserAndBlockedWatches,
 	getPlayerBlocks,
@@ -75,6 +75,12 @@ export function shouldUserByNotified(
 	return true;
 }
 
+export type WatchNotificationMetadata = Watch & {
+	player: string;
+	price: number | undefined;
+	auctionMessage: string;
+};
+
 export async function triggerFoundWatchedItem(
 	watchId: number,
 	player: string,
@@ -100,7 +106,12 @@ export async function triggerFoundWatchedItem(
 	});
 
 	// player is sourced from the function args, not the db
-	const metadata = { ...data, player };
+	const metadata = {
+		...data,
+		player,
+		price,
+		auctionMessage,
+	} as WatchNotificationMetadata;
 
 	await collectButtonInteractionAndReturnResponse(
 		message as unknown as InteractionResponse<boolean>,

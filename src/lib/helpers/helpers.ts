@@ -3,6 +3,8 @@ import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
 import { parseInput, prefixJSON } from './autocomplete';
 import { isPast } from 'date-fns';
+import { toTitleCase } from './titleCase';
+import { consolidatedItemsAndAliases } from '../content/gameData/consolidatedItems';
 
 type AllowedOptionValues = string | number | boolean;
 
@@ -119,7 +121,7 @@ export function parseWatchesForAutoSuggest(
 		}
 
 		return {
-			name: itemName,
+			name: toTitleCase(itemName),
 			// max length of value is 100, so only adding essential metadata
 			value: prefixJSON(JSON.stringify({ watch: { id: watch.id } })),
 		};
@@ -147,7 +149,7 @@ export function parseBlockedPlayersForAutoSuggest(
 		}
 
 		return {
-			name: playerName,
+			name: toTitleCase(playerName),
 			// max length of value is 100, so only adding essential metadata
 			value: prefixJSON(JSON.stringify({ blockedPlayer: { id: bp.id } })),
 		};
@@ -198,4 +200,8 @@ export function formatPriceNumberToReadableString(price: number | '-'): string {
 			return formattedPrice + 'pp';
 		}
 	}
+}
+
+export function isKnownItem(item: string) {
+	return !!consolidatedItemsAndAliases[item.toUpperCase()];
 }

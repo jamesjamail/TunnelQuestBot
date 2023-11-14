@@ -9,6 +9,10 @@ function generateRedisKey(itemName: string, server: Server) {
 	return `historical:${server}:${itemName}`;
 }
 
+export function generateAuctionLogKey(auctionText: string) {
+	return `auctionLog:${auctionText.toUpperCase()}`;
+}
+
 // TODO: confirm Prisma Server enum matches pig parse Sever enum
 function getServerIntForExternalApi(server: Server) {
 	return Server[server];

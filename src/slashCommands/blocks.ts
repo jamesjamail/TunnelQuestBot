@@ -20,11 +20,17 @@ const command: SlashCommand = {
 		// defer reply immediately as it may take a while to send blocks
 		await interaction.deferReply();
 		const args = getInteractionArgs(interaction, [], ['filter']);
-
 		const data = await getPlayerBlocks(
 			interaction.user.id,
 			args?.filter?.value as string,
 		);
+
+		// edge case if user has no blocks
+		if (data.length === 0) {
+			return await interaction.editReply(
+				messageCopy.youDontHaveAnyBlocks(args?.filter?.value as string),
+			);
+		}
 
 		let lastDmChannelId = '';
 

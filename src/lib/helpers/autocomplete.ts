@@ -63,7 +63,11 @@ export async function autocompleteWatches(
 ) {
 	const focusedValue = interaction.options.getFocused();
 	const watches = await getWatchesByDiscordUser(interaction.user);
-	const watchNames = parseWatchesForAutoSuggest(watches);
+	// 	add "all watches" as an autocomplete suggestion
+	const watchNames = [
+		{ name: 'All Watches', value: 'ALL WATCHES' },
+		...parseWatchesForAutoSuggest(watches),
+	];
 	const filtered = watchNames.filter(
 		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
 	);
@@ -76,10 +80,15 @@ export async function autocompleteSnoozedWatches(
 ) {
 	const focusedValue = interaction.options.getFocused();
 	const watches = await getSnoozedWatchesByDiscordUser(interaction.user);
-	const watchNames = parseWatchesForAutoSuggest(watches);
+	// 	add "all watches" as an autocomplete suggestion
+	const watchNames = [
+		{ name: 'All Watches', value: 'ALL WATCHES' },
+		...parseWatchesForAutoSuggest(watches),
+	];
 	const filtered = watchNames.filter(
 		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
 	);
+
 	await interaction.respond(filtered);
 }
 
@@ -91,7 +100,7 @@ export async function autocompleteItems(
 	if (focusedValue.length === 0) {
 		return await interaction.respond([
 			{
-				name: 'Start typing an item name for suggestions.',
+				name: 'start typing an item name for suggestions',
 				value: '',
 			},
 		]);

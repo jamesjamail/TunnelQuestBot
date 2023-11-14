@@ -3,7 +3,7 @@ import { ButtonInteraction } from 'discord.js';
 import { extendWatch } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
-import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
+import { MessageTypes, buttonRowBuilder } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/helpers';
 
 export default async function handleWatchRefreshInactive<T>(

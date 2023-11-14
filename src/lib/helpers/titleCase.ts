@@ -19,13 +19,12 @@ export function toTitleCase(input: string): string {
 	return input
 		.split(/[\s-]/) // Split by space and hyphen
 		.map((word, index) => {
+			const lowerCaseWord = word.toLowerCase();
 			// Always capitalize the first word or if it's not a preposition
-			if (index === 0 || !prepositions.includes(word.toLowerCase())) {
-				return (
-					word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-				);
+			if (index === 0 || !prepositions.includes(lowerCaseWord)) {
+				return word.charAt(0).toUpperCase() + lowerCaseWord.slice(1);
 			} else {
-				return word.toLowerCase();
+				return lowerCaseWord;
 			}
 		})
 		.join(' ') // First join with spaces

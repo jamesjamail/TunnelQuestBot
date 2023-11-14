@@ -29,8 +29,6 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleWatchSnoozeInactive,
 			[ButtonInteractionTypes.WatchSnoozeActive]:
 				handlers.handleWatchSnoozeActive,
-			[ButtonInteractionTypes.UnwatchActive]:
-				handlers.handleUnwatchActive,
 			[ButtonInteractionTypes.UnwatchInactive]:
 				handlers.handleUnwatchInactive,
 			[ButtonInteractionTypes.WatchRefreshInactive]:
@@ -51,14 +49,22 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleUserSnoozeActive,
 			[ButtonInteractionTypes.GlobalUnblockInactive]:
 				handlers.handleGlobalUnblockInactive,
-			[ButtonInteractionTypes.GlobalUnblockActive]:
-				handlers.handleGlobalUnblockActive,
 			[ButtonInteractionTypes.UnlinkCharacterInactive]:
 				handlers.handleUnlinkCharacterInactive,
 			[ButtonInteractionTypes.UnlinkCharacterActive]:
 				handlers.handleUnlinkCharacterActive,
 			[ButtonInteractionTypes.WatchBlockInactive]:
 				handlers.handleWatchBlockInactive,
+			[ButtonInteractionTypes.WatchNotificationSnoozeInactive]:
+				handlers.handleWatchNotificationSnoozeInactive,
+			[ButtonInteractionTypes.WatchNotificationSnoozeActive]:
+				handlers.handleWatchNotificationSnoozeActive,
+			[ButtonInteractionTypes.WatchNotificationUnwatchInactive]:
+				handlers.handleWatchNotificationUnwatchInactive,
+			[ButtonInteractionTypes.WatchNotificationWatchRefreshInactive]:
+				handlers.handleWatchNotificationRefreshInactive,
+			[ButtonInteractionTypes.WatchNotificationWatchRefreshActive]:
+				handlers.handleWatchNotificationRefreshInactive,
 			// TODO: add other mappings
 		};
 
@@ -68,6 +74,7 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 					interaction.customId as keyof typeof ButtonInteractionTypes
 				]
 			];
+
 		if (handler) {
 			await handler(interaction, metadata);
 		}

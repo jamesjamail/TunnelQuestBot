@@ -34,14 +34,32 @@ const command: SlashCommand = {
 		await autocompleteWatches(interaction);
 	},
 	execute: async (interaction) => {
-		// TODO: initially I had made watch optional as away to signify snooze all watches
-		// but i think it's more clear to auto suggest "all watches" and handle that condition accordingly
 		const args = getInteractionArgs(interaction, ['watch'], ['hours']);
 		const hours = args?.hours?.value;
-
+		const value = args.watch.value as string;
+		if (value.toUpperCase() === 'ALL WATCHES') {
+			const data = await snoozeAllWatches(interaction.user.id);
+			const user = await findOrCreateUser(interaction.user);
+			const embeds = listCommandResponseBuilder(data, user);
+			const components = buttonRowBuilder(MessageTypes.list, [
+				true,
+				false,
+			]);
+			const response = await interaction.reply({
+				content: messageCopy.allYourWatchesHaveBeenSnoozed(
+					hours as number,
+				),
+				embeds,
+				components,
+			});
+			return await collectButtonInteractionAndReturnResponse(
+				response,
+				data,
+			);
+		}
 		// check if watch option is user submitted or from an auto suggestion
 		if (args?.watch?.isAutoSuggestion) {
-			// if it's an auto suggestion, we know this user is snoozing a specific watch
+			// if it's an auto suggestion and not ALL WATCHES, we know this user is snoozing a specific watch
 			const watch = await snoozeWatch(
 				// TODO: we should probably create _redux types to make sure we have the expected data
 				args?.watch?.autoSuggestionMetaData?.watch as Watch,
@@ -98,17 +116,6 @@ const command: SlashCommand = {
 				});
 			}
 		}
-
-		//	if no watch option, user is activating global snooze
-		const data = await snoozeAllWatches(interaction.user.id);
-		const user = await findOrCreateUser(interaction.user);
-		const embeds = listCommandResponseBuilder(data, user);
-		const response = await interaction.reply({
-			content: messageCopy.allYourWatchesHaveBeenSnoozed(hours as number),
-			embeds,
-			components,
-		});
-		return await collectButtonInteractionAndReturnResponse(response, data);
 	},
 	cooldown: 10,
 };

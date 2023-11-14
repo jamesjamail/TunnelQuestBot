@@ -30,7 +30,6 @@ export enum ButtonInteractionTypes {
 	WatchNotificationWatchRefreshInactive,
 	UnlinkCharacterActive,
 	UnlinkCharacterInactive,
-	watchNotification,
 }
 
 type ButtonConfig = {
@@ -54,6 +53,9 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'UserSnooze',
 			):
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'WatchNotificationSnooze',
+			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
 					.setLabel('💤');
@@ -63,6 +65,9 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'GlobalUnblock',
+			):
+			case ButtonInteractionTypes[buttonConfig.type].startsWith(
+				'WatchNotificationUnwatch',
 			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
@@ -78,7 +83,7 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 				'GlobalRefresh',
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchUnblock',
+				'WatchNotificationWatchRefresh',
 			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])

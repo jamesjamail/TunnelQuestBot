@@ -128,24 +128,16 @@ export async function watchNotificationBuilder(
 				)} (Count: ${historicalPricing.totalWTSLast30DaysCount})\n` +
 				`Last 60 Days Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTSLast60DaysAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTSLast60DaysCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTSLast60DaysCount})\n` +
 				`Last 90 Days Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTSLast90DaysAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTSLast90DaysCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTSLast90DaysCount})\n` +
 				`Last 6 Months Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTSLast6MonthsAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTSLast6MonthsCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTSLast6MonthsCount})\n` +
 				`Last Year Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTSLastYearAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTSLastYearCount,
-				)})`,
+				)} (Count: ${historicalPricing.totalWTSLastYearCount})`,
 			inline: true,
 		});
 
@@ -154,29 +146,19 @@ export async function watchNotificationBuilder(
 			value:
 				`Last 30 Days Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTBLast30DaysAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTBLast30DaysCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTBLast30DaysCount})\n` +
 				`Last 60 Days Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTBLast60DaysAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTBLast60DaysCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTBLast60DaysCount})\n` +
 				`Last 90 Days Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTBLast90DaysAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTBLast90DaysCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTBLast90DaysCount})\n` +
 				`Last 6 Months Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTBLast6MonthsAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTBLast6MonthsCount,
-				)})\n` +
+				)} (Count: ${historicalPricing.totalWTBLast6MonthsCount})\n` +
 				`Last Year Avg: ${formatPriceNumberToReadableString(
 					historicalPricing.totalWTBLastYearAverage,
-				)} (Count: ${formatPriceNumberToReadableString(
-					historicalPricing.totalWTBLastYearCount,
-				)})`,
+				)} (Count: ${historicalPricing.totalWTBLastYearCount})`,
 			inline: true,
 		});
 	}
@@ -196,12 +178,16 @@ export async function watchNotificationBuilder(
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor(authorProperties)
-		.setTitle(`Watch Notification - ${toTitleCase(watchData.itemName)}`)
+		.setTitle(`Watch Notification: ${toTitleCase(watchData.itemName)}`)
 		.setDescription(
 			`\n\n\n**${player}** is currently selling **${toTitleCase(
 				watchData.itemName,
 			)}** ${
-				auctionedPrice ? 'for **' + auctionedPrice + '**' : ''
+				auctionedPrice
+					? 'for **' +
+					  formatPriceNumberToReadableString(auctionedPrice) +
+					  '**'
+					: ''
 			} on **Project 1999 ${formatserverEnumToReadableString(
 				watchData.server,
 			)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`,

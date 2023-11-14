@@ -9,6 +9,8 @@ import {
 } from '../content/streams/streamAuction';
 import { state } from './state';
 import { triggerFoundWatchedItems } from '../helpers/watchNotification';
+import { generateAuctionLogKey } from '../helpers/fetchHistoricalPricing';
+import { redis } from '../../redis/init';
 
 export function isAuctionOfInterest(
 	text: string,
@@ -246,12 +248,27 @@ export function monitorLogFile(server: Server) {
 		if (auctionMatch) {
 			// extract the timestamp, player, and auction message from the log line
 			const [, playerName, auctionText] = auctionMatch;
-			// console.log(playerName, auctionText);
-			const auctionData = parser.parseAuctionMessage(
-				auctionText.toUpperCase(),
-			);
+			const auctionLogKey = generateAuctionLogKey(auctionText);
+			const cachedAuctionData = await redis.get(auctionLogKey);
+			let auctionData;
 
-			// console.log('auctionData = ', auctionData);
+			if (!cachedAuctionData) {
+				// Parse the auction message if not in cache
+				auctionData = parser.parseAuctionMessage(
+					auctionText.toUpperCase(),
+				);
+				// Cache the parsed data
+				await redis.set(auctionLogKey, JSON.stringify(auctionData));
+			} else {
+				// Use the cached data
+				auctionData = JSON.parse(cachedAuctionData);
+			}
+
+			if (!auctionData) {
+				throw new Error(
+					'Could not retrieve auction data from redis or parse auction message',
+				);
+			}
 
 			await streamAuctionToAllStreamChannels(
 				playerName,
@@ -260,32 +277,57 @@ export function monitorLogFile(server: Server) {
 				auctionData,
 			);
 
-			auctionData.selling.forEach(async (item) => {
-				if (watchedItemsForThisServer.WTS[item.item]) {
+			auctionData.selling.forEach(async (item: ItemType) => {
+				// 	"known" items are exact matches and can be looked up by key
+				if (watchedItemsForThisServer.WTS.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
-						watchedItemsForThisServer.WTS[item.item],
+						watchedItemsForThisServer.WTS.knownItems[item.item],
 						playerName,
 						item.price,
 						auctionText,
 					);
 				}
+				// 	"unknown" items are not exact matches, check to see if each item
+				// 	being auctioned contains the unknown item to determine a match.
+				// 	for example, "banded armor" is an unknown item that should match "banded armor pieces"
+				watchedItemsForThisServer.WTS.unknownItems.forEach(
+					async (unknownItem) => {
+						if (item.item.includes(unknownItem.item)) {
+							await triggerFoundWatchedItems(
+								unknownItem.watchIds,
+								playerName,
+								item.price,
+								auctionText,
+							);
+						}
+					},
+				);
 			});
 
 			// Iterate over auctionData.buying array and check against watchedItems.WTB
-			auctionData.buying.forEach(async (item) => {
-				if (watchedItemsForThisServer.WTB[item.item]) {
-					// TODO: if any of the watchedItems for this server and auctionType are not
-					// known item names, check each auctionData to see if it includes the
-					// watchedItem.  For example "banded armor" isn't a known item and should
-					// trigger if an item "various banded armor pieces" is auctioned.  this involves
-					// refactoring state into known items and unknown items
+			auctionData.buying.forEach(async (item: ItemType) => {
+				if (watchedItemsForThisServer.WTB.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
-						watchedItemsForThisServer.WTB[item.item],
+						watchedItemsForThisServer.WTB.knownItems[item.item],
 						playerName,
 						item.price,
 						auctionText,
 					);
 				}
+
+				// check if auction contains any unknown items
+				watchedItemsForThisServer.WTB.unknownItems.forEach(
+					async (unknownItem) => {
+						if (item.item.includes(unknownItem.item)) {
+							await triggerFoundWatchedItems(
+								unknownItem.watchIds,
+								playerName,
+								item.price,
+								auctionText,
+							);
+						}
+					},
+				);
 			});
 		} else if (linkMatch) {
 			const [, playerName, linkCode] = linkMatch;

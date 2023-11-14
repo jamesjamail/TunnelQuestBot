@@ -17,6 +17,7 @@ import { attemptAndCreateUserIfNeeded } from './higherOrderFunctions';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
 import { prisma } from './init';
+import { isKnownItem } from '../lib/helpers/helpers';
 
 export async function createUser(discordUser: DiscordUser) {
 	return prisma.user.create({
@@ -506,7 +507,9 @@ export async function getPlayerBlocks(
 	});
 
 	if (filter) {
-		return blockedPlayers.filter((bp) => bp.player.includes(filter));
+		return blockedPlayers.filter((bp) =>
+			bp.player.includes(filter.toUpperCase()),
+		);
 	}
 
 	return blockedPlayers;
@@ -521,18 +524,18 @@ export async function addPlayerBlock(
 		where: {
 			discordUserId_server_player: {
 				discordUserId,
-				player,
+				player: player.toUpperCase(),
 				server,
 			},
 		},
 		update: {
 			discordUserId,
-			player,
+			player: player.toUpperCase(),
 			server,
 		},
 		create: {
 			discordUserId,
-			player,
+			player: player.toUpperCase(),
 			server,
 		},
 	});
@@ -547,7 +550,7 @@ export async function removePlayerBlock(
 		where: {
 			discordUserId_server_player: {
 				discordUserId,
-				player,
+				player: player.toUpperCase(),
 				server,
 			},
 		},
@@ -593,19 +596,19 @@ export async function removePlayerBlockById(id: number) {
 export async function addPlayerBlockByWatch(
 	discordUserId: string,
 	watchId: number,
-	seller: string,
+	player: string,
 ) {
 	return await prisma.blockedPlayerByWatch.upsert({
 		where: {
 			watchId_player: {
 				watchId: watchId,
-				player: seller,
+				player: player.toUpperCase(),
 			},
 		},
 		update: {}, // No op, using upsert to swallow any insert conflict errors
 		create: {
 			watchId: watchId,
-			player: seller,
+			player: player.toUpperCase(),
 			discordUserId,
 		},
 	});
@@ -613,13 +616,13 @@ export async function addPlayerBlockByWatch(
 
 export async function removePlayerBlockByWatch(
 	watchId: number,
-	seller: string,
+	player: string,
 ) {
 	return await prisma.blockedPlayerByWatch.delete({
 		where: {
 			watchId_player: {
 				watchId: watchId,
-				player: seller,
+				player: player.toUpperCase(),
 			},
 		},
 	});
@@ -634,7 +637,10 @@ export async function fetchActiveWatches() {
 }
 export type GroupedWatchesType = {
 	[K in Server]: {
-		[L in WatchType]: Record<string, number[]>;
+		[L in WatchType]: {
+			knownItems: Record<string, number[]>;
+			unknownItems: { item: string; watchIds: number[] }[];
+		};
 	};
 };
 
@@ -643,8 +649,8 @@ export const initializeGroupedWatches = (): GroupedWatchesType => {
 
 	for (const server of Object.values(Server)) {
 		obj[server] = {
-			WTB: {},
-			WTS: {},
+			WTB: { knownItems: {}, unknownItems: [] },
+			WTS: { knownItems: {}, unknownItems: [] },
 		};
 	}
 
@@ -660,11 +666,27 @@ export async function getWatchesGroupedByServer() {
 		const watchType = watch.watchType;
 		const itemName = watch.itemName;
 
-		if (!groupedWatches[server][watchType][itemName]) {
-			groupedWatches[server][watchType][itemName] = [];
+		if (isKnownItem(itemName)) {
+			if (!groupedWatches[server][watchType].knownItems[itemName]) {
+				groupedWatches[server][watchType].knownItems[itemName] = [];
+			}
+			groupedWatches[server][watchType].knownItems[itemName].push(
+				watch.id,
+			);
+		} else {
+			// Check if the item already exists in unknownItems
+			const existingUnknownItem = groupedWatches[server][
+				watchType
+			].unknownItems.find((ui) => ui.item === itemName);
+			if (existingUnknownItem) {
+				existingUnknownItem.watchIds.push(watch.id);
+			} else {
+				groupedWatches[server][watchType].unknownItems.push({
+					item: itemName,
+					watchIds: [watch.id],
+				});
+			}
 		}
-
-		groupedWatches[server][watchType][itemName].push(watch.id);
 	}
 
 	return groupedWatches;

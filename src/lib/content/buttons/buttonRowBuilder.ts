@@ -78,20 +78,21 @@ const commandTypeButtonMappings: {
 	],
 	[MessageTypes.watchNotification]: [
 		{
-			active: ButtonInteractionTypes.WatchSnoozeActive,
-			inactive: ButtonInteractionTypes.WatchSnoozeInactive,
+			active: ButtonInteractionTypes.WatchNotificationSnoozeActive,
+			inactive: ButtonInteractionTypes.WatchNotificationSnoozeInactive,
 		},
 		{
-			active: ButtonInteractionTypes.UnwatchActive,
-			inactive: ButtonInteractionTypes.UnwatchInactive,
+			active: ButtonInteractionTypes.WatchNotificationUnwatchActive,
+			inactive: ButtonInteractionTypes.WatchNotificationUnwatchInactive,
 		},
 		{
 			active: ButtonInteractionTypes.WatchBlockActive,
 			inactive: ButtonInteractionTypes.WatchBlockInactive,
 		},
 		{
-			active: ButtonInteractionTypes.WatchRefreshActive,
-			inactive: ButtonInteractionTypes.WatchRefreshInactive,
+			active: ButtonInteractionTypes.WatchNotificationWatchRefreshActive,
+			inactive:
+				ButtonInteractionTypes.WatchNotificationWatchRefreshInactive,
 		},
 	],
 };
