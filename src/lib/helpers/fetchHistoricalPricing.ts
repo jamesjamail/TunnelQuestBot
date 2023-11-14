@@ -35,7 +35,7 @@ export async function fetchHistoricalPricingForItem(
 
 		if (!res.ok) {
 			// eslint-disable-next-line no-console
-			console.error(res.status);
+			console.error(res.status, endpoint);
 			return null;
 		}
 
@@ -72,16 +72,4 @@ export async function fetchHistoricalPricingForItems(
 	}
 
 	return results;
-}
-
-export async function fetchHistoricalPricingForWatchNotification(
-	item: string,
-	server: Server,
-) {
-
-	return await fetchHistoricalPricingForItem(
-		item,
-		server,
-	);
-
 }

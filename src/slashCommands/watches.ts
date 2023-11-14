@@ -2,7 +2,7 @@ import { SlashCommand } from '../types';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { getWatchesByItemName } from '../prisma/dbExecutors';
@@ -31,7 +31,7 @@ const command: SlashCommand = {
 		await Promise.all(
 			data.map(async (watch) => {
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(CommandTypes.watch);
+				const components = buttonRowBuilder(MessageTypes.watch);
 
 				const message = await interaction.user.send({
 					embeds,

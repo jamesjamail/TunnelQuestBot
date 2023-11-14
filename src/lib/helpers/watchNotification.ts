@@ -2,14 +2,14 @@ import { BlockedPlayer, WatchType } from '@prisma/client';
 import {
 	WatchWithUserAndBlockedWatches,
 	getPlayerBlocks,
-	getWatchByWatchIdsForWatchNotification,
+	getWatchByWatchIdForWatchNotification,
 	updateWatchLastNotifiedTimestamp,
 } from '../../prisma/dbExecutors';
 import { isSnoozed, lastAlertedMoreThanFifteenMinutesAgo } from './helpers';
 import { watchNotificationBuilder } from '../content/messages/messageBuilder';
 import {
 	buttonRowBuilder,
-	CommandTypes,
+	MessageTypes,
 } from '../content/buttons/buttonRowBuilder';
 import { InteractionResponse } from 'discord.js';
 import { collectButtonInteractionAndReturnResponse } from '../content/buttons/buttonInteractionCollector';
@@ -51,7 +51,8 @@ export function shouldUserByNotified(
 			return false;
 		}
 	});
-	// if there is price criteria, sure it is met
+
+	// if there is price criteria, ensure it is met
 	if (watch.priceRequirement) {
 		// if price criteria set, a price must be parsed to trigger watch notification
 		if (!price) {
@@ -81,7 +82,7 @@ export async function triggerFoundWatchedItem(
 	auctionMessage: string,
 ) {
 	//  get the watch and user from the db, as well as blocks by user and watch
-	const data = await getWatchByWatchIdsForWatchNotification(watchId);
+	const data = await getWatchByWatchIdForWatchNotification(watchId);
 	const blocks = await getPlayerBlocks(data.user.discordUserId);
 
 	if (!shouldUserByNotified(data, blocks, player, price)) {
@@ -91,16 +92,19 @@ export async function triggerFoundWatchedItem(
 	const embeds = [
 		await watchNotificationBuilder(data, player, price, auctionMessage),
 	];
-	const components = buttonRowBuilder(CommandTypes.watchNotification);
+	const components = buttonRowBuilder(MessageTypes.watchNotification);
 
 	const message = await client.users.send(data.discordUserId, {
 		embeds,
 		components,
 	});
 
+	// player is sourced from the function args, not the db
+	const metadata = { ...data, player };
+
 	await collectButtonInteractionAndReturnResponse(
 		message as unknown as InteractionResponse<boolean>,
-		data,
+		metadata,
 	);
 
 	await updateWatchLastNotifiedTimestamp(watchId);

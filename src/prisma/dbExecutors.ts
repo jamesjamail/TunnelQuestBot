@@ -590,7 +590,42 @@ export async function removePlayerBlockById(id: number) {
 	});
 }
 
-async function fetchActiveWatches() {
+export async function addPlayerBlockByWatch(
+	discordUserId: string,
+	watchId: number,
+	seller: string,
+) {
+	return await prisma.blockedPlayerByWatch.upsert({
+		where: {
+			watchId_player: {
+				watchId: watchId,
+				player: seller,
+			},
+		},
+		update: {}, // No op, using upsert to swallow any insert conflict errors
+		create: {
+			watchId: watchId,
+			player: seller,
+			discordUserId,
+		},
+	});
+}
+
+export async function removePlayerBlockByWatch(
+	watchId: number,
+	seller: string,
+) {
+	return await prisma.blockedPlayerByWatch.delete({
+		where: {
+			watchId_player: {
+				watchId: watchId,
+				player: seller,
+			},
+		},
+	});
+}
+
+export async function fetchActiveWatches() {
 	return prisma.watch.findMany({
 		where: {
 			active: true,
@@ -640,7 +675,7 @@ export type WatchWithUserAndBlockedWatches = Watch & {
 	blockedWatches: BlockedPlayerByWatch[];
 };
 
-export async function getWatchByWatchIdsForWatchNotification(
+export async function getWatchByWatchIdForWatchNotification(
 	watchId: number,
 ): Promise<WatchWithUserAndBlockedWatches> {
 	const data = await prisma.watch.findUnique({
@@ -669,4 +704,22 @@ export async function updateWatchLastNotifiedTimestamp(watchId: number) {
 			lastAlertedTimestamp: new Date(),
 		},
 	});
+}
+
+export async function deleteWatchesOlderThanSeverDays() {
+	const sevenDaysAgo = new Date();
+	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+	const result = await prisma.watch.deleteMany({
+		where: {
+			created: {
+				lt: sevenDaysAgo,
+			},
+		},
+	});
+
+	if (result.count > 0) {
+		// eslint-disable-next-line no-console
+		console.info(`Deleted ${result.count} expired watches.`);
+	}
 }

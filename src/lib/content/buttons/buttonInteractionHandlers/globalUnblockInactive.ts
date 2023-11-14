@@ -3,7 +3,7 @@ import { ButtonInteraction } from 'discord.js';
 import { removePlayerBlockById } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { confirmButtonInteraction } from '../../../helpers/buttons';
-import { CommandTypes } from '../buttonRowBuilder';
+import { MessageTypes } from '../buttonRowBuilder';
 
 export default async function handleGlobalUnblockInactive<T>(
 	interaction: ButtonInteraction,
@@ -22,6 +22,6 @@ export default async function handleGlobalUnblockInactive<T>(
 			});
 		},
 		'Are you sure wish to unblock?',
-		CommandTypes.unblock,
+		MessageTypes.unblock,
 	);
 }

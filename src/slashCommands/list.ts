@@ -4,7 +4,7 @@ import { findOrCreateUser, getWatchesByUser } from '../prisma/dbExecutors';
 import { listCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { isSnoozed } from '../lib/helpers/helpers';
@@ -27,7 +27,7 @@ const command: SlashCommand = {
 
 		const embeds = listCommandResponseBuilder(watches, user);
 
-		const components = buttonRowBuilder(CommandTypes.list, [
+		const components = buttonRowBuilder(MessageTypes.list, [
 			globalSnoozeActive,
 			false,
 		]);

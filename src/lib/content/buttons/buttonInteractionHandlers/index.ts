@@ -10,6 +10,7 @@ import handleGlobalUnblockActive from './globalUnblockActive';
 import handleGlobalUnblockInactive from './globalUnblockInactive';
 import handleUnlinkCharacterActive from './unlinkCharacterActive';
 import handleUnlinkCharacterInactive from './unlinkCharacterInactive';
+import handleWatchBlockInactive from './watchBlockInactive';
 
 export {
 	handleWatchSnoozeInactive,
@@ -24,5 +25,6 @@ export {
 	handleGlobalUnblockActive,
 	handleUnlinkCharacterInactive,
 	handleUnlinkCharacterActive,
+	handleWatchBlockInactive,
 	// ... import other handlers
 };

@@ -7,7 +7,7 @@ import { BlockedPlayer } from '@prisma/client';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
-	CommandTypes,
+	MessageTypes,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { blockCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { getInteractionArgs } from '../lib/helpers/helpers';
@@ -34,7 +34,7 @@ const command: SlashCommand = {
 			const block = await removePlayerBlockById(metadata.id);
 
 			const embeds = [blockCommandResponseBuilder(block)];
-			const components = buttonRowBuilder(CommandTypes.block, [
+			const components = buttonRowBuilder(MessageTypes.block, [
 				false,
 				true,
 				false,
@@ -59,7 +59,7 @@ const command: SlashCommand = {
 			);
 
 			const embeds = [blockCommandResponseBuilder(block)];
-			const components = buttonRowBuilder(CommandTypes.watch, [
+			const components = buttonRowBuilder(MessageTypes.watch, [
 				false,
 				true,
 				false,

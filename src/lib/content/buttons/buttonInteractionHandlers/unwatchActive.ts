@@ -3,7 +3,7 @@ import { ButtonInteraction } from 'discord.js';
 import { setWatchActiveByWatchId } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
-import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/helpers';
 
 export default async function handleUnwatchActive<T>(
@@ -12,7 +12,7 @@ export default async function handleUnwatchActive<T>(
 ) {
 	const { id } = metadata as Watch;
 	const data = await setWatchActiveByWatchId(id);
-	const components = buttonRowBuilder(CommandTypes.watch, [
+	const components = buttonRowBuilder(MessageTypes.watch, [
 		isSnoozed(data.snoozedUntil),
 		false,
 		false,

@@ -6,7 +6,7 @@ import { Watch } from '@prisma/client';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
-	CommandTypes,
+	MessageTypes,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { messageCopy } from '../lib/content/copy/messageCopy';
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
@@ -32,7 +32,7 @@ const command: SlashCommand = {
 			);
 
 			const embeds = [watchCommandResponseBuilder(watch)];
-			const components = buttonRowBuilder(CommandTypes.watch);
+			const components = buttonRowBuilder(MessageTypes.watch);
 			const response = await interaction.reply({
 				content: messageCopy.yourWatchHasBeenSnoozed(),
 				embeds,
@@ -53,7 +53,7 @@ const command: SlashCommand = {
 			);
 
 			const embeds = [watchCommandResponseBuilder(watch)];
-			const components = buttonRowBuilder(CommandTypes.watch);
+			const components = buttonRowBuilder(MessageTypes.watch);
 			const response = await interaction.reply({
 				content: messageCopy.yourWatchHasBeenUnsoozed,
 				embeds,

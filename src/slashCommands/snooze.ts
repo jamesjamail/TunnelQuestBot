@@ -20,7 +20,7 @@ import { Watch } from '@prisma/client';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import { messageCopy } from '../lib/content/copy/messageCopy';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 
@@ -49,7 +49,7 @@ const command: SlashCommand = {
 			);
 
 			const embeds = [watchCommandResponseBuilder(watch)];
-			const components = buttonRowBuilder(CommandTypes.watch, [
+			const components = buttonRowBuilder(MessageTypes.watch, [
 				true,
 				false,
 				false,
@@ -69,7 +69,7 @@ const command: SlashCommand = {
 		const itemName = args?.watch?.value;
 
 		// components below are for list responses
-		const components = buttonRowBuilder(CommandTypes.list, [true, false]);
+		const components = buttonRowBuilder(MessageTypes.list, [true, false]);
 		// if it's not an auto suggestion, if there's a value for watch let's
 		// try to snooze the watch by name
 		if (itemName) {

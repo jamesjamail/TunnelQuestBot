@@ -54,9 +54,6 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'UserSnooze',
 			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationSnooze',
-			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
 					.setLabel('💤');
@@ -66,9 +63,6 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'GlobalUnblock',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationUnwatch',
 			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
@@ -82,12 +76,6 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'GlobalRefresh',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationWatchRefresh',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchBlock',
 			):
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
 				'WatchUnblock',
@@ -133,7 +121,7 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 					);
 				break;
 			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'watchBlock',
+				'WatchBlock',
 			):
 				builder
 					.setCustomId(ButtonInteractionTypes[buttonConfig.type])

@@ -4,7 +4,7 @@ import { getPlayerLinksForUser } from '../prisma/dbExecutors';
 import { playerlinkCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import {
 	buttonRowBuilder,
-	CommandTypes,
+	MessageTypes,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import { messageCopy } from '../lib/content/copy/messageCopy';
@@ -26,7 +26,7 @@ const command: SlashCommand = {
 				const embed = playerlinkCommandResponseBuilder(link);
 				if (embed != undefined) {
 					const embeds = [embed];
-					const components = buttonRowBuilder(CommandTypes.link);
+					const components = buttonRowBuilder(MessageTypes.link);
 
 					const message = await interaction.user.send({
 						embeds,

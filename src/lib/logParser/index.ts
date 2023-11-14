@@ -1,5 +1,6 @@
 import { monitorLogFile } from './parser';
 import {
+	deleteWatchesOlderThanSeverDays,
 	getWatchesGroupedByServer,
 	runPlayerLinkHousekeeping,
 } from '../../prisma/dbExecutors';
@@ -23,11 +24,18 @@ export async function startLoggingAllServers() {
 		events.emit('watchedItemsUpdated');
 	}, 60000);
 
+	// TODO: make a decision about including console statements here or in the dbExecutors themselves
+
+	// remove expired watches
+	setInterval(async () => {
+		deleteWatchesOlderThanSeverDays();
+	}, 60000);
+
 	setInterval(async () => {
 		const cleanedRecords = await runPlayerLinkHousekeeping();
 		if (cleanedRecords.count > 0) {
 			// eslint-disable-next-line no-console
-			console.log(
+			console.info(
 				`Deleted ${cleanedRecords.count} expired PlayerLink entries.`,
 			);
 		}

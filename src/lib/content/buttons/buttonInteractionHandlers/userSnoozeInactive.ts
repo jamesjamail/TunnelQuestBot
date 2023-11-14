@@ -2,7 +2,7 @@ import { ButtonInteraction } from 'discord.js';
 import { snoozeAllWatchesAndReturnWatchesAndUser } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
-import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 
 export default async function handleUserSnoozeInactive(
 	interaction: ButtonInteraction,
@@ -10,7 +10,7 @@ export default async function handleUserSnoozeInactive(
 	const { watches, user } = await snoozeAllWatchesAndReturnWatchesAndUser(
 		interaction.user.id,
 	);
-	const components = buttonRowBuilder(CommandTypes.list, [true, false]);
+	const components = buttonRowBuilder(MessageTypes.list, [true, false]);
 	const embeds = listCommandResponseBuilder(watches, user);
 	await interaction.update({
 		content: messageCopy.allYourWatchesHaveBeenSnoozed(),

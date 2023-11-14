@@ -57,6 +57,8 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleUnlinkCharacterInactive,
 			[ButtonInteractionTypes.UnlinkCharacterActive]:
 				handlers.handleUnlinkCharacterActive,
+			[ButtonInteractionTypes.WatchBlockInactive]:
+				handlers.handleWatchBlockInactive,
 			// TODO: add other mappings
 		};
 

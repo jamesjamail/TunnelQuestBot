@@ -1,4 +1,8 @@
-import { BlockedPlayer, PlayerLink } from '@prisma/client';
+import {
+	BlockedPlayer,
+	BlockedPlayerByWatch,
+	PlayerLink,
+} from '@prisma/client';
 import { formatServerFromEnum } from '../../helpers/helpers';
 
 const COMMAND_CHANNEL = process.env.command_channel;
@@ -125,6 +129,12 @@ export namespace messageCopy {
 		return `${block.player} has been unblocked on ${formatServerFromEnum(
 			block.server,
 		)}`;
+	};
+
+	export const soAndSoHasBeenBlockedForThisWatch = (
+		block: BlockedPlayerByWatch,
+	) => {
+		return `You will no longer receive Watch Notifications for auctions from ${block.player} for this watch.`;
 	};
 
 	export const soAndSoHasBeenLinked = (link: PlayerLink) => {

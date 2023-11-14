@@ -176,7 +176,11 @@ export function lastAlertedMoreThanFifteenMinutesAgo(timestamp: Date | null) {
 	return lastAlerted < fifteenMinutesAgo;
 }
 
-export function formatPriceNumberToReadableString(price: number): string {
+export function formatPriceNumberToReadableString(price: number | '-'): string {
+	if (price === '-') {
+		return price;
+	}
+
 	if (price < 1000) {
 		// Price is less than 1000
 		return price + 'pp';

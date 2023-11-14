@@ -11,7 +11,7 @@ import {
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { upsertWatchSafely } from '../prisma/dbExecutors';
@@ -44,7 +44,7 @@ const command: SlashCommand = {
 		});
 
 		const embeds = [watchCommandResponseBuilder(data)];
-		const components = buttonRowBuilder(CommandTypes.watch);
+		const components = buttonRowBuilder(MessageTypes.watch);
 
 		const response = await interaction.reply({
 			embeds,

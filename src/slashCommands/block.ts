@@ -10,7 +10,7 @@ import {
 import { blockCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { Server } from '@prisma/client';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 
@@ -34,7 +34,7 @@ const command: SlashCommand = {
 		);
 
 		const embeds = [blockCommandResponseBuilder(block)];
-		const components = buttonRowBuilder(CommandTypes.block);
+		const components = buttonRowBuilder(MessageTypes.block);
 
 		const response = await interaction.reply({
 			embeds,

@@ -2,7 +2,7 @@ import { ButtonInteraction } from 'discord.js';
 import { snoozeWatch } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
-import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { Watch } from '@prisma/client';
 
 export default async function handleWatchSnoozeInactive<T>(
@@ -10,7 +10,7 @@ export default async function handleWatchSnoozeInactive<T>(
 	metadata: T,
 ) {
 	const data = await snoozeWatch(metadata as Watch);
-	const components = buttonRowBuilder(CommandTypes.watch, [
+	const components = buttonRowBuilder(MessageTypes.watch, [
 		true,
 		false,
 		false,

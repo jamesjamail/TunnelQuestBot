@@ -1,6 +1,6 @@
 import { ButtonInteractionTypes, buttonBuilder } from './buttonBuilder';
 
-export enum CommandTypes {
+export enum MessageTypes {
 	block,
 	blocks,
 	help,
@@ -17,12 +17,12 @@ export enum CommandTypes {
 }
 
 const commandTypeButtonMappings: {
-	[key in CommandTypes]: {
+	[key in MessageTypes]: {
 		active: ButtonInteractionTypes;
 		inactive: ButtonInteractionTypes;
 	}[];
 } = {
-	[CommandTypes.watch]: [
+	[MessageTypes.watch]: [
 		{
 			active: ButtonInteractionTypes.WatchSnoozeActive,
 			inactive: ButtonInteractionTypes.WatchSnoozeInactive,
@@ -36,7 +36,7 @@ const commandTypeButtonMappings: {
 			inactive: ButtonInteractionTypes.WatchRefreshInactive,
 		},
 	],
-	[CommandTypes.list]: [
+	[MessageTypes.list]: [
 		{
 			active: ButtonInteractionTypes.UserSnoozeActive,
 			inactive: ButtonInteractionTypes.UserSnoozeInactive,
@@ -46,37 +46,37 @@ const commandTypeButtonMappings: {
 			inactive: ButtonInteractionTypes.GlobalRefreshInactive,
 		},
 	],
-	[CommandTypes.block]: [
+	[MessageTypes.block]: [
 		{
 			active: ButtonInteractionTypes.GlobalUnblockActive,
 			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
 		},
 	],
-	[CommandTypes.blocks]: [],
-	[CommandTypes.help]: [],
-	[CommandTypes.snooze]: [],
-	[CommandTypes.unblock]: [
+	[MessageTypes.blocks]: [],
+	[MessageTypes.help]: [],
+	[MessageTypes.snooze]: [],
+	[MessageTypes.unblock]: [
 		{
 			active: ButtonInteractionTypes.GlobalUnblockActive,
 			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
 		},
 	],
-	[CommandTypes.unsnooze]: [],
-	[CommandTypes.unwatch]: [],
-	[CommandTypes.watches]: [],
-	[CommandTypes.link]: [
+	[MessageTypes.unsnooze]: [],
+	[MessageTypes.unwatch]: [],
+	[MessageTypes.watches]: [],
+	[MessageTypes.link]: [
 		{
 			active: ButtonInteractionTypes.UnlinkCharacterActive,
 			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
 		},
 	],
-	[CommandTypes.unlink]: [
+	[MessageTypes.unlink]: [
 		{
 			active: ButtonInteractionTypes.UnlinkCharacterActive,
 			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
 		},
 	],
-	[CommandTypes.watchNotification]: [
+	[MessageTypes.watchNotification]: [
 		{
 			active: ButtonInteractionTypes.WatchSnoozeActive,
 			inactive: ButtonInteractionTypes.WatchSnoozeInactive,
@@ -107,7 +107,7 @@ function getButtonType(
 }
 
 export function buttonRowBuilder(
-	commandType: CommandTypes,
+	commandType: MessageTypes,
 	activeButtons = [false, false, false],
 ) {
 	const mappings = commandTypeButtonMappings[commandType];
@@ -118,8 +118,6 @@ export function buttonRowBuilder(
 	const buttonTypes = mappings.map((mapping, index) =>
 		getButtonType(activeButtons[index], mapping),
 	);
-
-	console.log('buttonTypes = ', buttonTypes)
 
 	return buttonBuilder(buttonTypes.map((type) => ({ type })));
 }

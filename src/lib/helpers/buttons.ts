@@ -5,6 +5,7 @@ import {
 	Interaction,
 	MentionableSelectMenuInteraction,
 	Message,
+	MessageComponentInteraction,
 	RoleSelectMenuInteraction,
 	StringSelectMenuInteraction,
 	UserSelectMenuInteraction,
@@ -14,7 +15,7 @@ import {
 	ButtonInteractionTypes,
 } from '../content/buttons/buttonBuilder';
 import {
-	CommandTypes,
+	MessageTypes,
 	buttonRowBuilder,
 } from '../content/buttons/buttonRowBuilder';
 
@@ -41,6 +42,15 @@ export async function deleteResponseIfNotModified(
 	}, duration);
 }
 
+export async function removeInteractionContentAfterDelay(
+	interaction: ButtonInteraction | MessageComponentInteraction,
+	delay: number = 5000,
+) {
+	setTimeout(async () => {
+		await interaction.deleteReply();
+	}, delay);
+}
+
 export async function confirmButtonInteraction(
 	interaction: Interaction,
 	confirmedAction: (
@@ -48,7 +58,7 @@ export async function confirmButtonInteraction(
 		interaction: ButtonInteraction,
 	) => Promise<void>,
 	confirmationMessage: string,
-	commandType: CommandTypes,
+	commandType: MessageTypes,
 ) {
 	const updatedComponents = buttonRowBuilder(commandType);
 	if (!interaction.isButton()) {
@@ -99,7 +109,8 @@ export async function confirmButtonInteraction(
 		if (!collected.isButton()) {
 			throw new Error('collected interaction is a button');
 		}
-		// linter rules doesn't like declarations in cases
+
+		// linter rule doesn't like declarations in cases
 		const potentialError = `Unknown customId: ${collected.customId}`;
 
 		switch (collected.customId) {

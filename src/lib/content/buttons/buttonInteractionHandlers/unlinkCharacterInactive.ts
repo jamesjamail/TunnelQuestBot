@@ -3,7 +3,7 @@ import { confirmButtonInteraction } from '../../../helpers/buttons';
 import { PlayerLink } from '@prisma/client';
 import { removePlayerLinkById } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
-import { buttonRowBuilder, CommandTypes } from '../buttonRowBuilder';
+import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
 
 export default async function handleUnlinkCharacterInactive<T>(
@@ -27,17 +27,17 @@ export default async function handleUnlinkCharacterInactive<T>(
 				await interaction.editReply({
 					content: messageCopy.soAndSoHasBeenUnlinked(link),
 					embeds: [new_embed],
-					components: buttonRowBuilder(CommandTypes.link, [true]),
+					components: buttonRowBuilder(MessageTypes.link, [true]),
 				});
 			} else {
 				await interaction.editReply({
 					content: messageCopy.soAndSoHasFailedToBeUnlinked(link),
 					embeds: [new_embed],
-					components: buttonRowBuilder(CommandTypes.link, [false]),
+					components: buttonRowBuilder(MessageTypes.link, [false]),
 				});
 			}
 		},
 		'Are you sure wish to unlink this character?',
-		CommandTypes.unlink,
+		MessageTypes.unlink,
 	);
 }

@@ -22,6 +22,7 @@ import {
 	fetchHistoricalPricingForItem,
 	fetchHistoricalPricingForItems,
 } from '../../helpers/fetchHistoricalPricing';
+import { toTitleCase } from '../../helpers/titleCase';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);
@@ -107,8 +108,6 @@ export async function watchNotificationBuilder(
 		watchData.server,
 	);
 
-	console.log('historicalPricing = ', historicalPricing);
-
 	const fields = [];
 
 	if (watchData.notes) {
@@ -124,22 +123,60 @@ export async function watchNotificationBuilder(
 		fields.push({
 			name: 'Historical Pricing (WTS)',
 			value:
-				`Last 30 Days Avg: ${historicalPricing.totalWTSLast30DaysAverage} (Count: ${historicalPricing.totalWTSLast30DaysCount})\n` +
-				`Last 60 Days Avg: ${historicalPricing.totalWTSLast60DaysAverage} (Count: ${historicalPricing.totalWTSLast60DaysCount})\n` +
-				`Last 90 Days Avg: ${historicalPricing.totalWTSLast90DaysAverage} (Count: ${historicalPricing.totalWTSLast90DaysCount})\n` +
-				`Last 6 Months Avg: ${historicalPricing.totalWTSLast6MonthsAverage} (Count: ${historicalPricing.totalWTSLast6MonthsCount})\n` +
-				`Last Year Avg: ${historicalPricing.totalWTSLastYearAverage} (Count: ${historicalPricing.totalWTSLastYearCount})`,
+				`Last 30 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast30DaysAverage,
+				)} (Count: ${historicalPricing.totalWTSLast30DaysCount})\n` +
+				`Last 60 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast60DaysAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast60DaysCount,
+				)})\n` +
+				`Last 90 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast90DaysAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast90DaysCount,
+				)})\n` +
+				`Last 6 Months Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast6MonthsAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLast6MonthsCount,
+				)})\n` +
+				`Last Year Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLastYearAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTSLastYearCount,
+				)})`,
 			inline: true,
 		});
 
 		fields.push({
 			name: 'Historical Pricing (WTB)',
 			value:
-				`Last 30 Days Avg: ${historicalPricing.totalWTBLast30DaysAverage} (Count: ${historicalPricing.totalWTBLast30DaysCount})\n` +
-				`Last 60 Days Avg: ${historicalPricing.totalWTBLast60DaysAverage} (Count: ${historicalPricing.totalWTBLast60DaysCount})\n` +
-				`Last 90 Days Avg: ${historicalPricing.totalWTBLast90DaysAverage} (Count: ${historicalPricing.totalWTBLast90DaysCount})\n` +
-				`Last 6 Months Avg: ${historicalPricing.totalWTBLast6MonthsAverage} (Count: ${historicalPricing.totalWTBLast6MonthsCount})\n` +
-				`Last Year Avg: ${historicalPricing.totalWTBLastYearAverage} (Count: ${historicalPricing.totalWTBLastYearCount})`,
+				`Last 30 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast30DaysAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast30DaysCount,
+				)})\n` +
+				`Last 60 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast60DaysAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast60DaysCount,
+				)})\n` +
+				`Last 90 Days Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast90DaysAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast90DaysCount,
+				)})\n` +
+				`Last 6 Months Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast6MonthsAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLast6MonthsCount,
+				)})\n` +
+				`Last Year Avg: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLastYearAverage,
+				)} (Count: ${formatPriceNumberToReadableString(
+					historicalPricing.totalWTBLastYearCount,
+				)})`,
 			inline: true,
 		});
 	}
@@ -159,16 +196,12 @@ export async function watchNotificationBuilder(
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor(authorProperties)
-		.setTitle(
-			`Watch Notification - ${formatCapitalCase(watchData.itemName)}`,
-		)
+		.setTitle(`Watch Notification - ${toTitleCase(watchData.itemName)}`)
 		.setDescription(
-			`\n\n\n**${player}** is currently selling **${
-				watchData.itemName
-			}** ${
-				watchData.priceRequirement
-					? 'for **' + auctionedPrice + '**'
-					: ''
+			`\n\n\n**${player}** is currently selling **${toTitleCase(
+				watchData.itemName,
+			)}** ${
+				auctionedPrice ? 'for **' + auctionedPrice + '**' : ''
 			} on **Project 1999 ${formatserverEnumToReadableString(
 				watchData.server,
 			)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`,
@@ -242,7 +275,7 @@ export function listCommandResponseBuilder(
 
 			const watchFields: EmbedField[] = [
 				{
-					name: `\`${snoozeEmoji}${formatCapitalCase(
+					name: `\`${snoozeEmoji}${toTitleCase(
 						watch.itemName,
 					)}\` | \`${price}\``,
 					value: `${formatWatchExpirationTimestamp(watch.created)}`,
@@ -381,7 +414,13 @@ export async function embeddedAuctionStreamMessageBuilder(
 		const count60 = historicalData[`total${prefix}Last60DaysCount`] || '0';
 		const count90 = historicalData[`total${prefix}Last90DaysCount`] || '0';
 
-		return `30 Day Avg: ${avg30} (of ${count30})\n 60 Day Avg: ${avg60} (of ${count60})\n 90 Day Avg: ${avg90} (of ${count90})`;
+		return `30 Day Avg: ${formatPriceNumberToReadableString(
+			avg30,
+		)} (of ${count30})\n 60 Day Avg: ${formatPriceNumberToReadableString(
+			avg60,
+		)} (of ${count60})\n 90 Day Avg: ${formatPriceNumberToReadableString(
+			avg90,
+		)} (of ${count90})`;
 	};
 
 	const generateItemFields = (
@@ -399,7 +438,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 				? formatHistoricalPricingInfo(historicalData, type)
 				: `Could not find wiki data for item ${item.item}`;
 			const valueField = formatHoverText(
-				formatCapitalCase(item.item),
+				toTitleCase(item.item),
 				wikiLink,
 				hoverText,
 			);

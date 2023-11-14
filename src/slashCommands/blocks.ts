@@ -3,7 +3,7 @@ import { SlashCommand } from '../types';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
-	CommandTypes,
+	MessageTypes,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { messageCopy } from '../lib/content/copy/messageCopy';
 import { blockCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
@@ -31,7 +31,7 @@ const command: SlashCommand = {
 		await Promise.all(
 			data.map(async (block) => {
 				const embeds = [blockCommandResponseBuilder(block)];
-				const components = buttonRowBuilder(CommandTypes.block);
+				const components = buttonRowBuilder(MessageTypes.block);
 
 				const message = await interaction.user.send({
 					embeds,
