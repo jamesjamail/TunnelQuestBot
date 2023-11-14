@@ -6,6 +6,7 @@ import { client } from '../..';
 import inGameItemNamesRaw from '../content/gameData/items.json';
 import { authPlayerLink } from '../../prisma/dbExecutors';
 import { messageCopy } from '../content/copy/messageCopy';
+import crypto from 'crypto';
 const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
 
 export type InGameItemNamesType = { [key: string]: string };
@@ -117,4 +118,13 @@ export async function handleLinkMatch(
 	} else {
 		// console.log("Link attempt failed.")
 	}
+}
+
+export function generateAuctionKey(auctionText: string) {
+	const hash = crypto
+		.createHash('sha256')
+		.update(auctionText.toUpperCase())
+		.digest('hex');
+	const prefix = 'auctionLog:';
+	return prefix + hash;
 }

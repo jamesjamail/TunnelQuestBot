@@ -1,6 +1,6 @@
 import { Server } from '@prisma/client';
 import { Tail } from 'tail';
-import { getLogFilePath, handleLinkMatch } from './helpers';
+import { generateAuctionKey, getLogFilePath, handleLinkMatch } from './helpers';
 import { Trie } from './trieSearch';
 import inGameItemsObject from '../content/gameData/items.json';
 import {
@@ -9,7 +9,6 @@ import {
 } from '../content/streams/streamAuction';
 import { state } from './state';
 import { triggerFoundWatchedItems } from '../helpers/watchNotification';
-import { generateAuctionLogKey } from '../helpers/fetchHistoricalPricing';
 import { redis } from '../../redis/init';
 
 export function isAuctionOfInterest(
@@ -248,7 +247,7 @@ export function monitorLogFile(server: Server) {
 		if (auctionMatch) {
 			// extract the timestamp, player, and auction message from the log line
 			const [, playerName, auctionText] = auctionMatch;
-			const auctionLogKey = generateAuctionLogKey(auctionText);
+			const auctionLogKey = generateAuctionKey(auctionText);
 			const cachedAuctionData = await redis.get(auctionLogKey);
 			let auctionData;
 
