@@ -6,12 +6,12 @@ on:
 
 jobs:
   # Build and push an image to GHCR
-  build-gh-no-push:
+  build-image-and-push:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build docker images using cache
-        uses: whoan/docker-build-with-cache-action@next
+        uses: whoan/docker-build-with-cache-action@master
         with:
           username: jamesjamail
           password: "${{ secrets.GITHUB_TOKEN }}"
