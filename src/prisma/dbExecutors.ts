@@ -12,12 +12,12 @@ import {
 	User as DiscordUser,
 	Interaction,
 } from 'discord.js';
-import { getExpirationTimestampForSnooze } from '../lib/helpers/datetime';
+import { getExpirationTimestampForSnooze } from '@helpers/datetime';
 import { attemptAndCreateUserIfNeeded } from './higherOrderFunctions';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
 import { prisma } from './init';
-import { isKnownItem } from '../lib/helpers/helpers';
+import { isKnownItem } from '@helpers/helpers';
 
 export async function createUser(discordUser: DiscordUser) {
 	return prisma.user.create({
