@@ -34,7 +34,6 @@
       depends_on:
         - postgres
         - redis
-      env_file: .env
       environment:
         SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${BLUE_LOG_FILE}"
         SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${GREEN_LOG_FILE}"
@@ -45,6 +44,9 @@
         - type: bind
           source: "/run/desktop/mnt/host/${LOG_SOURCE_PATH}"
           target: /logfiles
+        - type: bind
+          source: ".env"
+          target: /app/.env
         - "db-socket:${DB_SOCKET_DIR}"
         - "redis-socket:${REDIS_SOCKET_DIR}"
       restart: always
