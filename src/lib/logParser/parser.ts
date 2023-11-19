@@ -276,7 +276,7 @@ export function monitorLogFile(server: Server) {
 				auctionData,
 			);
 
-			auctionData.selling.forEach(async (item: ItemType) => {
+			for (const item of auctionData.selling) {
 				// 	"known" items are exact matches and can be looked up by key
 				if (watchedItemsForThisServer.WTS.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
@@ -289,22 +289,21 @@ export function monitorLogFile(server: Server) {
 				// 	"unknown" items are not exact matches, check to see if each item
 				// 	being auctioned contains the unknown item to determine a match.
 				// 	for example, "banded armor" is an unknown item that should match "banded armor pieces"
-				watchedItemsForThisServer.WTS.unknownItems.forEach(
-					async (unknownItem) => {
-						if (item.item.includes(unknownItem.item)) {
-							await triggerFoundWatchedItems(
-								unknownItem.watchIds,
-								playerName,
-								item.price,
-								auctionText,
-							);
-						}
-					},
-				);
-			});
+				for (const unknownItem of watchedItemsForThisServer.WTS
+					.unknownItems) {
+					if (item.item.includes(unknownItem.item)) {
+						await triggerFoundWatchedItems(
+							unknownItem.watchIds,
+							playerName,
+							item.price,
+							auctionText,
+						);
+					}
+				}
+			}
 
 			// Iterate over auctionData.buying array and check against watchedItems.WTB
-			auctionData.buying.forEach(async (item: ItemType) => {
+			for (const item of auctionData.buying) {
 				if (watchedItemsForThisServer.WTB.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
 						watchedItemsForThisServer.WTB.knownItems[item.item],
@@ -315,19 +314,18 @@ export function monitorLogFile(server: Server) {
 				}
 
 				// check if auction contains any unknown items
-				watchedItemsForThisServer.WTB.unknownItems.forEach(
-					async (unknownItem) => {
-						if (item.item.includes(unknownItem.item)) {
-							await triggerFoundWatchedItems(
-								unknownItem.watchIds,
-								playerName,
-								item.price,
-								auctionText,
-							);
-						}
-					},
-				);
-			});
+				for (const unknownItem of watchedItemsForThisServer.WTB
+					.unknownItems) {
+					if (item.item.includes(unknownItem.item)) {
+						await triggerFoundWatchedItems(
+							unknownItem.watchIds,
+							playerName,
+							item.price,
+							auctionText,
+						);
+					}
+				}
+			}
 		} else if (linkMatch) {
 			const [, playerName, linkCode] = linkMatch;
 			// console.log(playerName, linkMatch);
