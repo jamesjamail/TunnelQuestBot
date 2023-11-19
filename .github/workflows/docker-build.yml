@@ -1,0 +1,21 @@
+name: Image Build and Publish
+
+on:
+  push:
+    branches: [tsc_prisma_refactor]
+
+jobs:
+  # Build and push an image to GHCR
+  build-gh-no-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build docker images using cache
+        uses: whoan/docker-build-with-cache-action@next
+        with:
+          username: jamesjamail
+          password: "${{ secrets.GITHUB_TOKEN }}"
+          registry: ghcr.io
+          image_tag: latest
+          image_name: jamesjamail/tunnelquestbot/dev/tunnelquestbot
+          push_image_and_stages: on:push
