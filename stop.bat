@@ -1,0 +1,1 @@
+@start docker-compose.exe down
