@@ -27,7 +27,7 @@ services:
     restart: unless-stopped
 
   tunnelquestbot:
-    image: ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
+    image: ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
     container_name: tunnelquestbot
     depends_on:
       - postgres
