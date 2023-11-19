@@ -1,1 +1,1 @@
-@start docker-compose.exe down
+@start docker-compose.exe down --remove-orphans
