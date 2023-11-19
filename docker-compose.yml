@@ -34,6 +34,7 @@
       depends_on:
         - postgres
         - redis
+      env_file: .env
       environment:
         SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${BLUE_LOG_FILE}"
         SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${GREEN_LOG_FILE}"

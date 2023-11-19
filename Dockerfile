@@ -13,7 +13,7 @@ COPY package*.json /app/
 RUN npm install
 
 # Copy over necessary source/configs
-COPY .env tsconfig.json /app/
+COPY tsconfig.json /app/
 COPY src/ /app/src/
 
 # Generate the prisma interface
@@ -28,12 +28,12 @@ RUN npm prune --omit=dev
 ##########################
 ## Create runtime image ##
 ##########################
-FROM node:alpine
+FROM node:alpine AS RUNTIME_IMAGE
 
 # Set our working directory to /app
 WORKDIR /app
 
-COPY --from=BUILD_IMAGE /app/.env /app/package*.json /app/
+COPY --from=BUILD_IMAGE /app/package*.json /app/
 COPY --from=BUILD_IMAGE /app/node_modules /app/node_modules
 COPY --from=BUILD_IMAGE /app/build /app/build
 COPY --from=BUILD_IMAGE /app/src/prisma /app/src/prisma
