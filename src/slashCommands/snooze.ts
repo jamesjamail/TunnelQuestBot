@@ -5,7 +5,6 @@ import {
 	snoozeHoursOptions,
 } from '../lib/content/commandOptions/commandOptions';
 import { getInteractionArgs } from '../lib/helpers/helpers';
-import { autocompleteWatches } from '../lib/helpers/autocomplete';
 import {
 	findOrCreateUser,
 	snoozeAllWatches,
@@ -23,6 +22,7 @@ import {
 	MessageTypes,
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
+import { autocompleteWatches } from '../lib/autocomplete/autocompleteWatches';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()

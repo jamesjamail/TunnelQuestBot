@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types';
 import { messageCopy } from '../lib/content/copy/messageCopy';
 import { autoCompletePlayerNameOptions } from '../lib/content/commandOptions/commandOptions';
-import { autocompleteBlocks } from '../lib/helpers/autocomplete';
 import { BlockedPlayer } from '@prisma/client';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
@@ -15,6 +14,7 @@ import {
 	removePlayerBlockById,
 	removePlayerBlockWithoutServer,
 } from '../prisma/dbExecutors';
+import { autocompleteBlocks } from '../lib/autocomplete/autocompleteBlocks';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()

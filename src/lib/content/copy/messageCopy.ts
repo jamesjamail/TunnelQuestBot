@@ -156,4 +156,6 @@ export namespace messageCopy {
 
 		return `You don't have any blocks.  Add some with \`\`/block\`\``;
 	};
+
+	export const heresAListOfYourWatches = `Here's a list of your watches organized by server.`;
 }

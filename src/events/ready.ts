@@ -2,7 +2,7 @@
 import { Client } from 'discord.js';
 import { BotEvent } from '../types';
 import { color } from '../functions';
-import { startLoggingAllServers } from '../lib/logParser';
+import { startLoggingAllServers } from '../lib/parser';
 import { initializePrisma } from '../prisma/init';
 
 const event: BotEvent = {

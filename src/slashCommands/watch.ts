@@ -16,7 +16,7 @@ import {
 } from '../lib/content/buttons/buttonRowBuilder';
 import { upsertWatchSafely } from '../prisma/dbExecutors';
 import { getInteractionArgs } from '../lib/helpers/helpers';
-import { autocompleteItems } from '../lib/helpers/autocomplete';
+import { autocompleteItems } from '../lib/autocomplete/autocompleteItems';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()

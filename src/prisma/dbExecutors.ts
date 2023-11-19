@@ -158,7 +158,7 @@ export async function removePlayerLinkById(id: number) {
 }
 
 export async function runPlayerLinkHousekeeping() {
-	return prisma.playerLink.deleteMany({
+	const deletedPlayerLinks = await prisma.playerLink.deleteMany({
 		where: {
 			linkCodeExpiry: {
 				lt: new Date(),
@@ -166,6 +166,13 @@ export async function runPlayerLinkHousekeeping() {
 			},
 		},
 	});
+
+	if (deletedPlayerLinks.count > 0) {
+		// eslint-disable-next-line no-console
+		console.info(
+			`Deleted ${deletedPlayerLinks.count} expired PlayerLink entries.`,
+		);
+	}
 }
 
 export async function authPlayerLink(

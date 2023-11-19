@@ -1,4 +1,4 @@
-import { InGameItemNamesType } from '../../logParser/helpers';
+import { InGameItemNamesType } from '../../parser/playerLinks';
 import inGameItemNamesRaw from './items.json';
 import inGameSpellNamesRaw from './spells.json';
 import inGameAliasesRaw from './aliases.json';

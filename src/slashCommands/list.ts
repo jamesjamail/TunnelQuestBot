@@ -8,6 +8,7 @@ import {
 	buttonRowBuilder,
 } from '../lib/content/buttons/buttonRowBuilder';
 import { isSnoozed } from '../lib/helpers/helpers';
+import { messageCopy } from '../lib/content/copy/messageCopy';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -32,7 +33,7 @@ const command: SlashCommand = {
 			false,
 		]);
 		const response = await interaction.reply({
-			content: `Here's a list of your watches organized by server`,
+			content: messageCopy.heresAListOfYourWatches,
 			embeds,
 			components,
 		});

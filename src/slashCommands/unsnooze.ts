@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types';
 import { autoCompleteWatchOptionsForSnooze } from '../lib/content/commandOptions/commandOptions';
-import { autocompleteSnoozedWatches } from '../lib/helpers/autocomplete';
 import { Watch } from '@prisma/client';
 import { collectButtonInteractionAndReturnResponse } from '../lib/content/buttons/buttonInteractionCollector';
 import {
@@ -12,6 +11,7 @@ import { messageCopy } from '../lib/content/copy/messageCopy';
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
 import { getInteractionArgs } from '../lib/helpers/helpers';
 import { unsnoozeWatch, unsnoozeWatchByItemName } from '../prisma/dbExecutors';
+import { autocompleteSnoozedWatches } from '../lib/autocomplete/autocompleteSnoozedWatches';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()

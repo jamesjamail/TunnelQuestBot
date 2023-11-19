@@ -25,8 +25,6 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		const args = getInteractionArgs(interaction, ['player', 'server']);
 
-		// TODO: would be nice to eventually allow server to be optional, and block
-		//  player on all servers if omitted
 		const block = await addPlayerBlock(
 			interaction.user.id,
 			args.player.value as string, // TODO: why is this a number?

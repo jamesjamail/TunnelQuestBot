@@ -1,10 +1,10 @@
 import { BlockedPlayer, Prisma, Server, Watch } from '@prisma/client';
 import { CommandInteraction } from 'discord.js';
 import { ButtonInteractionTypes } from '../content/buttons/buttonBuilder';
-import { parseInput, prefixJSON } from './autocomplete';
 import { isPast } from 'date-fns';
 import { toTitleCase } from './titleCase';
 import { consolidatedItemsAndAliases } from '../content/gameData/consolidatedItems';
+import { parseInput, prefixJSON } from '../autocomplete/autocompleteHelpers';
 
 type AllowedOptionValues = string | number | boolean;
 

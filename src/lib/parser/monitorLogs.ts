@@ -1,0 +1,155 @@
+import { Server } from '@prisma/client';
+import { Tail } from 'tail';
+import { redis } from '../../redis/init';
+import { streamAuctionToAllStreamChannels } from '../content/streams/streamAuction';
+import { triggerFoundWatchedItems } from '../helpers/watchNotification';
+import { AuctionParser } from './parser';
+import { state } from './state';
+import path from 'path';
+import { handleLinkMatch } from './playerLinks';
+import crypto from 'crypto';
+
+export function getLogFilePath(server: Server): string {
+	let logFilePath: string | undefined;
+	if ((process.env.FAKE_LOGS || 'false').match(/^[tT]/)) {
+		logFilePath = path.join(__dirname, '..', 'fakeLogs', `${server}.log`);
+	} else {
+		const envVarName = `SERVERS_${server}_LOG_FILE_PATH`;
+		logFilePath = process.env[envVarName] as string;
+	}
+
+	if (!logFilePath) {
+		throw new Error(
+			`Log file path for server ${server} is not defined in environment variables`,
+		);
+	}
+
+	return logFilePath;
+}
+
+export function generateAuctionKey(auctionText: string) {
+	const hash = crypto
+		.createHash('sha256')
+		.update(auctionText.toUpperCase())
+		.digest('hex');
+	const prefix = 'auctionLog:';
+	return prefix + hash;
+}
+
+const parser = new AuctionParser();
+
+export function monitorLogFile(server: Server) {
+	const logFilePath = getLogFilePath(server);
+	// eslint-disable-next-line no-console
+	console.log(
+		'Starting log monitoring for server ' + server + ': ' + logFilePath,
+	);
+	const tail = new Tail(logFilePath, {
+		follow: true,
+		flushAtEOF: true,
+		useWatchFile: true,
+	});
+	const watchedItemsForThisServer = state.watchedItems[server];
+
+	tail.on('line', async function (data) {
+		// filter for log lines that start with "soAndSo auctions,"
+		const auctionMatch = data.match(/(\w+) auctions?, '(.+)'/);
+		const linkMatch = data.match(
+			/(\w+) says? out of character, 'Link me: ([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})'/,
+		);
+
+		if (auctionMatch) {
+			// extract the timestamp, player, and auction message from the log line
+			const [, playerName, auctionText] = auctionMatch;
+			const auctionLogKey = generateAuctionKey(auctionText);
+			const cachedAuctionData = await redis.get(auctionLogKey);
+			let auctionData;
+
+			if (!cachedAuctionData) {
+				// Parse the auction message if not in cache
+				auctionData = parser.parseAuctionMessage(
+					auctionText.toUpperCase(),
+				);
+				// Cache the parsed data
+				await redis.set(auctionLogKey, JSON.stringify(auctionData));
+			} else {
+				// Use the cached data
+				auctionData = JSON.parse(cachedAuctionData);
+			}
+
+			if (!auctionData) {
+				throw new Error(
+					'Could not retrieve auction data from redis or parse auction message',
+				);
+			}
+
+			await streamAuctionToAllStreamChannels(
+				playerName,
+				server,
+				auctionText,
+				auctionData,
+			);
+
+			for (const item of auctionData.selling) {
+				// 	"known" items are exact matches and can be looked up by key
+				if (watchedItemsForThisServer.WTS.knownItems[item.item]) {
+					await triggerFoundWatchedItems(
+						watchedItemsForThisServer.WTS.knownItems[item.item],
+						playerName,
+						item.price,
+						auctionText,
+					);
+				}
+				// 	"unknown" items are not exact matches, check to see if each item
+				// 	being auctioned contains the unknown item to determine a match.
+				// 	for example, "banded armor" is an unknown item that should match "banded armor pieces"
+				for (const unknownItem of watchedItemsForThisServer.WTS
+					.unknownItems) {
+					if (item.item.includes(unknownItem.item)) {
+						await triggerFoundWatchedItems(
+							unknownItem.watchIds,
+							playerName,
+							item.price,
+							auctionText,
+						);
+					}
+				}
+			}
+
+			// Iterate over auctionData.buying array and check against watchedItems.WTB
+			for (const item of auctionData.buying) {
+				if (watchedItemsForThisServer.WTB.knownItems[item.item]) {
+					await triggerFoundWatchedItems(
+						watchedItemsForThisServer.WTB.knownItems[item.item],
+						playerName,
+						item.price,
+						auctionText,
+					);
+				}
+
+				// check if auction contains any unknown items
+				for (const unknownItem of watchedItemsForThisServer.WTB
+					.unknownItems) {
+					if (item.item.includes(unknownItem.item)) {
+						await triggerFoundWatchedItems(
+							unknownItem.watchIds,
+							playerName,
+							item.price,
+							auctionText,
+						);
+					}
+				}
+			}
+		} else if (linkMatch) {
+			const [, playerName, linkCode] = linkMatch;
+			// console.log(playerName, linkMatch);
+
+			await handleLinkMatch(playerName, server, linkCode);
+		}
+	});
+
+	tail.on('error', function (error) {
+		// eslint-disable-next-line no-console
+		console.error('LOG PARSER ERROR: ', error);
+	});
+}

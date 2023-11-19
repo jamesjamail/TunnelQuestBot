@@ -11,7 +11,7 @@ import {
 } from '../lib/content/buttons/buttonRowBuilder';
 import { messageCopy } from '../lib/content/copy/messageCopy';
 import { watchCommandResponseBuilder } from '../lib/content/messages/messageBuilder';
-import { autocompleteWatches } from '../lib/helpers/autocomplete';
+import { autocompleteWatches } from '../lib/autocomplete/autocompleteWatches';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()

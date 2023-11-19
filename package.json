@@ -11,7 +11,7 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --write \"./**/*.ts\"",
     "dev": "concurrently \"npm run fakeLogs\" \"npm run start\"",
-    "fakeLogs": "node ./build/lib/tests/logFaker.js",
+    "fakeLogs": "node ./build/lib/parser/logFaker.js",
     "clean": "rd /s /q .\\build"
   },
   "husky": {
