@@ -2,10 +2,10 @@ import { Server } from '@prisma/client';
 import { itemTrie } from './trieSearch';
 import { state } from './state';
 import * as path from 'path';
-import { client } from '@src/index';
-import inGameItemNamesRaw from '@gameData/items.json';
-import { authPlayerLink } from '@src/prisma/dbExecutors';
-import { messageCopy } from '@src/lib/content/copy/messageCopy';
+import { client } from '../..';
+import inGameItemNamesRaw from '../content/gameData/items.json';
+import { authPlayerLink } from '../../prisma/dbExecutors';
+import { messageCopy } from '../content/copy/messageCopy';
 import crypto from 'crypto';
 const inGameItemNamesObject = inGameItemNamesRaw as InGameItemNamesType;
 

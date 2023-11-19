@@ -1,10 +1,10 @@
 import { Watch } from '@prisma/client';
 import { ButtonInteraction } from 'discord.js';
-import { extendWatch } from '@src/prisma/dbExecutors';
-import { messageCopy } from '@src/lib/content/copy/messageCopy';
-import { watchCommandResponseBuilder } from '@src/lib/content/messages/messageBuilder';
-import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
-import { isSnoozed } from '@helpers/helpers';
+import { extendWatch } from '../../../../prisma/dbExecutors';
+import { messageCopy } from '../../copy/messageCopy';
+import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
+import { MessageTypes, buttonRowBuilder } from '../buttonRowBuilder';
+import { isSnoozed } from '../../../helpers/helpers';
 
 export default async function handleWatchRefreshInactive<T>(
 	interaction: ButtonInteraction,

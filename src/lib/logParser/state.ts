@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import {
 	GroupedWatchesType,
 	initializeGroupedWatches,
-} from '@src/prisma/dbExecutors';
+} from '../../prisma/dbExecutors';
 
 export const state: { watchedItems: GroupedWatchesType } = {
 	watchedItems: initializeGroupedWatches(),

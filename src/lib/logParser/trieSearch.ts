@@ -1,4 +1,4 @@
-import inGameItemsObject from '@gameData/items.json';
+import inGameItemsObject from '../content/gameData/items.json';
 
 class TrieNode {
 	children: { [key: string]: TrieNode };

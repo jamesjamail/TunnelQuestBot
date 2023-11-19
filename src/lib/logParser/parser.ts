@@ -2,14 +2,14 @@ import { Server } from '@prisma/client';
 import { Tail } from 'tail';
 import { generateAuctionKey, getLogFilePath, handleLinkMatch } from './helpers';
 import { Trie } from './trieSearch';
-import inGameItemsObject from '@gameData/items.json';
+import inGameItemsObject from '../content/gameData/items.json';
 import {
 	ItemType,
 	streamAuctionToAllStreamChannels,
-} from '@src/lib/content/streams/streamAuction';
+} from '../content/streams/streamAuction';
 import { state } from './state';
-import { triggerFoundWatchedItems } from '@helpers/watchNotification';
-import { redis } from '@src/redis/init';
+import { triggerFoundWatchedItems } from '../helpers/watchNotification';
+import { redis } from '../../redis/init';
 
 export function isAuctionOfInterest(
 	text: string,

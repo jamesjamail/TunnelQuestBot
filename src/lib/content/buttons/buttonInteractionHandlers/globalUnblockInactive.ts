@@ -1,8 +1,8 @@
 import { BlockedPlayer } from '@prisma/client';
 import { ButtonInteraction } from 'discord.js';
-import { removePlayerBlockById } from '@src/prisma/dbExecutors';
-import { messageCopy } from '@src/lib/content/copy/messageCopy';
-import { confirmButtonInteraction } from '@helpers/buttons';
+import { removePlayerBlockById } from '../../../../prisma/dbExecutors';
+import { messageCopy } from '../../copy/messageCopy';
+import { confirmButtonInteraction } from '../../../helpers/buttons';
 import { MessageTypes } from '../buttonRowBuilder';
 
 export default async function handleGlobalUnblockInactive<T>(

@@ -1,5 +1,5 @@
 import { ChannelType } from 'discord.js';
-import { client } from '@src/index';
+import { client } from '../../..';
 import { Server } from '@prisma/client';
 import { embeddedAuctionStreamMessageBuilder } from '../messages/messageBuilder';
 

@@ -2,7 +2,7 @@ import { Server } from '@prisma/client';
 import * as fs from 'fs';
 import { config } from 'dotenv';
 import path from 'path';
-import inGameItemsObject from '@gameData/items.json';
+import inGameItemsObject from '../content/gameData/items.json';
 
 config();
 

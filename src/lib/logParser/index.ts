@@ -3,7 +3,7 @@ import {
 	deleteWatchesOlderThanSeverDays,
 	getWatchesGroupedByServer,
 	runPlayerLinkHousekeeping,
-} from '@src/prisma/dbExecutors';
+} from '../../prisma/dbExecutors';
 import { state, events } from './state';
 import { Server } from '@prisma/client';
 

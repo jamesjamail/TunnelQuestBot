@@ -1,4 +1,4 @@
-import { consolidatedItems } from '@gameData/consolidatedItems';
+import { consolidatedItems } from '../content/gameData/consolidatedItems';
 
 export function getImageUrlForItem(item: string) {
 	const slug = consolidatedItems[item?.toUpperCase()];
