@@ -1,0 +1,12 @@
+name: Promote Image Dev->Prod
+
+on: workflow_dispatch
+
+jobs:
+  promote-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull latest dev image
+        run: docker pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+      - name: Push image to prod
+        run: docker push ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
