@@ -24,7 +24,7 @@ export class AuctionParser {
 		// Remove specific patterns and exclamation marks
 		processedMsg = processedMsg
 			.replace(
-				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|PST)\b|!/gi,
+				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|TRADE|OR TRADE|PST|EACH|EA)\b|!/gi,
 				'',
 			)
 			.trim();
@@ -35,12 +35,19 @@ export class AuctionParser {
 	private wordIsAuctionType(word: string) {
 		const wtsAuctionTypes = ['WTS', 'SELLING'];
 		const wtbAuctionTypes = ['WTB', 'BUYING'];
-		if (wtsAuctionTypes.includes(word)) {
-			return AuctionTypes.WTS;
+
+		// Check if the word includes any of the WTS auction types
+		for (const auctionType of wtsAuctionTypes) {
+			if (word.includes(auctionType)) {
+				return AuctionTypes.WTS;
+			}
 		}
 
-		if (wtbAuctionTypes.includes(word)) {
-			return AuctionTypes.WTB;
+		// Check if the word includes any of the WTB auction types
+		for (const auctionType of wtbAuctionTypes) {
+			if (word.includes(auctionType)) {
+				return AuctionTypes.WTB;
+			}
 		}
 
 		return false;
@@ -191,7 +198,7 @@ export class AuctionParser {
 
 					addUnknownItemToResultsAndReset();
 					// Advance index past the matched item
-					index += matchInfo.endIndex + 1;
+					index = priceInfo.newIndex;
 				} else {
 					// No match found starting with this word
 					// add it to unkown item string
@@ -201,6 +208,8 @@ export class AuctionParser {
 				}
 			}
 		}
+
+		addUnknownItemToResultsAndReset();
 
 		return { buying, selling };
 	}

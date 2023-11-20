@@ -1,4 +1,4 @@
-import inGameItemsObject from '../gameData/items.json';
+import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
 
 class TrieNode {
 	children: { [key: string]: TrieNode };
@@ -73,6 +73,6 @@ export class Trie {
 
 export const itemTrie = new Trie();
 // populate the Trie with all in-game item names
-for (const itemName of Object.keys(inGameItemsObject)) {
+for (const itemName of Object.keys(consolidatedItemsAndAliases)) {
 	itemTrie.insert(itemName);
 }
