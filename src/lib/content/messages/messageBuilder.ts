@@ -9,20 +9,20 @@ import { EmbedField } from 'discord.js';
 import {
 	formatPriceNumberToReadableString,
 	isSnoozed,
-} from '../../helpers/helpers';
+} from '../../helpers/watches';
 import {
 	AuctionData,
 	ItemType,
 	getEnvironmentVariable,
-} from '../streams/streamAuction';
+} from '../../streams/streamAuction';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
-import { getPlayerLink } from '../../../prisma/dbExecutors';
 import {
 	fetchHistoricalPricingForItem,
 	fetchHistoricalPricingForItems,
 } from '../../helpers/fetchHistoricalPricing';
 import { toTitleCase } from '../../helpers/titleCase';
+import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	const imgUrl = getImageUrlForItem(watchData.itemName);

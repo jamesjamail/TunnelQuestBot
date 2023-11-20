@@ -1,9 +1,9 @@
 import { Watch } from '@prisma/client';
 import { ButtonInteraction } from 'discord.js';
-import { unwatch } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
-import { confirmButtonInteraction } from '../../../helpers/buttons';
 import { MessageTypes } from '../buttonRowBuilder';
+import { confirmButtonInteraction } from '../buttonHelpers';
+import { unwatch } from '../../../../prisma/dbExecutors/watch';
 
 export default async function handleWatchNotificationUnwatchInactive<T>(
 	interaction: ButtonInteraction,

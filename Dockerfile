@@ -37,7 +37,7 @@ COPY --from=BUILD_IMAGE /app/package*.json /app/
 COPY --from=BUILD_IMAGE /app/node_modules /app/node_modules
 COPY --from=BUILD_IMAGE /app/build /app/build
 COPY --from=BUILD_IMAGE /app/src/prisma /app/src/prisma
-COPY --from=BUILD_IMAGE /app/src/lib/content/gameData/*.json /app/src/lib/content/gameData/
+COPY --from=BUILD_IMAGE /app/src/lib/gameData/*.json /app/src/lib/gameData/
 
 # Use the FAKE_LOGS to decide whether to start in dev mode or start mode
 CMD if [[ "$FAKE_LOGS" =~ ^[tT] ]]; then npm run dev; else npm start; fi

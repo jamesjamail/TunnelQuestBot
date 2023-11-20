@@ -1,14 +1,12 @@
 import { ButtonInteraction } from 'discord.js';
-import {
-	WatchWithUserAndBlockedWatches,
-	addPlayerBlockByWatch,
-} from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
+import { MessageTypes } from '../buttonRowBuilder';
 import {
 	confirmButtonInteraction,
 	removeInteractionContentAfterDelay,
-} from '../../../helpers/buttons';
-import { MessageTypes } from '../buttonRowBuilder';
+} from '../buttonHelpers';
+import { addPlayerBlockByWatch } from '../../../../prisma/dbExecutors/block';
+import { WatchWithUserAndBlockedWatches } from '../../../../prisma/dbExecutors/watch';
 
 type WatchBlockInactiveMetadata = WatchWithUserAndBlockedWatches & {
 	player: string;

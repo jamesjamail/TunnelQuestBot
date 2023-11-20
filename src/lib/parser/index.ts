@@ -1,8 +1,8 @@
+import { runPlayerLinkHousekeeping } from '../../prisma/dbExecutors/playerLink';
 import {
-	deleteWatchesOlderThanSeverDays,
 	getWatchesGroupedByServer,
-	runPlayerLinkHousekeeping,
-} from '../../prisma/dbExecutors';
+	deleteWatchesOlderThanSeverDays,
+} from '../../prisma/dbExecutors/watch';
 import { monitorLogFile } from './monitorLogs';
 import { state, events } from './state';
 import { Server } from '@prisma/client';

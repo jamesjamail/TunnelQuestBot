@@ -1,11 +1,9 @@
 import { ButtonInteraction } from 'discord.js';
-import {
-	extendAllWatchesAndReturnWatches,
-	findOrCreateUser,
-} from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
+import { findOrCreateUser } from '../../../../prisma/dbExecutors/user';
+import { extendAllWatchesAndReturnWatches } from '../../../../prisma/dbExecutors/watch';
 
 export default async function handleUserSnoozeActive(
 	interaction: ButtonInteraction,

@@ -10,7 +10,7 @@ module.exports = (client: Client) => {
 	const slashCommands: SlashCommandBuilder[] = [];
 	// this template also contained a /commands folder for non-slashCommands, but it was removed as TQB
 	// exclusively uses slashCommands.  If regular commmands are ever needed, refer to template (see readme).
-	const slashCommandsDir = join(__dirname, '../slashCommands');
+	const slashCommandsDir = join(__dirname, '../lib/commands/slashCommands');
 
 	readdirSync(slashCommandsDir).forEach((file) => {
 		if (!file.endsWith('.js') || file.startsWith('_')) return;

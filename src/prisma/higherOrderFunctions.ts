@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Interaction } from 'discord.js';
-import { createUser } from './dbExecutors';
+import { createUser } from './dbExecutors/user';
 
 //  users table PK is discord user id. feels like a waste to look it up everytime
 //  when they only need to be created once.  let's assume they exist and catch the

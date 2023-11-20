@@ -1,12 +1,12 @@
 import { Server } from '@prisma/client';
 import { Tail } from 'tail';
 import { redis } from '../../redis/init';
-import { streamAuctionToAllStreamChannels } from '../content/streams/streamAuction';
-import { triggerFoundWatchedItems } from '../helpers/watchNotification';
+import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
+import { triggerFoundWatchedItems } from '../watchNotification/watchNotification';
 import { AuctionParser } from './parser';
 import { state } from './state';
 import path from 'path';
-import { handleLinkMatch } from './playerLinks';
+import { handleLinkMatch } from '../playerLink/playerLink';
 import crypto from 'crypto';
 
 export function getLogFilePath(server: Server): string {

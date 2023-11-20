@@ -1,9 +1,9 @@
 import { ButtonInteraction, EmbedBuilder } from 'discord.js';
 import { PlayerLink } from '@prisma/client';
-import { insertPlayerLinkFull } from '../../../../prisma/dbExecutors';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
 import { messageCopy } from '../../copy/messageCopy';
+import { insertPlayerLinkFull } from '../../../../prisma/dbExecutors/playerLink';
 
 export default async function handleUnlinkCharacterActive<T>(
 	interaction: ButtonInteraction,

@@ -1,8 +1,8 @@
 import { ButtonInteraction } from 'discord.js';
-import { extendAllWatchesAndReturnUserAndWatches } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
+import { extendAllWatchesAndReturnUserAndWatches } from '../../../../prisma/dbExecutors/watch';
 
 export default async function handleGlobalRefreshInactive(
 	interaction: ButtonInteraction,

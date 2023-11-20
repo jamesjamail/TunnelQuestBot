@@ -1,9 +1,9 @@
 import { ButtonInteraction } from 'discord.js';
-import { unsnoozeWatch } from '../../../../prisma/dbExecutors';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { Watch } from '@prisma/client';
+import { unsnoozeWatch } from '../../../../prisma/dbExecutors/watch';
 
 export default async function handleWatchSnoozeActive<T>(
 	interaction: ButtonInteraction,

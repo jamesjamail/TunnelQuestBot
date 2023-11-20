@@ -1,6 +1,6 @@
 import { Trie } from './trieSearch';
-import inGameItemsObject from '../content/gameData/items.json';
-import { ItemType } from '../content/streams/streamAuction';
+import inGameItemsObject from '../gameData/items.json';
+import { ItemType } from '../streams/streamAuction';
 
 enum AuctionTypes {
 	'WTS',

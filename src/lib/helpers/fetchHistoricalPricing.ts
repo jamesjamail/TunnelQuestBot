@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { Server } from '@prisma/client';
 import { redis } from '../../redis/init';
-import { AuctionData } from '../content/streams/streamAuction';
+import { AuctionData } from '../streams/streamAuction';
 import { HistoricalData } from '../content/messages/messageBuilder';
 
 // Helper function to generate a Redis key based on item name and server
