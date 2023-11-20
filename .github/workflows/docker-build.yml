@@ -17,5 +17,5 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
           image_tag: latest
-          image_name: jamesjamail/tunnelquestbot/dev/tunnelquestbot
+          image_name: ${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot
           push_image_and_stages: on:push
