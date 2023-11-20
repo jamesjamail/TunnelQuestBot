@@ -2,7 +2,7 @@ name: Image Build and Publish
 
 on:
   push:
-    branches: [tsc_prisma_refactor]
+    branches: [main]
 
 jobs:
   # Build and push an image to GHCR
