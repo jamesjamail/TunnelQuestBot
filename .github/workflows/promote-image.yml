@@ -6,6 +6,12 @@ jobs:
   promote-image:
     runs-on: ubuntu-latest
     steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull latest dev image
         run: docker pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
       - name: Re-tag image for prod

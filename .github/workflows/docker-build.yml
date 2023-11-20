@@ -13,8 +13,8 @@ jobs:
       - name: Build docker images using cache
         uses: whoan/docker-build-with-cache-action@master
         with:
-          username: jamesjamail
-          password: "${{ secrets.GITHUB_TOKEN }}"
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
           image_tag: latest
           image_name: jamesjamail/tunnelquestbot/dev/tunnelquestbot
