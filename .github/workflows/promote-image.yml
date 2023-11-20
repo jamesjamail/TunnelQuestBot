@@ -8,5 +8,7 @@ jobs:
     steps:
       - name: Pull latest dev image
         run: docker pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+      - name: Re-tag image for prod
+        run: docker tag ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
       - name: Push image to prod
         run: docker push ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
