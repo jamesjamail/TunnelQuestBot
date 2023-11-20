@@ -422,7 +422,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 			const wikiLink = getWikiUrlFromItem(item.item) || '';
 			const hoverText = historicalData
 				? formatHistoricalPricingInfo(historicalData, type)
-				: `Could not find wiki data for item ${item.item}`;
+				: `Could not find historical pricing for item ${item.item}`;
 			const valueField = formatHoverText(
 				toTitleCase(item.item),
 				wikiLink,

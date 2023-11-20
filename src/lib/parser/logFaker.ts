@@ -2,13 +2,13 @@ import { Server } from '@prisma/client';
 import * as fs from 'fs';
 import { config } from 'dotenv';
 import path from 'path';
-import inGameItemsObject from '../gameData/items.json';
+import { consolidatedItems } from '../gameData/consolidatedItems';
 
 config();
 
 const players = ['Adam', 'Bob', 'Carl'];
 const actions = ['WTB', 'WTS'];
-const items = Object.keys(inGameItemsObject).map((item) => item.toLowerCase());
+const items = Object.keys(consolidatedItems).map((item) => item.toLowerCase());
 const delimiters = [',', '/', '\\', '-', '|', ' '];
 
 function getRandomElement(arr: string[]) {
