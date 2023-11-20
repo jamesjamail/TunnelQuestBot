@@ -19,15 +19,28 @@ function fixApostrophes(items: InGameItemNamesType) {
 	return { ...items, ...duped_items };
 }
 
-export const consolidatedItemsAndAliases: InGameItemNamesType = {
+function addSpellPrefix(spells: InGameItemNamesType) {
+	const spell_items: InGameItemNamesType = {};
+	for (const spell of Object.entries(spells)) {
+		spell_items[`SPELL: ${spell[0]}`] = spell[1];
+	}
+	return spell_items;
+}
+
+export const spells: InGameItemNamesType = {
+	...fixApostrophes(addSpellPrefix(inGameSpellNamesRaw)),
+};
+
+export const items: InGameItemNamesType = {
 	...fixApostrophes(inGameItemNamesRaw),
-	...fixApostrophes(inGameSpellNamesRaw),
-	...inGameAliasesRaw,
 };
 
 export const consolidatedItems: InGameItemNamesType = {
-	...fixApostrophes(inGameItemNamesRaw),
-	...fixApostrophes(inGameSpellNamesRaw),
+	...items,
+	...spells,
 };
 
-export const consolidatedItemsList = Object.keys(consolidatedItems);
+export const consolidatedItemsAndAliases: InGameItemNamesType = {
+	...consolidatedItems,
+	...inGameAliasesRaw,
+};
