@@ -35,9 +35,9 @@
         - postgres
         - redis
       environment:
-        SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${BLUE_LOG_FILE}"
-        SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${GREEN_LOG_FILE}"
-        SERVERS_RED_LOG_FILE_PATH: "/logfiles/${RED_LOG_FILE}"
+        SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${SERVERS_BLUE_LOG_FILE}"
+        SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${SERVERS_GREEN_LOG_FILE}"
+        SERVERS_RED_LOG_FILE_PATH: "/logfiles/${SERVERS_RED_LOG_FILE}"
         REDIS_SOCKET_DIR: "${REDIS_SOCKET_DIR}"
         FAKE_LOGS: "${FAKE_LOGS:-false}"
       volumes:
