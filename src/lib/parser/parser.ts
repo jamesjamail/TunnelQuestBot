@@ -131,9 +131,9 @@ export class AuctionParser {
 		const wtb_match = preprocessedMessage.match(/WTB/);
 		const wts_match = preprocessedMessage.match(/WTS/);
 		if (wtb_match && wts_match) {
-			// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- linter is wrong here
-			// @ts-ignore -- if both ANDs pass, then both are defined
-			if (wtb_match.index < wts_match.index) {
+			// Typescript barks wtb_match and wts_match might be undefined, even though
+			// they are tested above.  ! is used to assert non-nullness
+			if (wtb_match.index! < wts_match.index!) {
 				currentAuctionType = AuctionTypes.WTB;
 			}
 		} else if (wtb_match) {
