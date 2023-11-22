@@ -79,16 +79,16 @@ export class AuctionParser {
 
 		const preprocessedMessage = this.preprocessMessage(message);
 		const results = this.aho.search(preprocessedMessage);
-		const match_ranges: { start: number; end: number }[] = [];
+		const matchRanges: { start: number; end: number }[] = [];
 		for (const i in results) {
 			const item = results[i];
-			match_ranges.push({
+			matchRanges.push({
 				start: item[0] - item[1][0].length + 1,
 				end: item[0] + 1,
 			});
 		}
 		// Getting the composed set of ranges solves the "substring" (overlap) problem
-		const composed_ranges = this.composeRanges(match_ranges);
+		const composedRanges = this.composeRanges(matchRanges);
 
 		// Pull together a list of matches with their corresponding "segments"
 		// A "segment" is all text from the start of the match to just before the
@@ -98,45 +98,42 @@ export class AuctionParser {
 			segment: string;
 			price: number | undefined;
 		}[] = [];
-		let last_range = { start: 0, end: 0 };
-		for (const range of composed_ranges) {
-			if (last_range.end === 0) {
-				last_range = range;
+		let lastRange = { start: 0, end: 0 };
+		for (const range of composedRanges) {
+			if (lastRange.end === 0) {
+				lastRange = range;
 				continue;
 			}
 			matches.push({
 				item: preprocessedMessage.substring(
-					last_range.start,
-					last_range.end,
+					lastRange.start,
+					lastRange.end,
 				),
 				segment: preprocessedMessage.substring(
-					last_range.start,
+					lastRange.start,
 					range.start,
 				),
 				price: undefined,
 			});
-			last_range = range;
+			lastRange = range;
 		}
 		matches.push({
-			item: preprocessedMessage.substring(
-				last_range.start,
-				last_range.end,
-			),
-			segment: preprocessedMessage.substring(last_range.start),
+			item: preprocessedMessage.substring(lastRange.start, lastRange.end),
+			segment: preprocessedMessage.substring(lastRange.start),
 			price: undefined,
 		});
 
 		// Default to WTS or whichever is earlier in the message
 		let currentAuctionType = AuctionTypes.WTS;
-		const wtb_match = preprocessedMessage.match(/WTB/);
-		const wts_match = preprocessedMessage.match(/WTS/);
-		if (wtb_match && wts_match) {
-			// Typescript barks wtb_match and wts_match might be undefined, even though
+		const wtbMatch = preprocessedMessage.match(/WTB/);
+		const wtsMatch = preprocessedMessage.match(/WTS/);
+		if (wtbMatch && wtsMatch) {
+			// Typescript barks wtbMatch and wtsMatch might be undefined, even though
 			// they are tested above.  ! is used to assert non-nullness
-			if (wtb_match.index! < wts_match.index!) {
+			if (wtbMatch.index! < wtsMatch.index!) {
 				currentAuctionType = AuctionTypes.WTB;
 			}
-		} else if (wtb_match) {
+		} else if (wtbMatch) {
 			currentAuctionType = AuctionTypes.WTB;
 		}
 
@@ -149,32 +146,29 @@ export class AuctionParser {
 			}
 
 			// Figure out price
-			const price_match = Array.from(
+			const priceMatch = Array.from(
 				segment.segment.matchAll(
 					/(?<price>[0-9]+(\.[0-9]+)?)(?<kpp>k?p{0,2})/gi,
 				),
 			);
-			if (price_match.length > 0) {
-				const single_price_match = price_match[price_match.length - 1];
-				let price: number = +single_price_match[1];
-				if (
-					single_price_match[3] &&
-					single_price_match[3].match(/k/i)
-				) {
+			if (priceMatch.length > 0) {
+				const singlePriceMatch = priceMatch[priceMatch.length - 1];
+				let price: number = +singlePriceMatch[1];
+				if (singlePriceMatch[3] && singlePriceMatch[3].match(/k/i)) {
 					price *= 1000;
 				}
 				segment.price = price;
 			}
 
 			// Put it in the right bucket
-			const the_item: ItemType = {
+			const theItem: ItemType = {
 				item: segment.item,
 				price: segment.price,
 			};
 			if (currentAuctionType == AuctionTypes.WTS) {
-				selling.push(the_item);
+				selling.push(theItem);
 			} else {
-				buying.push(the_item);
+				buying.push(theItem);
 			}
 		}
 
