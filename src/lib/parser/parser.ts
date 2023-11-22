@@ -5,7 +5,7 @@ import { ItemType } from '../streams/streamAuction';
 // eslint-disable-next-line @typescript-eslint/no-var-requires -- Need JS lib
 const AhoCorasick = require('ahocorasick');
 
-enum AuctionTypes {
+export enum AuctionTypes {
 	'WTS',
 	'WTB',
 }
@@ -173,5 +173,45 @@ export class AuctionParser {
 		}
 
 		return { buying, selling };
+	}
+}
+
+export function auctionIncludesUnknownItem(
+	auctionText: string,
+	item: string,
+	watchType: AuctionTypes,
+) {
+	// Regular expressions for auction types
+	const sellingRegex = /\b(WTS|SELLING)\b/i;
+	const buyingRegex = /\b(WTB|BUYING)\b/i;
+
+	const uppercaseAuctionText = auctionText.toUpperCase();
+
+	// Find the index of the item in the auction text
+	const itemIndex = uppercaseAuctionText.indexOf(item.toUpperCase());
+
+	// If the item is not found, return false
+	if (itemIndex === -1) return false;
+
+	// Extract the text before the item
+	const textBeforeItem = uppercaseAuctionText.substring(0, itemIndex);
+
+	// Find the last occurrence of any auction type
+	const lastSellingIndex = textBeforeItem.search(sellingRegex);
+	const lastBuyingIndex = textBeforeItem.search(buyingRegex);
+
+	// Determine the latest auction type declaration before the item
+	const lastAuctionTypeIndex = Math.max(lastSellingIndex, lastBuyingIndex);
+
+	// If no auction type declaration is found, assume selling
+	if (lastAuctionTypeIndex === -1 && watchType === AuctionTypes.WTS) {
+		return true;
+	}
+
+	// Check if the last auction type matches the type we are watching for
+	if (watchType === AuctionTypes.WTS) {
+		return lastSellingIndex >= lastBuyingIndex;
+	} else {
+		return lastBuyingIndex >= lastSellingIndex;
 	}
 }

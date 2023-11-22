@@ -29,8 +29,8 @@ export function getInteractionArgs<
 	// Collect values for both mandatory and optional arguments
 	for (const arg of allArgs) {
 		const option = interaction.options.get(arg as string);
-
-		if (option?.value) {
+		// be explicit in order to allow 0 value
+		if (option?.value !== null && option?.value !== undefined) {
 			const parsed = parseInput(option.value as string);
 
 			// Assigning the parsed value with the desired structure

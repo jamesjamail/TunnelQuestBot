@@ -25,18 +25,39 @@ import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
+	// Helper function to generate the field value based on conditions
+	function generateFieldValue(watchData: Watch, isKnownItem: boolean) {
+		if (watchData.priceRequirement && isKnownItem) {
+			const formattedPrice = formatPriceNumberToReadableString(
+				watchData?.priceRequirement,
+			);
+			if (watchData.watchType === 'WTS') {
+				return `This watch will trigger for all ${watchData.watchType} auctions with a price less than or equal to ${formattedPrice}.`;
+			} else if (watchData.watchType === 'WTB') {
+				return `This watch will trigger for all ${watchData.watchType} auctions with a price equal to or greater than ${formattedPrice}.`;
+			}
+		} else if (watchData.priceRequirement && !isKnownItem) {
+			return `This watch will trigger for all ${watchData.watchType} auctions. Due to unreliable price parsing for custom items, your price requirement will not be considered when filtering auctions.`;
+		}
+		return `This watch will trigger for all ${watchData.watchType} auctions`;
+	}
+
 	const imgUrl = getImageUrlForItem(watchData.itemName);
 	const wikiUrl = getWikiUrlFromItem(watchData.itemName);
 
-	const price = watchData.priceRequirement ?? 'No Price Criteria';
+	const price = watchData?.priceRequirement
+		? `Price Criteria: ${formatPriceNumberToReadableString(
+				watchData?.priceRequirement,
+		  )}`
+		: 'No Price Criteria';
 	const formattedExpirationTimestamp = formatWatchExpirationTimestamp(
 		watchData.created,
 	);
+
 	const fields = [
 		{
 			name: `${price}`,
-			// TODO: make this conditional based on watchType
-			value: `This watch will trigger for all ${watchData.watchType} auctions`,
+			value: generateFieldValue(watchData, !!wikiUrl), //	existence of wikiUrl is effectively the same as a true result from isKnownItem()
 			inline: false,
 		},
 		{
@@ -254,7 +275,7 @@ export function listCommandResponseBuilder(
 			if (totalFieldsCount >= 25) return;
 
 			const price = watch.priceRequirement
-				? `$${watch.priceRequirement}`
+				? `${formatPriceNumberToReadableString(watch.priceRequirement)}`
 				: 'no price criteria';
 
 			const snoozeEmoji = isSnoozed(watch.snoozedUntil) ? '💤 ' : '';

@@ -3,7 +3,11 @@ import { Tail } from 'tail';
 import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
 import { triggerFoundWatchedItems } from '../watchNotification/watchNotification';
-import { AuctionParser } from './parser';
+import {
+	AuctionParser,
+	AuctionTypes,
+	auctionIncludesUnknownItem,
+} from './parser';
 import { state } from './state';
 import path from 'path';
 import { handleLinkMatch } from '../playerLink/playerLink';
@@ -61,7 +65,7 @@ export function monitorLogFile(server: Server) {
 		if (auctionMatch) {
 			// extract the timestamp, player, and auction message from the log line
 			const [, playerName, auctionText] = auctionMatch;
-			const auctionLogKey = generateAuctionKey(auctionText);
+			const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
 			const cachedAuctionData = await redis.get(auctionLogKey);
 			let auctionData;
 
@@ -100,20 +104,6 @@ export function monitorLogFile(server: Server) {
 						auctionText,
 					);
 				}
-				// 	"unknown" items are not exact matches, check to see if each item
-				// 	being auctioned contains the unknown item to determine a match.
-				// 	for example, "banded armor" is an unknown item that should match "banded armor pieces"
-				for (const unknownItem of watchedItemsForThisServer.WTS
-					.unknownItems) {
-					if (item.item.includes(unknownItem.item)) {
-						await triggerFoundWatchedItems(
-							unknownItem.watchIds,
-							playerName,
-							item.price,
-							auctionText,
-						);
-					}
-				}
 			}
 
 			// Iterate over auctionData.buying array and check against watchedItems.WTB
@@ -126,18 +116,48 @@ export function monitorLogFile(server: Server) {
 						auctionText,
 					);
 				}
+			}
 
-				// check if auction contains any unknown items
-				for (const unknownItem of watchedItemsForThisServer.WTB
-					.unknownItems) {
-					if (item.item.includes(unknownItem.item)) {
-						await triggerFoundWatchedItems(
-							unknownItem.watchIds,
-							playerName,
-							item.price,
-							auctionText,
-						);
-					}
+			// while known items must be exact matches, unknown items should trigger a watch notification
+			// if they appear anywhere in the auction message.  Since parsing price on unknown items is
+			// unreliable, we will just pass undefined as the price.  Users are informed of this in the
+			// response to /watch
+
+			// check WTS watches for unknown items
+			for (const unknownItem of watchedItemsForThisServer.WTS
+				.unknownItems) {
+				if (
+					auctionIncludesUnknownItem(
+						auctionText,
+						unknownItem.item,
+						AuctionTypes.WTS,
+					)
+				) {
+					await triggerFoundWatchedItems(
+						unknownItem.watchIds,
+						playerName,
+						undefined,
+						auctionText,
+					);
+				}
+			}
+
+			// check WTB watches for unknown items
+			for (const unknownItem of watchedItemsForThisServer.WTB
+				.unknownItems) {
+				if (
+					auctionIncludesUnknownItem(
+						auctionText,
+						unknownItem.item,
+						AuctionTypes.WTB,
+					)
+				) {
+					await triggerFoundWatchedItems(
+						unknownItem.watchIds,
+						playerName,
+						undefined,
+						auctionText,
+					);
 				}
 			}
 		} else if (linkMatch) {

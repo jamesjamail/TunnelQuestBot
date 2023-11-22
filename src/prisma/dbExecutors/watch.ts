@@ -19,6 +19,7 @@ type CreateWatchInputArgs = {
 	itemName: string;
 	server: Server;
 	watchType: WatchType;
+	priceRequirement?: number;
 	notes?: string;
 };
 
@@ -26,8 +27,14 @@ export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	const { itemName, server, watchType, notes } = watchData;
-	// Upsert the watch
+	const { itemName, server, watchType, priceRequirement, notes } = watchData;
+
+	// allow users to erase previously set price requirements by inputting 0 or less
+	const updatedPriceRequirement =
+		priceRequirement !== undefined && priceRequirement <= 0
+			? null
+			: priceRequirement;
+
 	return prisma.watch.upsert({
 		where: {
 			discordUserId_itemName_server_watchType: {
@@ -38,8 +45,9 @@ export async function upsertWatch(
 			},
 		},
 		update: {
-			itemName: watchData.itemName,
+			itemName: watchData.itemName.toUpperCase(),
 			server: watchData.server,
+			priceRequirement: updatedPriceRequirement,
 			active: true,
 			created: new Date(),
 			snoozedUntil: null,
@@ -47,10 +55,11 @@ export async function upsertWatch(
 		},
 		create: {
 			discordUserId,
-			itemName,
+			itemName: itemName.toUpperCase(),
 			server,
 			watchType,
 			snoozedUntil: null,
+			priceRequirement: updatedPriceRequirement,
 			notes,
 		},
 	});

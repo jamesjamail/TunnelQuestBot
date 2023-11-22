@@ -34,12 +34,14 @@ const command: SlashCommand = {
 		const args = getInteractionArgs(
 			interaction,
 			['server', 'item', 'type'],
-			['notes'],
+			['price', 'notes'],
 		);
+
 		const data = await upsertWatchSafely(interaction, {
 			server: args.server.value as Server,
 			itemName: args.item.value as string,
 			watchType: args.type.value as WatchType,
+			priceRequirement: args?.price?.value as number,
 			notes: args?.notes?.value as string,
 		});
 
