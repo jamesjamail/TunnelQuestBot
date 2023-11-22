@@ -6,7 +6,7 @@ import { parseWatchesForAutocomplete } from './autocompleteHelpers';
 export async function autocompleteSnoozedWatches(
 	interaction: AutocompleteInteraction<CacheType>,
 ) {
-	const focusedValue = interaction.options.getFocused();
+	const focusedValue = interaction.options.getFocused().toUpperCase();
 	const watches = await getSnoozedWatchesByDiscordUser(interaction.user);
 	// 	add "all watches" as an autocomplete suggestion
 	const watchNames = [
@@ -14,7 +14,8 @@ export async function autocompleteSnoozedWatches(
 		...parseWatchesForAutocomplete(watches),
 	];
 	const filtered = watchNames.filter(
-		(choice, index) => choice.name.startsWith(focusedValue) && index < 25,
+		(choice, index) =>
+			choice.name.toUpperCase().startsWith(focusedValue) && index < 25,
 	);
 
 	await interaction.respond(filtered);

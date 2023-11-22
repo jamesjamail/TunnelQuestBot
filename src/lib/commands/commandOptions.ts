@@ -41,6 +41,15 @@ export const autoCompleteWatchOptionsForUnwatch = (
 		.setAutocomplete(true)
 		.setRequired(true);
 
+export const autoCompleteWatchOptionsForInfoCommand = (
+	option: SlashCommandStringOption,
+) =>
+	option
+		.setName('watch')
+		.setDescription('the watch you information on')
+		.setAutocomplete(true)
+		.setRequired(true);
+
 export const snoozeHoursOptions = (option: SlashCommandNumberOption) =>
 	option
 		.setName('hours')

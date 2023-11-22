@@ -15,7 +15,7 @@ import {
 	MessageTypes,
 	buttonRowBuilder,
 } from '../../content/buttons/buttonRowBuilder';
-import { autocompleteWatches } from '../autocomplete/autocompleteWatches';
+import { autocompleteWatchesWithAllWatchesOption } from '../autocomplete/autocompleteWatches';
 import { findOrCreateUser } from '../../../prisma/dbExecutors/user';
 import {
 	snoozeAllWatches,
@@ -31,7 +31,7 @@ const command: SlashCommand = {
 		.addStringOption(autoCompleteWatchOptionsForSnooze)
 		.addNumberOption(snoozeHoursOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	async autocomplete(interaction) {
-		await autocompleteWatches(interaction);
+		await autocompleteWatchesWithAllWatchesOption(interaction);
 	},
 	execute: async (interaction) => {
 		const args = getInteractionArgs(interaction, ['watch'], ['hours']);

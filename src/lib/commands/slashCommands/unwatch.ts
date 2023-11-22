@@ -9,7 +9,7 @@ import {
 } from '../../content/buttons/buttonRowBuilder';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
-import { autocompleteWatches } from '../autocomplete/autocompleteWatches';
+import { autocompleteWatchesWithAllWatchesOption } from '../autocomplete/autocompleteWatches';
 import { unwatch, unwatchByWatchName } from '../../../prisma/dbExecutors/watch';
 import { getInteractionArgs } from '../getInteractionsArgs';
 
@@ -19,7 +19,7 @@ const command: SlashCommand = {
 		.addStringOption(autoCompleteWatchOptionsForUnwatch)
 		.setDescription('removes a watch'),
 	async autocomplete(interaction) {
-		await autocompleteWatches(interaction);
+		await autocompleteWatchesWithAllWatchesOption(interaction);
 	},
 	execute: async (interaction) => {
 		// TODO: add a "all watches" value first on the list and handle that accordingly

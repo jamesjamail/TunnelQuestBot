@@ -6,7 +6,7 @@ import { SlashCommand } from '../../../types';
 // These command files should contain the config for the command and not much else.
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
-		.setName('exampleCommand') // the display + machine name of the command - can't be duplicated or contains spaces
+		.setName('exampleCommand') // the display + machine name of the command - can't be duplicated, contain spaces, or capital letters
 		.setDescription('Demonstrates an example command'),
 	execute: (interaction) => {
 		interaction.reply({

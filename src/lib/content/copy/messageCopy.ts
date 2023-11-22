@@ -4,6 +4,7 @@ import {
 	PlayerLink,
 } from '@prisma/client';
 import { formatServerFromEnum } from '../../helpers/watches';
+import { toTitleCase } from '../../helpers/titleCase';
 
 const COMMAND_CHANNEL = process.env.command_channel;
 const FEEDBACK_AND_IDEAS = process.env.feedback_and_ideas_channel;
@@ -156,6 +157,9 @@ export namespace messageCopy {
 
 		return `You don't have any blocks.  Add some with \`\`/block\`\``;
 	};
+
+	export const heresInformationOnYourWatch = (watch: string) =>
+		`Here's information on your \`\`${toTitleCase(watch)}\`\` watch:`;
 
 	export const heresAListOfYourWatches = `Here's a list of your watches organized by server.`;
 }

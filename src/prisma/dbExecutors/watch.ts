@@ -117,6 +117,21 @@ export async function getSnoozedWatchesByDiscordUser(user: DiscordUser) {
 	});
 }
 
+export async function getWatchByItemName(
+	discordUserId: string,
+	itemName: string,
+) {
+	const watches = await getWatchesByUser(discordUserId);
+	const filteredWatches = watches.filter((watch) => {
+		return watch.itemName === itemName.toUpperCase();
+	});
+
+	// it's possible a user could have multiple watches for the same item
+	// across varies servers and watch types.  simply return the first, as
+	// this is being used as a good faith effort when autocomplete fails.
+	return filteredWatches[0];
+}
+
 export async function getWatchesByItemName(
 	discordUserId: string,
 	itemName = '',
@@ -397,6 +412,20 @@ export async function getWatchesGroupedByServer() {
 	}
 
 	return groupedWatches;
+}
+
+export async function getWatchByWatchId(watchId: number): Promise<Watch> {
+	const data = await prisma.watch.findUnique({
+		where: {
+			id: watchId,
+		},
+	});
+
+	if (!data) {
+		throw new Error(`Error querying db for watch id ${watchId}`);
+	}
+
+	return data;
 }
 
 export type WatchWithUserAndBlockedWatches = Watch & {
