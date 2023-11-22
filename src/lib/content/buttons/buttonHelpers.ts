@@ -47,8 +47,9 @@ export async function confirmButtonInteraction(
 	// TODO: whatever button was clicked should be active
 	// we need a way to determine which buttons corelate to which button interactions
 	// probably easiest to accept ButtonInteractionTypes as extra argument
-	const ButtonRowWithActiveButton = buttonRowBuilder(commandType);
-	await interaction.editReply({ components: ButtonRowWithActiveButton });
+	const buttonRowWithActiveButton = buttonRowBuilder(commandType);
+
+	await interaction.editReply({ components: buttonRowWithActiveButton });
 
 	const followUp = await interaction.followUp({
 		content: confirmationMessage,

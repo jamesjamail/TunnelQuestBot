@@ -22,6 +22,6 @@ export default async function handleUnwatchInactive<T>(
 			// TODO: delete reply after 10 seconds.
 		},
 		'Are you sure you want to unwatch?',
-		MessageTypes.unwatch,
+		MessageTypes.watch,
 	);
 }

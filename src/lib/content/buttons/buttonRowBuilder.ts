@@ -1,5 +1,10 @@
 import { ButtonInteractionTypes, buttonBuilder } from './buttonBuilder';
 
+// TODO: 2 goals are conflated in this single file that should be separated
+// first, we want a way to relate map commands (and other async events) to their component structure
+// secondly, we need an enum to refer all the various types of messages.
+// It is currently messy because many commands like snooze and unsnooze use MessageTypes.watch and not
+// separate ones based on the actual command or message function
 export enum MessageTypes {
 	block,
 	blocks,
@@ -112,6 +117,7 @@ export function buttonRowBuilder(
 	activeButtons = [false, false, false],
 ) {
 	const mappings = commandTypeButtonMappings[commandType];
+
 	if (!mappings) {
 		throw new Error('Invalid command type.');
 	}
