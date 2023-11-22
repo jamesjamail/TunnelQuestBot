@@ -54,6 +54,8 @@ Special care was taken to handle dynamic server name in the Server Enum in prism
 
 ## Auction Parser Functionality
 
+TODO: update the overview below to reflect new aho corasick parser
+
 The most complex aspect of the repo lies in parsing the auction contents from log files.  Here is a biref explanation of the functionality:
 
 * a new line is read from the log file
