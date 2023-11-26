@@ -1,9 +1,10 @@
 import { Interaction } from 'discord.js';
 import { BotEvent } from '../types';
+import { gracefullyHandleError } from '../lib/helpers/errors';
 
 const event: BotEvent = {
 	name: 'interactionCreate',
-	execute: (interaction: Interaction) => {
+	execute: async (interaction: Interaction) => {
 		if (interaction.isChatInputCommand()) {
 			const command = interaction.client.slashCommands.get(
 				interaction.commandName,
@@ -37,7 +38,11 @@ const event: BotEvent = {
 					Date.now() + command.cooldown * 1000,
 				);
 			}
-			command.execute(interaction);
+			try {
+				command.execute(interaction);
+			} catch (e) {
+				await gracefullyHandleError(e, interaction, command);
+			}
 		} else if (interaction.isAutocomplete()) {
 			const command = interaction.client.slashCommands.get(
 				interaction.commandName,
@@ -53,8 +58,7 @@ const event: BotEvent = {
 				if (!command.autocomplete) return;
 				command.autocomplete(interaction);
 			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error(error);
+				await gracefullyHandleError(error, interaction, command);
 			}
 		}
 	},

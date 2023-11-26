@@ -2,6 +2,7 @@ import { ChannelType } from 'discord.js';
 import { client } from '../..';
 import { Server } from '@prisma/client';
 import { embeddedAuctionStreamMessageBuilder } from '../content/messages/messageBuilder';
+import { gracefullyHandleError } from '../helpers/errors';
 
 export function getEnvironmentVariable(name: string): string {
 	const value = process.env[name];
@@ -59,9 +60,7 @@ export async function streamAuctionToAllStreamChannels(
 		});
 	} catch (err) {
 		// eslint-disable-next-line no-console
-		console.error(err);
-		// TODO: graceful error
-		// await gracefulSystemError(bot, err);
+		await gracefullyHandleError(err);
 	}
 
 	try {
@@ -74,8 +73,6 @@ export async function streamAuctionToAllStreamChannels(
 		await classicChannel.send(rawAuction);
 	} catch (err) {
 		// eslint-disable-next-line no-console
-		console.error(err);
-		// TODO: graceful error
-		// await gracefulSystemError(bot, err);
+		await gracefullyHandleError(err);
 	}
 }

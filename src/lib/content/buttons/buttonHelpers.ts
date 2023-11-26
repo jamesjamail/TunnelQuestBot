@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { buttonBuilder, ButtonInteractionTypes } from './buttonBuilder';
 import { MessageTypes, buttonRowBuilder } from './buttonRowBuilder';
+import { gracefullyHandleError } from '../../helpers/errors';
 
 export async function removeInteractionContentAfterDelay(
 	interaction: ButtonInteraction | MessageComponentInteraction,
@@ -109,7 +110,7 @@ export async function confirmButtonInteraction(
 			)
 		) {
 			// eslint-disable-next-line no-console
-			console.error('Error in collecting Interaction:', error);
+			await gracefullyHandleError(error);
 		}
 		// Revert to original state
 		await followUp.delete();

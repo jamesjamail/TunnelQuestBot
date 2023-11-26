@@ -19,6 +19,8 @@ export async function handleLinkMatch(
 			await user
 				.send(messageCopy.soAndSoHasBeenLinked(link))
 				.catch(() => {
+					// TODO: swallow, throw, or log this error?
+					// await gracefullyHandleError(e);
 					// console.log("User has DMs closed or has no mutual servers with the bot.");
 				});
 			// console.log("Player link successful.")

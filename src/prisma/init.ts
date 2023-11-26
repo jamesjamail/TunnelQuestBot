@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { PrismaClient } from '@prisma/client';
 import { color } from '../functions';
+import { gracefullyHandleError } from '../lib/helpers/errors';
 
 export const prisma = new PrismaClient();
 
@@ -30,6 +31,7 @@ export async function initializePrisma() {
 				),
 			);
 		} catch (error) {
+			await gracefullyHandleError(error);
 			console.log(
 				color(
 					'text',

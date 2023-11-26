@@ -5,6 +5,7 @@ import { readdirSync } from 'fs';
 import { join } from 'path';
 import { color } from '../functions';
 import { SlashCommand } from '../types';
+import { gracefullyHandleError } from '../lib/helpers/errors';
 
 module.exports = (client: Client) => {
 	const slashCommands: SlashCommandBuilder[] = [];
@@ -39,7 +40,7 @@ module.exports = (client: Client) => {
 				),
 			);
 		})
-		.catch((e) => {
-			console.log(e);
+		.catch(async (e) => {
+			await gracefullyHandleError(e);
 		});
 };
