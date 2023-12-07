@@ -1,4 +1,11 @@
-import { Watch, Server, User, BlockedPlayer, PlayerLink } from '@prisma/client';
+import {
+	Watch,
+	Server,
+	User,
+	BlockedPlayer,
+	PlayerLink,
+	WatchType,
+} from '@prisma/client';
 import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
@@ -201,9 +208,9 @@ export async function watchNotificationBuilder(
 		.setAuthor(authorProperties)
 		.setTitle(`Watch Notification: ${toTitleCase(watchData.itemName)}`)
 		.setDescription(
-			`\n\n\n**${player}** is currently selling **${toTitleCase(
-				watchData.itemName,
-			)}** ${
+			`\n\n\n**${player}** is currently ${
+				watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
+			} **${toTitleCase(watchData.itemName)}** ${
 				auctionedPrice
 					? 'for **' +
 					  formatPriceNumberToReadableString(auctionedPrice) +
