@@ -15,6 +15,7 @@ import {
 	unsnoozeWatchByItemName,
 } from '../../../prisma/dbExecutors/watch';
 import { getInteractionArgs } from '../getInteractionsArgs';
+import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -27,46 +28,50 @@ const command: SlashCommand = {
 		await autocompleteSnoozedWatches(interaction);
 	},
 	execute: async (interaction) => {
-		const args = getInteractionArgs(interaction, ['watch']);
-		if (args?.watch?.isAutoSuggestion) {
-			// unwatch watch by id
-			const watch = await unsnoozeWatch(
-				args?.watch?.autoSuggestionMetaData?.watch as Watch,
-			);
+		try {
+			const args = getInteractionArgs(interaction, ['watch']);
+			if (args?.watch?.isAutoSuggestion) {
+				// unwatch watch by id
+				const watch = await unsnoozeWatch(
+					args?.watch?.autoSuggestionMetaData?.watch as Watch,
+				);
 
-			const embeds = [watchCommandResponseBuilder(watch)];
-			const components = buttonRowBuilder(MessageTypes.watch);
-			const response = await interaction.reply({
-				content: messageCopy.yourWatchHasBeenSnoozed(),
-				embeds,
-				components,
-			});
+				const embeds = [watchCommandResponseBuilder(watch)];
+				const components = buttonRowBuilder(MessageTypes.watch);
+				const response = await interaction.reply({
+					content: messageCopy.yourWatchHasBeenSnoozed(),
+					embeds,
+					components,
+				});
 
-			return await collectButtonInteractionAndReturnResponse(
-				response,
-				watch,
-			);
-		} else {
-			// make a good faith effort to snooze based on raw string
-			const itemName = args?.watch?.value;
-			// TODO: this will throw if no watch found - catch and update message accordingly
-			const watch = await unsnoozeWatchByItemName(
-				interaction,
-				itemName as string, //	TODO: fix type error
-			);
+				return await collectButtonInteractionAndReturnResponse(
+					response,
+					watch,
+				);
+			} else {
+				// make a good faith effort to snooze based on raw string
+				const itemName = args?.watch?.value;
+				// TODO: this will throw if no watch found - catch and update message accordingly
+				const watch = await unsnoozeWatchByItemName(
+					interaction,
+					itemName as string, //	TODO: fix type error
+				);
 
-			const embeds = [watchCommandResponseBuilder(watch)];
-			const components = buttonRowBuilder(MessageTypes.watch);
-			const response = await interaction.reply({
-				content: messageCopy.yourWatchHasBeenUnsoozed,
-				embeds,
-				components,
-			});
+				const embeds = [watchCommandResponseBuilder(watch)];
+				const components = buttonRowBuilder(MessageTypes.watch);
+				const response = await interaction.reply({
+					content: messageCopy.yourWatchHasBeenUnsoozed,
+					embeds,
+					components,
+				});
 
-			return await collectButtonInteractionAndReturnResponse(
-				response,
-				watch,
-			);
+				return await collectButtonInteractionAndReturnResponse(
+					response,
+					watch,
+				);
+			}
+		} catch (error) {
+			await gracefullyHandleError(error, interaction, command);
 		}
 	},
 	cooldown: 10,

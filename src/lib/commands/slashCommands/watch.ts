@@ -17,6 +17,7 @@ import {
 import { autocompleteItems } from '../autocomplete/autocompleteItems';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
 import { getInteractionArgs } from '../getInteractionsArgs';
+import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -31,29 +32,36 @@ const command: SlashCommand = {
 		await autocompleteItems(interaction);
 	},
 	execute: async (interaction) => {
-		const args = getInteractionArgs(
-			interaction,
-			['server', 'item', 'type'],
-			['price', 'notes'],
-		);
+		try {
+			const args = getInteractionArgs(
+				interaction,
+				['server', 'item', 'type'],
+				['price', 'notes'],
+			);
 
-		const data = await upsertWatchSafely(interaction, {
-			server: args.server.value as Server,
-			itemName: args.item.value as string,
-			watchType: args.type.value as WatchType,
-			priceRequirement: args?.price?.value as number,
-			notes: args?.notes?.value as string,
-		});
+			const data = await upsertWatchSafely(interaction, {
+				server: args.server.value as Server,
+				itemName: args.item.value as string,
+				watchType: args.type.value as WatchType,
+				priceRequirement: args?.price?.value as number,
+				notes: args?.notes?.value as string,
+			});
 
-		const embeds = [watchCommandResponseBuilder(data)];
-		const components = buttonRowBuilder(MessageTypes.watch);
+			const embeds = [watchCommandResponseBuilder(data)];
+			const components = buttonRowBuilder(MessageTypes.watch);
 
-		const response = await interaction.reply({
-			embeds,
-			components,
-		});
+			const response = await interaction.reply({
+				embeds,
+				components,
+			});
 
-		return await collectButtonInteractionAndReturnResponse(response, data);
+			return await collectButtonInteractionAndReturnResponse(
+				response,
+				data,
+			);
+		} catch (error) {
+			await gracefullyHandleError(error, interaction, command);
+		}
 	},
 	cooldown: 3,
 };

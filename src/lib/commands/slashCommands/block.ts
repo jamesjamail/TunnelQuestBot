@@ -10,6 +10,7 @@ import {
 import { blockCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import { playerNameOptions, requiredsServerOptions } from '../commandOptions';
 import { getInteractionArgs } from '../getInteractionsArgs';
+import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -20,23 +21,30 @@ const command: SlashCommand = {
 			requiredsServerOptions,
 		) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	execute: async (interaction) => {
-		const args = getInteractionArgs(interaction, ['player', 'server']);
+		try {
+			const args = getInteractionArgs(interaction, ['player', 'server']);
 
-		const block = await addPlayerBlock(
-			interaction.user.id,
-			args.player.value as string, // TODO: why is this a number?
-			args.server.value as Server,
-		);
+			const block = await addPlayerBlock(
+				interaction.user.id,
+				args.player.value as string, // TODO: why is this a number?
+				args.server.value as Server,
+			);
 
-		const embeds = [blockCommandResponseBuilder(block)];
-		const components = buttonRowBuilder(MessageTypes.block);
+			const embeds = [blockCommandResponseBuilder(block)];
+			const components = buttonRowBuilder(MessageTypes.block);
 
-		const response = await interaction.reply({
-			embeds,
-			components,
-		});
+			const response = await interaction.reply({
+				embeds,
+				components,
+			});
 
-		return await collectButtonInteractionAndReturnResponse(response, block);
+			return await collectButtonInteractionAndReturnResponse(
+				response,
+				block,
+			);
+		} catch (error) {
+			await gracefullyHandleError(error, interaction, command);
+		}
 	},
 	cooldown: 10,
 };
