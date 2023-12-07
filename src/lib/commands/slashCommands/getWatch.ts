@@ -20,10 +20,13 @@ import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
-		.setName('info')
-		.setDescription('get information on an existing watch.')
-		.addStringOption(
-			autoCompleteWatchOptionsForInfoCommand,
+		.setName('get')
+		.setDescription('get info on an existing watch')
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('watch')
+				.setDescription('get info on an existing watch')
+				.addStringOption(autoCompleteWatchOptionsForInfoCommand),
 		) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	async autocomplete(interaction) {
 		await autocompleteWatches(interaction);
