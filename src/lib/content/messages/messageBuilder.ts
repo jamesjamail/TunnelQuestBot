@@ -441,6 +441,10 @@ export async function embeddedAuctionStreamMessageBuilder(
 		items: ItemType[],
 		type: 'buying' | 'selling',
 	) => {
+		if (items.length === 0) {
+			return [];
+		}
+
 		return items.map((item) => {
 			const priceField = item.price
 				? `${formatPriceNumberToReadableString(item.price)}`
