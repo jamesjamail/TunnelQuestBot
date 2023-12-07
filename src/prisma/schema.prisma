@@ -57,7 +57,7 @@ model BlockedPlayerByWatch {
   discordUserId String
   watchId       Int
   player        String @db.VarChar(255)
-  watch         Watch  @relation(fields: [watchId], references: [id])
+  watch         Watch  @relation(fields: [watchId], references: [id], onDelete: Cascade)
   user          User   @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([watchId, player])

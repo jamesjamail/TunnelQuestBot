@@ -192,13 +192,10 @@ export async function unsnoozeWatchByItemName(
 }
 
 export async function unwatch(metadata: MetadataType) {
-	// Update the watch entry by setting active to false where the id matches metadata.id
-	return prisma.watch.update({
+	// Delete the watch entry where the id matches metadata.id
+	return prisma.watch.delete({
 		where: {
 			id: metadata.id,
-		},
-		data: {
-			active: false,
 		},
 	});
 }
@@ -207,20 +204,18 @@ export async function unwatchByWatchName(
 	interaction: Interaction,
 	watchName: string,
 ) {
+	// First, find the watch entry based on itemName and discordUserId
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName,
+			itemName: watchName.toUpperCase(),
 			discordUserId: interaction.user.id,
 		},
 	});
 
-	// Update the watch entry by setting active to false where itemName = itemName
-	return prisma.watch.update({
+	// Delete the watch entry found above
+	return prisma.watch.delete({
 		where: {
 			id: watch.id,
-		},
-		data: {
-			active: false,
 		},
 	});
 }
