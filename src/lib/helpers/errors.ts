@@ -18,8 +18,9 @@ export async function gracefullyHandleError(
 		errorMessage = `${interaction.user.displayName} triggered the following error using command ${command.command.name}: \`\`${error.message}\`\``;
 	}
 
-	// Log the error to the console
-	console.error(errorMessage);
+	// Log the error to the console - warning level so we can reserve error level for
+	// error-logging-to-discord failures
+	console.warn(errorMessage);
 
 	const errorChannelId = process.env.ERROR_LOG_CHANNEL_ID;
 
@@ -44,6 +45,9 @@ export async function gracefullyHandleError(
 	// Check if the channel is a text channel and send a message
 	if (channel && channel.isTextBased()) {
 		const textChannel = channel as TextChannel;
-		await textChannel.send(errorMessage);
+		await textChannel.send(errorMessage).catch((loggingError) => {
+			console.error('ERROR LOGGING ERROR TO DISCORD: ', loggingError);
+			console.error('ORIGINAL ERROR THAT FAILED TO SEND: ', error);
+		});
 	}
 }

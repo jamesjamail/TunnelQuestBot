@@ -12,6 +12,7 @@ import { state } from './state';
 import path from 'path';
 import { handleLinkMatch } from '../playerLink/playerLink';
 import crypto from 'crypto';
+import { gracefullyHandleError } from '../helpers/errors';
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
@@ -168,8 +169,7 @@ export function monitorLogFile(server: Server) {
 		}
 	});
 
-	tail.on('error', function (error) {
-		// eslint-disable-next-line no-console
-		console.error('LOG PARSER ERROR: ', error);
+	tail.on('error', async function (error) {
+		await gracefullyHandleError(error);
 	});
 }
