@@ -11,11 +11,11 @@ export async function gracefullyHandleError(
 	let errorMessage = `An error occured: ${error.message}`;
 	// include interaction info if available
 	if (interaction) {
-		errorMessage = `${interaction.user.displayName} triggered the following error:\n \`\`${error.message}\`\``;
+		errorMessage = `<@${interaction.user.id}> triggered the following error:\n \`\`${error.message}\`\``;
 	}
 
 	if (interaction && command) {
-		errorMessage = `${interaction.user.displayName} triggered the following error using the \`\`${command.command.name}\`\` command:\n \`\`${error.message}\`\``;
+		errorMessage = `<@${interaction.user.id}> triggered the following error using the \`\`${command.command.name}\`\` command:\n \`\`${error.message}\`\``;
 	}
 
 	// Log the error to the console - warning level so we can reserve error level for
