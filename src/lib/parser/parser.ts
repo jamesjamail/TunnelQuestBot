@@ -160,15 +160,17 @@ export class AuctionParser {
 				segment.price = price;
 			}
 
-			// Put it in the right bucket
-			const theItem: ItemType = {
-				item: segment.item,
-				price: segment.price,
-			};
-			if (currentAuctionType == AuctionTypes.WTS) {
-				selling.push(theItem);
-			} else {
-				buying.push(theItem);
+			// Put it in the right bucket only if item name is not empty
+			if (segment.item.trim() !== '') {
+				const theItem: ItemType = {
+					item: segment.item.trim(),
+					price: segment.price,
+				};
+				if (currentAuctionType == AuctionTypes.WTS) {
+					selling.push(theItem);
+				} else {
+					buying.push(theItem);
+				}
 			}
 		}
 
