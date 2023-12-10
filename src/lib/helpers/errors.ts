@@ -21,6 +21,7 @@ export async function gracefullyHandleError(
 	// Log the error to the console - warning level so we can reserve error level for
 	// error-logging-to-discord failures
 	console.warn(errorMessage);
+	console.warn(error);
 
 	const errorChannelId = process.env.ERROR_LOG_CHANNEL_ID;
 
