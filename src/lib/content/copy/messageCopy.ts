@@ -6,55 +6,57 @@ import {
 import { formatServerFromEnum } from '../../helpers/watches';
 import { toTitleCase } from '../../helpers/titleCase';
 
-const COMMAND_CHANNEL = process.env.command_channel;
-const FEEDBACK_AND_IDEAS = process.env.feedback_and_ideas_channel;
+const commandChannel = process.env.COMMAND_CHANNEL;
+const feedbackAndIdeasChannel = process.env.FEEDBACK_AND_IDEAS_CHANNEL;
 
 export namespace messageCopy {
 	export const helpMsg =
 		'\n\n' +
 		'__***HELP***__\n' +
 		' • TunnelQuestBot uses Discord Slash Commands.  Type `/` in' +
-		`<#${COMMAND_CHANNEL}>` +
+		`<#${commandChannel}>` +
 		' to get started.\n' +
 		'\n' +
 		'__***COMMANDS***__\n' +
 		'**/help**\n' +
 		'> Displays available commands.\n\n' +
-		'**/watch `item` `server` `maximum price`**\n' +
-		'> Starts a watch based on entered parameters. Maximum price is optional.\n\n' +
-		'**/unwatch item `item` `server`**\n' +
-		'> Ends a currently running watch. Server is optional.\n\n' +
-		'**/unwatch all watches**\n' +
-		'> Ends all currently running watches.\n\n' +
+		'**/watch `type` `item` `server` `price criteria` `notes`**\n' +
+		'> Receive a notification when an in-game item is auctioned meeting your criteria\n\n' +
+		'**/get watch `watch`**\n' +
+		'> Get information about an existing watch\n\n' +
+		'**/unwatch `watch` **\n' +
+		'> Ends a currently running watch.\n\n' +
 		'**/watches `search filter`**\n' +
-		'> Returns every watch as an individual message. An optional search term can be specified.  For example: `/watches belt of` returns all watches containing "belt of".\n\n' +
+		'> Returns watches as an individual messages. An optional search filter can be specified.  For example: `/watches belt of` returns all watches containing "belt of".\n\n' +
 		'**/list**\n' +
 		'> Lists details for all watches in a concise message.\n\n' +
 		'**/block `seller` `server`**\n' +
-		'>  Blocks a seller from triggering any watch notifications.  `server` is optional; if omitted, the seller will be blocked on both servers.\n\n' +
+		'>  Blocks a seller from triggering any watch notifications.\n\n' +
 		'**/blocks `search filter`**\n' +
-		'> Returns every block as an individual message. An optional search term can be specified for the player name.\n\n' +
-		'**/unblock `seller` `server`**\n' +
-		'> Unblocks a seller for all watch notifications.  `server` is optional- if omitted the seller will be unblocked on both servers.\n\n' +
-		'**/snooze watch `item` `hours`**\n' +
-		'> Pauses notifications on a specific watch.  `hours` is optional; if omitted, watch is snoozed for 6 hours.\n\n' +
-		'**/snooze all watches `hours`**\n' +
-		'> Pauses notifications on all watches.  `hours` is optional; if omitted, watches are snoozed for 6 hours.\n\n' +
+		'> Returns every block as an individual message. An optional search filter can be specified for the player name.\n\n' +
+		'**/unblock `blocked player`**\n' +
+		'> Unblocks a player for all watch notifications.\n\n' +
+		'**/snooze `watch` `hours`**\n' +
+		'> Pauses notifications on a specific watch.  `hours` is optional; if omitted, watch is snoozed for 6 hours.  Use `All Watches` option to Snooze all watches.\n\n' +
 		'**/unsnooze `watch`**\n' +
-		'> Unsnooze a specific watch.\n\n' +
-		'**/unsnooze all watches**\n' +
-		'> Unsnooze all watches.\n\n' +
+		'> Unsnooze a specific watch, or all watches with the `All Watches` option.\n\n' +
+		'**/link **\n' +
+		'> Link a character to your discord user.\n\n' +
+		'**/links `search filter`**\n' +
+		'> Show current characters linked to your discord user.\n\n' +
+		'**/unlink `player` `server`**\n' +
+		'> Unlink a character from your discord user.\n\n' +
 		'__***TIPS***__\n' +
 		' • You can use `/watch` to update an existing watch if you wish to modify the price requirement.\n' +
 		' • Most responses have buttons that trigger useful commands.\n' +
 		' • To report a problem or request a feature, talk to us in ' +
-		`<#${FEEDBACK_AND_IDEAS}>`;
+		`<#${feedbackAndIdeasChannel}>`;
 
 	export const welcomeMsg =
 		'Hello! I am TunnelQuestBot, your helpful gnome assistant. Please allow me to make buying and selling items easier so you can finally start tipping for ports.\n\n' +
 		"I watch EC auctions on both Blue and Green servers. If you're in the market for a new sword, you can set up a watch with the `/watch` command.\n\n" +
 		'Commands can be entered in' +
-		`<#${COMMAND_CHANNEL}>:\n\n` +
+		`<#${commandChannel}>:\n\n` +
 		'or as a Direct Message to me.\n\n' +
 		"Let's say you're in the market for a weapon upgrade.\n\n" +
 		'`/watch` `rusty bastard sword` `green server`\n\n' +
