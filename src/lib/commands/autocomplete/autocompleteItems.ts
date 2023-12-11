@@ -1,7 +1,7 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
 import Fuse from 'fuse.js';
 import { toTitleCase } from '../../helpers/titleCase';
-import itemsData from '../../gameData/items.json';
+import { consolidatedItems } from '../../gameData/consolidatedItems';
 
 export async function autocompleteItems(
 	interaction: AutocompleteInteraction<CacheType>,
@@ -18,7 +18,7 @@ export async function autocompleteItems(
 	}
 
 	// Convert the JSON object keys to an array of item names
-	const itemNames = Object.keys(itemsData).map((key) => {
+	const itemNames = Object.keys(consolidatedItems).map((key) => {
 		return { name: key };
 	});
 
