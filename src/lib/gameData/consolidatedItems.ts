@@ -19,6 +19,7 @@ function fixApostrophes(items: InGameItemNamesType) {
 	return { ...items, ...duped_items };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function addSpellPrefix(spells: InGameItemNamesType) {
 	const spell_items: InGameItemNamesType = {};
 	for (const spell of Object.entries(spells)) {
@@ -28,7 +29,7 @@ function addSpellPrefix(spells: InGameItemNamesType) {
 }
 
 export const spells: InGameItemNamesType = {
-	...fixApostrophes(addSpellPrefix(inGameSpellNamesRaw)),
+	...fixApostrophes(inGameSpellNamesRaw),
 };
 
 export const items: InGameItemNamesType = {
