@@ -106,11 +106,15 @@ export namespace messageCopy {
 		numberOfLinks: number,
 		channelId: string,
 	) => {
-		return `${numberOfLinks} character link${
-			numberOfLinks > 1 ? 's' : ''
-		} ${
-			numberOfLinks > 1 ? 'have' : 'has'
-		} been delivered via DM <#${channelId}>`;
+		if (numberOfLinks > 0) {
+			return `${numberOfLinks} character link${
+				numberOfLinks > 1 ? 's' : ''
+			} ${
+				numberOfLinks > 1 ? 'have' : 'has'
+			} been delivered via DM <#${channelId}>`;
+		} else {
+			return 'No character links found.';
+		}
 	};
 
 	export const blocksHaveBeenDeliveredViaDm = (

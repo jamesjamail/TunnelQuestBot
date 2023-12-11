@@ -24,11 +24,13 @@ const command: SlashCommand = {
 			// console.log(`Retrieved ${data.length} links for user ${interaction.user.id}.`);
 
 			let lastDmChannelId = '';
+			let linkCount = 0;
 
 			await Promise.all(
 				data.map(async (link) => {
 					const embed = playerlinkCommandResponseBuilder(link);
 					if (embed != undefined) {
+						linkCount += 1;
 						const embeds = [embed];
 						const components = buttonRowBuilder(MessageTypes.link);
 
@@ -53,7 +55,7 @@ const command: SlashCommand = {
 
 			const response = await interaction.editReply(
 				messageCopy.linksHaveBeenDeliveredViaDm(
-					data.length,
+					linkCount,
 					lastDmChannelId,
 				),
 			);
