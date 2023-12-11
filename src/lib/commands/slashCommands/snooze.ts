@@ -53,6 +53,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
+					ephemeral: true,
 				});
 				return await collectButtonInteractionAndReturnResponse(
 					response,
@@ -80,6 +81,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
+					ephemeral: true,
 				});
 
 				return await collectButtonInteractionAndReturnResponse(
@@ -110,6 +112,7 @@ const command: SlashCommand = {
 						),
 						embeds,
 						components,
+						ephemeral: true,
 					});
 					return await collectButtonInteractionAndReturnResponse(
 						response,
@@ -120,6 +123,7 @@ const command: SlashCommand = {
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(
 							itemName as string,
 						),
+						ephemeral: true,
 					});
 				}
 			}

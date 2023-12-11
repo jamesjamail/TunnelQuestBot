@@ -20,7 +20,9 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		try {
 			// defer reply immediately as it may take a while to send watches
-			await interaction.deferReply();
+			await interaction.deferReply({
+				ephemeral: true,
+			});
 			const args = getInteractionArgs(interaction, [], ['filter']);
 
 			const data = await getWatchesByItemName(

@@ -164,4 +164,6 @@ export namespace messageCopy {
 		`Here's information on your \`\`${toTitleCase(watch)}\`\` watch:`;
 
 	export const heresAListOfYourWatches = `Here's a list of your watches organized by server.`;
+
+	export const youDontHaveAnyWatches = `You don't have any watches.  Add some with \`/watch\``;
 }

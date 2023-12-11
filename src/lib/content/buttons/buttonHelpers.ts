@@ -55,6 +55,7 @@ export async function confirmButtonInteraction(
 	const followUp = await interaction.followUp({
 		content: confirmationMessage,
 		components: buttons,
+		ephemeral: true,
 	});
 
 	const filter = (

@@ -42,6 +42,7 @@ const command: SlashCommand = {
 					content: messageCopy.yourWatchHasBeenUnwatched,
 					embeds,
 					components,
+					ephemeral: true,
 				});
 
 				return await collectButtonInteractionAndReturnResponse(
@@ -66,6 +67,7 @@ const command: SlashCommand = {
 					content: messageCopy.yourWatchHasBeenUnwatched,
 					embeds,
 					components,
+					ephemeral: true,
 				});
 
 				return await collectButtonInteractionAndReturnResponse(

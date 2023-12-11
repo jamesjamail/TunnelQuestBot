@@ -25,7 +25,6 @@ const command: SlashCommand = {
 				player_name,
 				server,
 			);
-			// console.log(`Character ${server}.${player_name} unlinked from ${interaction.user.username}`)
 			let user_message;
 			if (success) {
 				user_message = messageCopy.soAndSoHasBeenUnlinked({

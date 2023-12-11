@@ -20,7 +20,7 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		try {
 			// defer reply immediately as it may take a while to send blocks
-			await interaction.deferReply();
+			await interaction.deferReply({ ephemeral: true });
 			const args = getInteractionArgs(interaction, [], ['filter']);
 			const data = await getPlayerBlocks(
 				interaction.user.id,

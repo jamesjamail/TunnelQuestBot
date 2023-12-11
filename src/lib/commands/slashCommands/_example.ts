@@ -18,6 +18,7 @@ const command: SlashCommand = {
 					)
 					.setColor(getThemeColor('text')),
 			],
+			ephemeral: true,
 		});
 	},
 	cooldown: 10,

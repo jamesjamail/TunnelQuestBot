@@ -11,6 +11,7 @@ const command: SlashCommand = {
 		try {
 			await interaction.reply({
 				content: messageCopy.helpMsg,
+				ephemeral: true,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

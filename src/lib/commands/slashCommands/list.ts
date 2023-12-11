@@ -22,9 +22,10 @@ const command: SlashCommand = {
 			const watches = await getWatchesByUser(interaction.user.id);
 
 			if (watches.length === 0) {
-				return await interaction.reply(
-					`You don't have any watches.  Add some with \`/watch\``,
-				);
+				return await interaction.reply({
+					content: messageCopy.youDontHaveAnyWatches,
+					ephemeral: true,
+				});
 			}
 
 			const globalSnoozeActive = isSnoozed(user.snoozedUntil);
@@ -39,6 +40,7 @@ const command: SlashCommand = {
 				content: messageCopy.heresAListOfYourWatches,
 				embeds,
 				components,
+				ephemeral: true,
 			});
 
 			return await collectButtonInteractionAndReturnResponse(

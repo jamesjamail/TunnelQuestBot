@@ -16,7 +16,9 @@ const command: SlashCommand = {
 		.setDescription('show characters linked to your discord user'),
 	execute: async (interaction) => {
 		try {
-			await interaction.deferReply();
+			await interaction.deferReply({
+				ephemeral: true,
+			});
 
 			const data = await getPlayerLinksForUser(interaction.user.id);
 			// console.log(`Retrieved ${data.length} links for user ${interaction.user.id}.`);

@@ -15,11 +15,12 @@ const event: BotEvent = {
 			if (!command) return;
 			if (command.cooldown && cooldown) {
 				if (Date.now() < cooldown) {
-					interaction.reply(
-						`You have to wait ${Math.floor(
+					interaction.reply({
+						content: `You have to wait ${Math.floor(
 							Math.abs(Date.now() - cooldown) / 1000,
 						)} second(s) to use this command again.`,
-					);
+						ephemeral: true,
+					});
 					setTimeout(() => interaction.deleteReply(), 5000);
 					return;
 				}
