@@ -184,8 +184,8 @@ export function auctionIncludesUnknownItem(
 	watchType: AuctionTypes,
 ) {
 	// Regular expressions for auction types
-	const sellingRegex = /\b(WTS|SELLING)\b/i;
-	const buyingRegex = /\b(WTB|BUYING)\b/i;
+	const sellingRegex = /\b(WTS|SELLING|WTSELL)\b/i;
+	const buyingRegex = /\b(WTB|BUYING|WTBUY)\b/i;
 
 	const uppercaseAuctionText = auctionText.toUpperCase();
 
