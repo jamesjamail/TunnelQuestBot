@@ -448,17 +448,6 @@ export async function getWatchByWatchIdForWatchNotification(
 	return data;
 }
 
-export async function updateWatchLastNotifiedTimestamp(watchId: number) {
-	return await prisma.watch.update({
-		where: {
-			id: watchId,
-		},
-		data: {
-			lastAlertedTimestamp: new Date(),
-		},
-	});
-}
-
 export async function deleteWatchesOlderThanSeverDays() {
 	const sevenDaysAgo = new Date();
 	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);

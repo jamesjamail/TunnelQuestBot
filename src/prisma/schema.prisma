@@ -38,7 +38,6 @@ model Watch {
   watchType             WatchType
   itemName              String    @db.VarChar(255)
   priceRequirement      Int?
-  lastAlertedTimestamp  DateTime?
   created               DateTime  @default(now())
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
