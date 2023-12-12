@@ -14,16 +14,6 @@ export function formatServerFromEnum(server: Server) {
 	return `Project 1999 ${server.toLowerCase()} server`;
 }
 
-export function lastAlertedMoreThanFifteenMinutesAgo(timestamp: Date | null) {
-	if (!timestamp) return true;
-
-	const lastAlerted = new Date(timestamp);
-	const fifteenMinutesAgo = new Date();
-	fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
-
-	return lastAlerted < fifteenMinutesAgo;
-}
-
 export function formatPriceNumberToReadableString(price: number | '-'): string {
 	if (price === '-') {
 		return price;

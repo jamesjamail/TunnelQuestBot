@@ -11,14 +11,23 @@ import { getPlayerBlocks } from '../../prisma/dbExecutors/block';
 import {
 	WatchWithUserAndBlockedWatches,
 	getWatchByWatchIdForWatchNotification,
-	updateWatchLastNotifiedTimestamp,
 } from '../../prisma/dbExecutors/watch';
-import {
-	isSnoozed,
-	lastAlertedMoreThanFifteenMinutesAgo,
-} from '../helpers/watches';
+import { isSnoozed } from '../helpers/watches';
+import crypto from 'crypto';
+import { redis } from '../../redis/init';
 
-export function shouldUserByNotified(
+export function generateDebounceKey(
+	watchId: number,
+	player: string,
+	price: number | undefined,
+) {
+	const uniqueString = `${watchId}:${player.toUpperCase()}:${price}`;
+	const hash = crypto.createHash('sha256').update(uniqueString).digest('hex');
+	const prefix = 'watchNotification:';
+	return prefix + hash;
+}
+
+export async function shouldUserByNotified(
 	watch: WatchWithUserAndBlockedWatches,
 	blockedPlayers: BlockedPlayer[],
 	player: string,
@@ -36,8 +45,12 @@ export function shouldUserByNotified(
 	if (isSnoozed(watch.user.snoozedUntil)) {
 		return false;
 	}
-	// ensure 15 minutes have elpased since the last notified timestamp on the watch
-	if (!lastAlertedMoreThanFifteenMinutesAgo(watch.lastAlertedTimestamp)) {
+
+	// Check if notification was already sent within the last 15 minutes
+	const debounceKey = generateDebounceKey(watch.id, player, price);
+	const alreadyNotified = await redis.exists(debounceKey);
+
+	if (alreadyNotified) {
 		return false;
 	}
 
@@ -121,7 +134,9 @@ export async function triggerFoundWatchedItem(
 		metadata,
 	);
 
-	await updateWatchLastNotifiedTimestamp(watchId);
+	// Set the debounce key in Redis with a 15-minute expiration
+	const debounceKey = generateDebounceKey(watchId, player, price);
+	await redis.set(debounceKey, 'notified', 'EX', 15 * 60);
 }
 
 export async function triggerFoundWatchedItems(
