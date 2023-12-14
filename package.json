@@ -6,11 +6,12 @@
   "scripts": {
     "build": "tsc",
     "start": "npx prisma generate && npx prisma migrate deploy && node ./build/index.js",
+    "debug": "npx prisma generate && npx prisma migrate deploy && node --inspect=0.0.0.0 ./build/index.js",
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write \"./**/*.ts\"",
-    "dev": "concurrently \"npm run fakeLogs\" \"npm run start\"",
+    "dev": "concurrently \"npm run fakeLogs\" \"npm run debug\"",
     "fakeLogs": "node ./build/lib/parser/logFaker.js",
     "clean": "rd /s /q .\\build"
   },
