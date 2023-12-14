@@ -39,7 +39,10 @@ const command: SlashCommand = {
 					false,
 				]);
 				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnwatched,
+					content: messageCopy.yourWatchHasBeenUnwatched(
+						watch.itemName,
+						watch.server,
+					),
 					embeds,
 					components,
 					ephemeral: true,
@@ -64,7 +67,10 @@ const command: SlashCommand = {
 					false,
 				]);
 				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnwatched,
+					content: messageCopy.yourWatchHasBeenUnwatched(
+						watch.itemName,
+						watch.server,
+					),
 					embeds,
 					components,
 					ephemeral: true,

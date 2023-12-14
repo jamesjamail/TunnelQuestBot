@@ -61,7 +61,7 @@ const command: SlashCommand = {
 				const embeds = [watchCommandResponseBuilder(watch)];
 				const components = buttonRowBuilder(MessageTypes.watch);
 				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnsoozed,
+					content: messageCopy.yourWatchHasBeenUnsnoozed,
 					embeds,
 					components,
 					ephemeral: true,

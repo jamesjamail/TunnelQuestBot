@@ -2,6 +2,7 @@ import {
 	BlockedPlayer,
 	BlockedPlayerByWatch,
 	PlayerLink,
+	Server,
 } from '@prisma/client';
 import { formatServerFromEnum } from '../../helpers/watches';
 import { toTitleCase } from '../../helpers/titleCase';
@@ -71,13 +72,13 @@ export namespace messageCopy {
 		'**Welcome to the server!**';
 
 	export const yourWatchHasBeenSnoozed = (hours = 6) =>
-		`Your watch has been snoozed for ${hours} hours`;
+		`Your watch has been snoozed for ${hours} hours.`;
 
-	export const yourWatchHasBeenUnsoozed = 'Your watch has been unsnoozed';
+	export const yourWatchHasBeenUnsnoozed = 'Your watch has been unsnoozed.';
 
-	export const yourWatchHasBeenUnwatched = 'Your watch has been unwatched';
-
-	export const yourWatchIsActiveAgain = 'Your watch is active again';
+	export const yourWatchHasBeenUnwatched = (name: string, server: Server) => {
+		return `Your watch for \`${name}\` on \`${server}\` has been unwatched.`;
+	};
 
 	export const yourWatchHasBeenExtended = `Your watch has been extended for another ${process.env.WATCH_DURATION_IN_DAYS} days.`;
 
