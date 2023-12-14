@@ -63,7 +63,7 @@ export namespace messageCopy {
 		'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
 		'`/watch` `rusty bastard sword` `green server` `5`\n\n' +
 		"Whenever I find a match, I'll send you a direct message with all the pertinent info.\n\n" +
-		'Watches last 7 days before they expire, and can be renewed at any time.\n\n' +
+		`Watches last ${process.env.WATCH_DURATION_IN_DAYS} days before they expire, and can be renewed at any time.\n\n` +
 		'Most responses feature buttons which trigger useful commands.\n\n\n' +
 		'You can also check out our Tunnel Stream channels.\n\n' +
 		'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data courtesy of the P1999 wiki.\n\n\n' +
@@ -79,8 +79,7 @@ export namespace messageCopy {
 
 	export const yourWatchIsActiveAgain = 'Your watch is active again';
 
-	export const yourWatchHasBeenExtended =
-		'Your watch has been extended for another 7 days';
+	export const yourWatchHasBeenExtended = `Your watch has been extended for another ${process.env.WATCH_DURATION_IN_DAYS} days.`;
 
 	export const allYourWatchesHaveBeenSnoozed = (hours = 6) => {
 		return `All your watches have been snoozed for ${hours} hours.  Use the 💤 button below to unsnooze.`;

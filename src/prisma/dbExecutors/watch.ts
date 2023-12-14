@@ -448,14 +448,17 @@ export async function getWatchByWatchIdForWatchNotification(
 	return data;
 }
 
-export async function deleteWatchesOlderThanSeverDays() {
-	const sevenDaysAgo = new Date();
-	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+export async function deleteWatchesOlderThanWatchdurationDays() {
+	const watchDuration = +(process.env.WATCH_DURATION_IN_DAYS || 7);
+	const watchDurationDaysAgo = new Date();
+	watchDurationDaysAgo.setDate(
+		watchDurationDaysAgo.getDate() - watchDuration,
+	);
 
 	const result = await prisma.watch.deleteMany({
 		where: {
 			created: {
-				lt: sevenDaysAgo,
+				lt: watchDurationDaysAgo,
 			},
 		},
 	});

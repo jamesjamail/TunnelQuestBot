@@ -1,7 +1,7 @@
 import { runPlayerLinkHousekeeping } from '../../prisma/dbExecutors/playerLink';
 import {
 	getWatchesGroupedByServer,
-	deleteWatchesOlderThanSeverDays,
+	deleteWatchesOlderThanWatchdurationDays,
 } from '../../prisma/dbExecutors/watch';
 import { monitorLogFile } from './monitorLogs';
 import { state, events } from './state';
@@ -26,7 +26,7 @@ export async function startLoggingAllServers() {
 
 	// remove expired watches
 	setInterval(async () => {
-		deleteWatchesOlderThanSeverDays();
+		deleteWatchesOlderThanWatchdurationDays();
 	}, 60000);
 
 	// remove expired player link
