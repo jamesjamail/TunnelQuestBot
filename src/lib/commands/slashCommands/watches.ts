@@ -21,7 +21,7 @@ const command: SlashCommand = {
 		try {
 			// defer reply immediately as it may take a while to send watches
 			await interaction.deferReply({
-				ephemeral: true,
+				ephemeral: true, //	note: ephemeral interactions cannot be deleted
 			});
 			const args = getInteractionArgs(interaction, [], ['filter']);
 
@@ -37,16 +37,25 @@ const command: SlashCommand = {
 					const embeds = [watchCommandResponseBuilder(watch)];
 					const components = buttonRowBuilder(MessageTypes.watch);
 
-					const message = await interaction.user.send({
-						embeds,
-						components,
-					});
+					const message = await interaction.user
+						.send({
+							embeds,
+							components,
+						})
+						.catch((err) => {
+							console.error('error sending message: ', err);
+						});
 
-					lastDmChannelId = message.channelId;
+					lastDmChannelId = message?.channelId || '';
 					await collectButtonInteractionAndReturnResponse(
 						message as unknown as InteractionResponse<boolean>,
 						watch,
-					);
+					).catch((err) => {
+						console.error(
+							'error collecting button interactions: ',
+							err,
+						);
+					});
 				}),
 			);
 
@@ -55,17 +64,12 @@ const command: SlashCommand = {
 				return await interaction.editReply('Here you go...');
 			}
 
-			const response = await interaction.editReply(
+			return await interaction.editReply(
 				messageCopy.watchesHaveBeenDeliveredViaDm(
 					data.length,
 					lastDmChannelId,
 				),
 			);
-
-			// Set a timeout to delete the reply after 10 seconds
-			return setTimeout(async () => {
-				await response.delete();
-			}, 10000);
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

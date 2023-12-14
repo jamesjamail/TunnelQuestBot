@@ -6,6 +6,8 @@ import {
 } from 'discord.js';
 import { ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
+import { generateButtonInteractionKey } from '../../helpers/redis';
+import { redis } from '../../../redis/init';
 
 export async function collectButtonInteractionAndReturnResponse<T>(
 	response: InteractionResponse,
@@ -18,6 +20,22 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 		});
 
 	collector.on('collect', async (interaction: ButtonInteraction) => {
+		// 	what a mess, discord sometimes fires the same button interaction multiple times
+		// 	I notice it seldomly but usually when moving focus while /watches are being
+		// 	deliverered.  Let's dedupe the button interactions by id...
+
+		const key = generateButtonInteractionKey(interaction.id);
+
+		// write if it doesnt already exist
+		const set = await redis.setnx(key, 'acknowledged');
+		if (!set) {
+			console.log('dupe detected');
+			return; // Skip processing if key exists
+		}
+		// Set a TTL for the key
+		await redis.expire(key, 15);
+
+		console.log('interaction = ', interaction.id, interaction.customId);
 		// map interaction types to specific handler functions.
 		const handlerMapping: {
 			[key: string]: (

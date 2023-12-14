@@ -2,6 +2,7 @@ import {
 	ButtonInteraction,
 	CacheType,
 	ChannelSelectMenuInteraction,
+	DiscordAPIError,
 	Interaction,
 	MentionableSelectMenuInteraction,
 	Message,
@@ -32,9 +33,8 @@ export async function confirmButtonInteraction(
 	confirmationMessage: string,
 	commandType: MessageTypes,
 ) {
-	const updatedComponents = buttonRowBuilder(commandType);
 	if (!interaction.isButton()) {
-		throw new Error('initial interaction is a button');
+		throw new Error('Expected a button interaction');
 	}
 
 	// Build buttons using buttonBuilder
@@ -43,79 +43,98 @@ export async function confirmButtonInteraction(
 		{ type: ButtonInteractionTypes.CancelActionActive },
 	]);
 
-	// Defer reply and follow up with the message
-	await interaction.deferUpdate();
-	// TODO: whatever button was clicked should be active
-	// we need a way to determine which buttons corelate to which button interactions
-	// probably easiest to accept ButtonInteractionTypes as extra argument
+	let followUp;
+
 	const buttonRowWithActiveButton = buttonRowBuilder(commandType);
+	const update = await interaction
+		.update({ components: buttonRowWithActiveButton })
+		.catch((e) => {console.error('error updating: ', e)});
 
-	await interaction.editReply({ components: buttonRowWithActiveButton });
-
-	const followUp = await interaction.followUp({
-		content: confirmationMessage,
-		components: buttons,
-	});
-
-	const filter = (
-		i:
-			| ButtonInteraction
-			| StringSelectMenuInteraction<CacheType>
-			| UserSelectMenuInteraction<CacheType>
-			| RoleSelectMenuInteraction<CacheType>
-			| MentionableSelectMenuInteraction<CacheType>
-			| ChannelSelectMenuInteraction<CacheType>,
-	) => {
-		if (!i.isButton()) return false;
-		return [
-			ButtonInteractionTypes[ButtonInteractionTypes.ConfirmActionActive],
-			ButtonInteractionTypes[ButtonInteractionTypes.CancelActionActive],
-		].includes(i.customId);
-	};
+	if (!update) {
+		return;
+	}
 
 	try {
-		const collected = await followUp.awaitMessageComponent({
-			filter,
-			time: 10000,
+		followUp = await interaction.followUp({
+			content: confirmationMessage,
+			components: buttons,
 		});
 
-		if (!collected.isButton()) {
-			throw new Error('collected interaction is a button');
-		}
+		// Filter for button interactions
+		const filter = (
+			i:
+				| ButtonInteraction
+				| StringSelectMenuInteraction<CacheType>
+				| UserSelectMenuInteraction<CacheType>
+				| RoleSelectMenuInteraction<CacheType>
+				| MentionableSelectMenuInteraction<CacheType>
+				| ChannelSelectMenuInteraction<CacheType>,
+		) => {
+			if (!i.isButton()) return false;
+			return [
+				ButtonInteractionTypes[
+					ButtonInteractionTypes.ConfirmActionActive
+				],
+				ButtonInteractionTypes[
+					ButtonInteractionTypes.CancelActionActive
+				],
+			].includes(i.customId);
+		};
 
-		// linter rule doesn't like declarations in cases
-		const potentialError = `Unknown customId: ${collected.customId}`;
+		try {
+			const collected = await followUp.awaitMessageComponent({
+				filter,
+				time: 10000,
+			});
 
-		switch (collected.customId) {
-			case 'ConfirmActionActive':
-				return await confirmedAction(followUp, collected); // Perform the confirmed action.
-				break;
-			case 'CancelActionActive':
-				// Revert to original state
+			if (!collected.isButton()) {
+				throw new Error('Expected a button interaction');
+			}
+
+			const potentialError = `Unknown customId: ${collected.customId}`;
+			switch (collected.customId) {
+				case 'ConfirmActionActive':
+					await confirmedAction(followUp, collected); // Perform the confirmed action.
+					break;
+				case 'CancelActionActive':
+					// Revert to original state
+					await followUp.delete();
+					// await interaction.update({
+					// 	components: updatedComponents,
+					// });
+					break;
+				default:
+					throw new Error(potentialError);
+			}
+		} catch (error) {
+			// This block handles the timeout case
+			if (
+				error.message.includes(
+					'Collector received no interactions before ending with reason: time',
+				)
+			) {
+				// If no interaction is collected in the specified time, revert to original state
 				await followUp.delete();
-				await interaction.editReply({
-					components: updatedComponents,
-				});
-				break;
-			default:
-				throw new Error(potentialError);
+			} else {
+				throw error; // Re-throw the error if it's not a timeout
+			}
 		}
-
-		// handle collected interaction...
 	} catch (error) {
-		if (
-			error instanceof Error && // TypeScript way to ensure `error` has `message` property.
-			!error.message.includes(
-				'Collector received no interactions before ending with reason: time',
-			)
-		) {
+		if (error instanceof DiscordAPIError && error.code === 10062) {
+			// Handle specific "Unknown interaction" error
 			// eslint-disable-next-line no-console
+			console.error('Swallowed Unknown Interaction error');
+			await followUp?.delete();
+			// 	TODO: when we error, we need to reset the message or delete it
+			//  currently, the follow up is not deleted
+		} else if (error instanceof DiscordAPIError && error.code === 44060) {
+			// Handle specific "interaction already acknowledged" error
+			// eslint-disable-next-line no-console
+			console.error('Swallowed Interaction already acknowledged error');
+			await followUp?.delete();
+		} else {
+			// Handle other errors
 			await gracefullyHandleError(error);
 		}
-		// Revert to original state
-		await followUp.delete();
-		await interaction.editReply({
-			components: updatedComponents,
-		});
 	}
 }
