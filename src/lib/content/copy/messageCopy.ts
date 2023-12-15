@@ -94,7 +94,7 @@ export namespace messageCopy {
 		'Global snooze has been been removed.  Your watches may still have individual snoozes applied.';
 
 	export const iCouldntFindAnyWatchesForItemName = (itemName: string) => {
-		return `I couldn't find any watches for item ${itemName}.  Try creating one with /watch.`;
+		return `I couldn't find any watches for item \`${itemName}\`.  Try creating one with /watch.`;
 	};
 
 	export const watchesHaveBeenDeliveredViaDm = (
@@ -131,21 +131,21 @@ export namespace messageCopy {
 	};
 
 	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
-		return `${block.player} has been blocked on ${formatServerFromEnum(
-			block.server,
-		)}`;
+		return `\`${
+			block.player
+		}\` has been blocked on \`${formatServerFromEnum(block.server)}\``;
 	};
 
 	export const soAndSoHasBeenUnblocked = (block: BlockedPlayer) => {
-		return `${block.player} has been unblocked on ${formatServerFromEnum(
-			block.server,
-		)}`;
+		return `\`${
+			block.player
+		}\` has been unblocked on \`${formatServerFromEnum(block.server)}\``;
 	};
 
 	export const soAndSoHasBeenBlockedForThisWatch = (
 		block: BlockedPlayerByWatch,
 	) => {
-		return `You will no longer receive Watch Notifications for auctions from ${block.player} for this watch.`;
+		return `You will no longer receive Watch Notifications for auctions from \`${block.player}\` for this watch.`;
 	};
 
 	export const soAndSoHasBeenLinked = (link: PlayerLink) => {
