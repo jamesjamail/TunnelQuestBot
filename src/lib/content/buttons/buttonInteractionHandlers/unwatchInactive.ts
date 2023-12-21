@@ -12,14 +12,17 @@ export default async function handleUnwatchInactive<T>(
 	return await confirmButtonInteraction(
 		interaction,
 		async (followUpMessage) => {
-			await unwatch(metadata as Watch);
+			const typedWatch = metadata as Watch;
+			await unwatch(typedWatch);
 			await followUpMessage.delete();
 			await interaction.editReply({
-				content: messageCopy.yourWatchHasBeenUnwatched,
+				content: messageCopy.yourWatchHasBeenUnwatched(
+					typedWatch.itemName,
+					typedWatch.server,
+				),
 				embeds: [],
 				components: [],
 			});
-			// TODO: delete reply after 10 seconds.
 		},
 		'Are you sure you want to unwatch?',
 		MessageTypes.watch,

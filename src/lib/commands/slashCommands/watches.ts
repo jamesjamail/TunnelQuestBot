@@ -55,17 +55,12 @@ const command: SlashCommand = {
 				return await interaction.editReply('Here you go...');
 			}
 
-			const response = await interaction.editReply(
+			return await interaction.editReply(
 				messageCopy.watchesHaveBeenDeliveredViaDm(
 					data.length,
 					lastDmChannelId,
 				),
 			);
-
-			// Set a timeout to delete the reply after 10 seconds
-			return setTimeout(async () => {
-				await response.delete();
-			}, 10000);
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

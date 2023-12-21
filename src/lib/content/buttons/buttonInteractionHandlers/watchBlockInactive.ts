@@ -1,10 +1,7 @@
 import { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { MessageTypes } from '../buttonRowBuilder';
-import {
-	confirmButtonInteraction,
-	removeInteractionContentAfterDelay,
-} from '../buttonHelpers';
+import { confirmButtonInteraction } from '../buttonHelpers';
 import { addPlayerBlockByWatch } from '../../../../prisma/dbExecutors/block';
 import { WatchWithUserAndBlockedWatches } from '../../../../prisma/dbExecutors/watch';
 
@@ -31,7 +28,6 @@ export default async function handleWatchBlockInactive<T>(
 				embeds: [],
 				components: [],
 			});
-			await removeInteractionContentAfterDelay(interaction, 5000);
 		},
 		'Are you sure wish to block this seller for this item?',
 		MessageTypes.watchNotification,

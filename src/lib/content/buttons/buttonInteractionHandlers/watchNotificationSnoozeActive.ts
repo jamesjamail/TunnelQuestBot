@@ -26,7 +26,7 @@ export default async function handleWatchNotificationSnoozeActive<T>(
 	];
 
 	await interaction.update({
-		content: messageCopy.yourWatchHasBeenUnsoozed,
+		content: messageCopy.yourWatchHasBeenUnsnoozed,
 		embeds,
 		components,
 	});

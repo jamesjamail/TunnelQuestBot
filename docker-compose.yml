@@ -50,6 +50,12 @@
         - "db-socket:${DB_SOCKET_DIR}"
         - "redis-socket:${REDIS_SOCKET_DIR}"
       restart: always
+      ports:
+        # Node.js Debug port is 9229
+        # It would be better to open this conditionally, but doing that in
+        # docker-compose isn't straightforward. This likely won't hurt to open even
+        # for our production server because ... it's a NUC in someone's basement.
+        - "9229:9229"
 
   volumes:
     postgres-data:

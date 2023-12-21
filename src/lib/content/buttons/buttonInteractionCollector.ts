@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
 	InteractionCollector,
 	ButtonInteraction,
@@ -6,6 +7,7 @@ import {
 } from 'discord.js';
 import { ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
+import { isDuplicateButtonInteraction } from '../../helpers/redis';
 
 export async function collectButtonInteractionAndReturnResponse<T>(
 	response: InteractionResponse,
@@ -17,8 +19,13 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 			time: 3_600_000,
 		});
 
+	//  map interaction types to specific handler functions.
 	collector.on('collect', async (interaction: ButtonInteraction) => {
-		// map interaction types to specific handler functions.
+		const isDupe = await isDuplicateButtonInteraction(interaction);
+		if (isDupe) {
+			return;
+		}
+
 		const handlerMapping: {
 			[key: string]: (
 				interaction: ButtonInteraction,

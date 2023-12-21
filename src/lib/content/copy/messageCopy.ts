@@ -2,6 +2,7 @@ import {
 	BlockedPlayer,
 	BlockedPlayerByWatch,
 	PlayerLink,
+	Server,
 } from '@prisma/client';
 import { formatServerFromEnum } from '../../helpers/watches';
 import { toTitleCase } from '../../helpers/titleCase';
@@ -63,7 +64,9 @@ export namespace messageCopy {
 		'If you only have 5pp to spend, you can enter a price criteria:\n\n' +
 		'`/watch` `rusty bastard sword` `green server` `5`\n\n' +
 		"Whenever I find a match, I'll send you a direct message with all the pertinent info.\n\n" +
-		'Watches last 7 days before they expire, and can be renewed at any time.\n\n' +
+		`Watches last ${
+			process.env.WATCH_DURATION_IN_DAYS || 7
+		} days before they expire, and can be renewed at any time.\n\n` +
 		'Most responses feature buttons which trigger useful commands.\n\n\n' +
 		'You can also check out our Tunnel Stream channels.\n\n' +
 		'Auction message are displayed at the top of each post with links to the wiki items beneath.  Hovering over the item name displays historical pricing data courtesy of the P1999 wiki.\n\n\n' +
@@ -71,16 +74,17 @@ export namespace messageCopy {
 		'**Welcome to the server!**';
 
 	export const yourWatchHasBeenSnoozed = (hours = 6) =>
-		`Your watch has been snoozed for ${hours} hours`;
+		`Your watch has been snoozed for ${hours} hours.`;
 
-	export const yourWatchHasBeenUnsoozed = 'Your watch has been unsnoozed';
+	export const yourWatchHasBeenUnsnoozed = 'Your watch has been unsnoozed.';
 
-	export const yourWatchHasBeenUnwatched = 'Your watch has been unwatched';
+	export const yourWatchHasBeenUnwatched = (name: string, server: Server) => {
+		return `Your watch for \`${name}\` on \`${server}\` has been unwatched.`;
+	};
 
-	export const yourWatchIsActiveAgain = 'Your watch is active again';
-
-	export const yourWatchHasBeenExtended =
-		'Your watch has been extended for another 7 days';
+	export const yourWatchHasBeenExtended = `Your watch has been extended for another ${
+		process.env.WATCH_DURATION_IN_DAYS || 7
+	} days.`;
 
 	export const allYourWatchesHaveBeenSnoozed = (hours = 6) => {
 		return `All your watches have been snoozed for ${hours} hours.  Use the 💤 button below to unsnooze.`;
@@ -90,7 +94,7 @@ export namespace messageCopy {
 		'Global snooze has been been removed.  Your watches may still have individual snoozes applied.';
 
 	export const iCouldntFindAnyWatchesForItemName = (itemName: string) => {
-		return `I couldn't find any watches for item ${itemName}.  Try creating one with /watch.`;
+		return `I couldn't find any watches for item \`${itemName}\`.  Try creating one with /watch.`;
 	};
 
 	export const watchesHaveBeenDeliveredViaDm = (
@@ -127,21 +131,21 @@ export namespace messageCopy {
 	};
 
 	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
-		return `${block.player} has been blocked on ${formatServerFromEnum(
-			block.server,
-		)}`;
+		return `\`${
+			block.player
+		}\` has been blocked on \`${formatServerFromEnum(block.server)}\``;
 	};
 
 	export const soAndSoHasBeenUnblocked = (block: BlockedPlayer) => {
-		return `${block.player} has been unblocked on ${formatServerFromEnum(
-			block.server,
-		)}`;
+		return `\`${
+			block.player
+		}\` has been unblocked on \`${formatServerFromEnum(block.server)}\``;
 	};
 
 	export const soAndSoHasBeenBlockedForThisWatch = (
 		block: BlockedPlayerByWatch,
 	) => {
-		return `You will no longer receive Watch Notifications for auctions from ${block.player} for this watch.`;
+		return `You will no longer receive Watch Notifications for auctions from \`${block.player}\` for this watch.`;
 	};
 
 	export const soAndSoHasBeenLinked = (link: PlayerLink) => {

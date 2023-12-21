@@ -2,6 +2,7 @@ import {
 	ButtonInteraction,
 	CacheType,
 	ChannelSelectMenuInteraction,
+	DiscordAPIError,
 	Interaction,
 	MentionableSelectMenuInteraction,
 	Message,
@@ -34,7 +35,7 @@ export async function confirmButtonInteraction(
 ) {
 	const updatedComponents = buttonRowBuilder(commandType);
 	if (!interaction.isButton()) {
-		throw new Error('initial interaction is a button');
+		throw new Error('Expected a button interaction');
 	}
 
 	// Build buttons using buttonBuilder
@@ -103,19 +104,26 @@ export async function confirmButtonInteraction(
 
 		// handle collected interaction...
 	} catch (error) {
-		if (
+		// this is the error on /watches unwatch button interaction
+		if (error instanceof DiscordAPIError && error.code === 10062) {
+			// eslint-disable-next-line no-console
+			const informativeError = new Error(
+				'Unknown interaction error received while confirming button interaction.  This is likely due to duplicate button interactions.',
+			);
+			await gracefullyHandleError(informativeError);
+		} else if (
 			error instanceof Error && // TypeScript way to ensure `error` has `message` property.
 			!error.message.includes(
 				'Collector received no interactions before ending with reason: time',
 			)
 		) {
-			// eslint-disable-next-line no-console
-			await gracefullyHandleError(error);
+			// log error
+			await gracefullyHandleError(error, interaction);
+			// Revert to original state
+			await followUp.delete();
+			await interaction.editReply({
+				components: updatedComponents,
+			});
 		}
-		// Revert to original state
-		await followUp.delete();
-		await interaction.editReply({
-			components: updatedComponents,
-		});
 	}
 }

@@ -203,12 +203,18 @@ export async function watchNotificationBuilder(
 		authorProperties.url = wikiUrl;
 	}
 
+	const playerLink = await getPlayerLink(player, watchData.server);
+	let playerLinkString = '';
+	if (playerLink) {
+		playerLinkString = `/<@${playerLink.discordUserId}>`;
+	}
+
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor(authorProperties)
 		.setTitle(`Watch Notification: ${toTitleCase(watchData.itemName)}`)
 		.setDescription(
-			`\n\n\n**${player}** is currently ${
+			`\n\n\n**${player}**${playerLinkString} is currently ${
 				watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
 			} **${toTitleCase(watchData.itemName)}** ${
 				auctionedPrice

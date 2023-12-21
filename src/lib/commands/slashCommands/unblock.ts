@@ -53,7 +53,7 @@ const command: SlashCommand = {
 					block,
 				);
 			} else {
-				// make a good faith effort to unwatch based on raw string
+				// make a good faith effort to unblock based on raw string
 				// TODO: if no block found, this will throw.  catch it and respond accordingly
 				const playerName = args?.player?.value;
 				const block = await removePlayerBlockWithoutServer(
@@ -68,7 +68,7 @@ const command: SlashCommand = {
 					false,
 				]);
 				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnwatched,
+					content: messageCopy.soAndSoHasBeenUnblocked(block),
 					embeds,
 					components,
 					ephemeral: true,
