@@ -79,7 +79,7 @@ export namespace messageCopy {
 	export const yourWatchHasBeenUnsnoozed = 'Your watch has been unsnoozed.';
 
 	export const yourWatchHasBeenUnwatched = (name: string, server: Server) => {
-		return `Your watch for \`${name}\` on \`${server}\` has been unwatched.`;
+		return `Your watch for \`${name}\` on \`${server}\` has been removed.`;
 	};
 
 	export const yourWatchHasBeenExtended = `Your watch has been extended for another ${
@@ -101,9 +101,15 @@ export namespace messageCopy {
 		numberOfWatches: number,
 		channelId: string,
 	) => {
-		return `${numberOfWatches} watch${numberOfWatches > 1 ? 'es' : ''} ${
-			numberOfWatches > 1 ? 'have' : 'has'
-		} been delivered via DM <#${channelId}>`;
+		if (numberOfWatches > 0) {
+			return `${numberOfWatches} watch${
+				numberOfWatches > 1 ? 'es' : ''
+			} ${
+				numberOfWatches > 1 ? 'have' : 'has'
+			} been delivered via DM <#${channelId}>`;
+		} else {
+			return 'No watches found.';
+		}
 	};
 
 	export const linksHaveBeenDeliveredViaDm = (
@@ -125,9 +131,13 @@ export namespace messageCopy {
 		numberOfBlocks: number,
 		channelId: string,
 	) => {
-		return `${numberOfBlocks} block${numberOfBlocks > 1 ? 's' : ''} ${
-			numberOfBlocks > 1 ? 'have' : 'has'
-		} been delivered via DM <#${channelId}>`;
+		if (numberOfBlocks > 0) {
+			return `${numberOfBlocks} block${numberOfBlocks > 1 ? 's' : ''} ${
+				numberOfBlocks > 1 ? 'have' : 'has'
+			} been delivered via DM <#${channelId}>`;
+		} else {
+			return 'No blocks found.';
+		}
 	};
 
 	export const soAndSoHasBeenBlocked = (block: BlockedPlayer) => {
