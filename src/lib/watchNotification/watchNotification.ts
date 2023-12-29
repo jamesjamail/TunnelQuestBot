@@ -15,6 +15,7 @@ import {
 import { isSnoozed } from '../helpers/watches';
 import crypto from 'crypto';
 import { redis } from '../../redis/init';
+import { gracefullyHandleError } from '../helpers/errors';
 
 export function generateDebounceKey(
 	watchId: number,
@@ -111,9 +112,15 @@ export async function triggerFoundWatchedItem(
 		return;
 	}
 
-	const embeds = [
-		await watchNotificationBuilder(data, player, price, auctionMessage),
-	];
+	const embeds = [];
+	try {
+		embeds.push(
+			await watchNotificationBuilder(data, player, price, auctionMessage),
+		);
+	} catch (error) {
+		await gracefullyHandleError(error);
+		return;
+	}
 	const components = buttonRowBuilder(MessageTypes.watchNotification);
 
 	const message = await client.users.send(data.discordUserId, {
