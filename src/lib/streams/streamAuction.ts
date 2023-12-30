@@ -1,4 +1,4 @@
-import { ChannelType } from 'discord.js';
+import { TextChannel, ChannelType } from 'discord.js';
 import { client } from '../..';
 import { Server } from '@prisma/client';
 import { embeddedAuctionStreamMessageBuilder } from '../content/messages/messageBuilder';
@@ -54,7 +54,7 @@ export async function streamAuctionToAllStreamChannels(
 			auctionData,
 		);
 
-		await embeddedChannel.send({
+		await (embeddedChannel as TextChannel).send({
 			embeds: embeds,
 			allowedMentions: { users: [] },
 		});
@@ -70,7 +70,7 @@ export async function streamAuctionToAllStreamChannels(
 				`could not fetch classic stream channel ${classicChannelId}`,
 			);
 		}
-		await classicChannel.send(rawAuction);
+		await (classicChannel as TextChannel).send(rawAuction);
 	} catch (err) {
 		// eslint-disable-next-line no-console
 		await gracefullyHandleError(err);
