@@ -7,6 +7,7 @@ export async function gracefullyHandleError(
 	error: Error,
 	interaction?: Interaction,
 	command?: SlashCommand,
+	extraData?: object,
 ) {
 	let errorMessage = `An error occured: ${error.message}`;
 	// include interaction info if available
@@ -16,6 +17,10 @@ export async function gracefullyHandleError(
 
 	if (interaction && command) {
 		errorMessage = `<@${interaction.user.id}> triggered the following error using the \`\`${command.command.name}\`\` command:\n \`\`${error.message}\`\``;
+	}
+
+	if (extraData) {
+		errorMessage += `\n\`\`\`json\n${JSON.stringify(extraData)}\n\`\`\``;
 	}
 
 	// Log the error to the console - warning level so we can reserve error level for

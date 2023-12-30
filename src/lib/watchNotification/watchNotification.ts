@@ -118,7 +118,7 @@ export async function triggerFoundWatchedItem(
 			await watchNotificationBuilder(data, player, price, auctionMessage),
 		);
 	} catch (error) {
-		await gracefullyHandleError(error);
+		await gracefullyHandleError(error, undefined, undefined, data);
 		return;
 	}
 	const components = buttonRowBuilder(MessageTypes.watchNotification);
