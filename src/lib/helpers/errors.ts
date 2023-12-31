@@ -19,10 +19,6 @@ export async function gracefullyHandleError(
 		errorMessage = `<@${interaction.user.id}> triggered the following error using the \`\`${command.command.name}\`\` command:\n \`\`${error.message}\`\``;
 	}
 
-	if (extraData) {
-		errorMessage += `\n\`\`\`json\n${JSON.stringify(extraData)}\n\`\`\``;
-	}
-
 	// Log the error to the console - warning level so we can reserve error level for
 	// error-logging-to-discord failures
 	console.warn(errorMessage);
@@ -51,9 +47,30 @@ export async function gracefullyHandleError(
 	// Check if the channel is a text channel and send a message
 	if (channel && channel.isTextBased()) {
 		const textChannel = channel as TextChannel;
-		await textChannel.send(errorMessage).catch((loggingError) => {
-			console.error('ERROR LOGGING ERROR TO DISCORD: ', loggingError);
-			console.error('ORIGINAL ERROR THAT FAILED TO SEND: ', error);
-		});
+		await textChannel
+			.send(errorMessage)
+			.then((sentMessage) => {
+				sentMessage
+					.startThread({
+						name: `error-${Math.floor(Date.now() / 1000)}`,
+						autoArchiveDuration: 60 * 24, // One Day
+					})
+					.then((errorThread) => {
+						errorThread.send(
+							`Stack:\n\`\`\`\n${error.stack}\n\`\`\``,
+						);
+						if (extraData) {
+							errorThread.send(
+								`Extra data:\n\`\`\`json\n${JSON.stringify(
+									extraData,
+								)}\n\`\`\``,
+							);
+						}
+					});
+			})
+			.catch((loggingError) => {
+				console.error('ERROR LOGGING ERROR TO DISCORD: ', loggingError);
+				console.error('ORIGINAL ERROR THAT FAILED TO SEND: ', error);
+			});
 	}
 }
