@@ -198,11 +198,11 @@ export async function watchNotificationBuilder(
 			`itemName is an empty string for watch id: ${watchData.id}`,
 		);
 		await gracefullyHandleError(error);
+		watchData.itemName = 'unknown item';
 	}
 
-	// TODO: figure out what how itemNames could be empty - the fallback below is a temporary fix
 	const authorProperties: EmbedAuthorOptions = {
-		name: watchData.itemName || 'UNKNOWN ITEM', //	itemName is intentionally left uppercase as a heading
+		name: watchData.itemName, //	itemName is intentionally left uppercase as a heading
 	};
 
 	if (imgUrl) {

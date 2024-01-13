@@ -39,6 +39,12 @@ const command: SlashCommand = {
 				['price', 'notes'],
 			);
 
+			if (!args.item.value) {
+				return await interaction.reply(
+					`You didn't enter an item name. Instead of selecting the option \`start typing an item name for suggestions\`, either select a suggested option or enter your own.`,
+				);
+			}
+
 			const data = await upsertWatchSafely(interaction, {
 				server: args.server.value as Server,
 				itemName: args.item.value as string,
