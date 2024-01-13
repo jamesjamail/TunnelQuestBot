@@ -30,6 +30,7 @@ import {
 } from '../../helpers/fetchHistoricalPricing';
 import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
+import { gracefullyHandleError } from '../../helpers/errors';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	// Helper function to generate the field value based on conditions
@@ -191,8 +192,17 @@ export async function watchNotificationBuilder(
 		});
 	}
 
+	// TODO: let's keep an on eye on this bug for now
+	if (watchData.itemName.trim() === '') {
+		const error = new Error(
+			`itemName is an empty string for watch id: ${watchData.id}`,
+		);
+		await gracefullyHandleError(error);
+	}
+
+	// TODO: figure out what how itemNames could be empty - the fallback below is a temporary fix
 	const authorProperties: EmbedAuthorOptions = {
-		name: watchData.itemName, //	itemName is intentionally left uppercase as a heading
+		name: watchData.itemName || 'UNKNOWN ITEM', //	itemName is intentionally left uppercase as a heading
 	};
 
 	if (imgUrl) {
