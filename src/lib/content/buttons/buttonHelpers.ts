@@ -24,6 +24,7 @@ export async function removeInteractionContentAfterDelay(
 	}, delay);
 }
 
+// TODO: remove this as we no longer use it
 export async function confirmButtonInteraction(
 	interaction: Interaction,
 	confirmedAction: (

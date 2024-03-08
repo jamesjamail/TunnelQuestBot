@@ -21,6 +21,8 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 
 	//  map interaction types to specific handler functions.
 	collector.on('collect', async (interaction: ButtonInteraction) => {
+		// TODO: once this follow ups are removed, this can be removed as well.
+		// 		 leaving until we confirm this resolves the duplicate interaction id
 		const isDupe = await isDuplicateButtonInteraction(interaction);
 		if (isDupe) {
 			return;
@@ -38,6 +40,8 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleWatchSnoozeActive,
 			[ButtonInteractionTypes.UnwatchInactive]:
 				handlers.handleUnwatchInactive,
+			[ButtonInteractionTypes.UnwatchActive]:
+				handlers.handleUnwatchActive,
 			[ButtonInteractionTypes.WatchRefreshInactive]:
 				//	since refresh button does not have a toggle state, we can use
 				//  the same handler for both states.
@@ -56,23 +60,28 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 				handlers.handleUserSnoozeActive,
 			[ButtonInteractionTypes.GlobalUnblockInactive]:
 				handlers.handleGlobalUnblockInactive,
+			[ButtonInteractionTypes.GlobalUnblockActive]:
+				handlers.handleGlobalUnblockActive,
 			[ButtonInteractionTypes.UnlinkCharacterInactive]:
 				handlers.handleUnlinkCharacterInactive,
 			[ButtonInteractionTypes.UnlinkCharacterActive]:
 				handlers.handleUnlinkCharacterActive,
 			[ButtonInteractionTypes.WatchBlockInactive]:
 				handlers.handleWatchBlockInactive,
+			[ButtonInteractionTypes.WatchBlockActive]:
+				handlers.handleWatchBlockActive,
 			[ButtonInteractionTypes.WatchNotificationSnoozeInactive]:
 				handlers.handleWatchNotificationSnoozeInactive,
 			[ButtonInteractionTypes.WatchNotificationSnoozeActive]:
 				handlers.handleWatchNotificationSnoozeActive,
 			[ButtonInteractionTypes.WatchNotificationUnwatchInactive]:
 				handlers.handleWatchNotificationUnwatchInactive,
+			[ButtonInteractionTypes.WatchNotificationUnwatchActive]:
+				handlers.handleWatchNotificationUnwatchActive,
 			[ButtonInteractionTypes.WatchNotificationWatchRefreshInactive]:
 				handlers.handleWatchNotificationRefreshInactive,
 			[ButtonInteractionTypes.WatchNotificationWatchRefreshActive]:
 				handlers.handleWatchNotificationRefreshInactive,
-			// TODO: add other mappings
 		};
 
 		const handler =

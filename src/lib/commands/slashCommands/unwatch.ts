@@ -31,7 +31,6 @@ const command: SlashCommand = {
 				const watch = await unwatch(
 					args?.watch?.autoSuggestionMetaData?.watch as Watch,
 				);
-
 				const embeds = [watchCommandResponseBuilder(watch)];
 				const components = buttonRowBuilder(MessageTypes.watch, [
 					false,

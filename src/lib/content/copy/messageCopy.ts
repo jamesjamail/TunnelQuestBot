@@ -82,6 +82,10 @@ export namespace messageCopy {
 		return `Your watch for \`${name}\` on \`${server}\` has been removed.`;
 	};
 
+	export const yourWatchHasBeenRestored = (name: string, server: Server) => {
+		return `Your watch for \`${name}\` on \`${server}\` has been restored.`;
+	};
+
 	export const yourWatchHasBeenExtended = `Your watch has been extended for another ${
 		process.env.WATCH_DURATION_IN_DAYS || 7
 	} days.`;
@@ -156,6 +160,12 @@ export namespace messageCopy {
 		block: BlockedPlayerByWatch,
 	) => {
 		return `You will no longer receive Watch Notifications for auctions from \`${block.player}\` for this watch.`;
+	};
+
+	export const soAndSoHasBeenUnblockedForThisWatch = (
+		block: BlockedPlayerByWatch,
+	) => {
+		return `You will once again receive Watch Notifications for auctions from \`${block.player}\` for this watch.`;
 	};
 
 	export const soAndSoHasBeenLinked = (link: PlayerLink) => {

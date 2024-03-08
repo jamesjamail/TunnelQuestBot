@@ -13,24 +13,31 @@ import handleWatchNotificationRefreshInactive from './watchNotificationRefreshIn
 import handleWatchNotificationSnoozeInactive from './watchNotificationSnoozeInactive';
 import handleWatchNotificationSnoozeActive from './watchNotificationSnoozeActive';
 import handleWatchNotificationUnwatchInactive from './watchNotificationUnwatchInactive';
+import handleUnwatchActive from './unwatchActive';
+import handleGlobalUnblockActive from './globalUnblockActive';
+import handleWatchBlockActive from './watchBlockActive';
+import handleWatchNotificationUnwatchActive from './watchNotificationUnwatchActive';
 
 export {
 	// buttons from command responses below...
 	handleWatchSnoozeInactive,
 	handleWatchSnoozeActive,
 	handleUnwatchInactive,
+	handleUnwatchActive,
 	handleWatchRefreshInactive,
 	handleGlobalRefreshInactive,
 	handleUserSnoozeInactive,
 	handleUserSnoozeActive,
 	handleGlobalUnblockInactive,
+	handleGlobalUnblockActive,
 	handleUnlinkCharacterInactive,
 	handleUnlinkCharacterActive,
 	// buttons from watch notifications below...
 	handleWatchNotificationSnoozeInactive,
 	handleWatchNotificationSnoozeActive,
 	handleWatchNotificationUnwatchInactive,
+	handleWatchNotificationUnwatchActive,
 	handleWatchBlockInactive,
+	handleWatchBlockActive,
 	handleWatchNotificationRefreshInactive,
-	// ... import other handlers
 };

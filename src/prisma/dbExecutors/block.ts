@@ -48,6 +48,19 @@ export async function addPlayerBlock(
 	});
 }
 
+export async function restorePlayerBlockById(id: number) {
+	// Update the blockedPlayer entry where the block id matches
+	// the arguement id
+	return prisma.blockedPlayer.update({
+		where: {
+			id,
+		},
+		data: {
+			active: true,
+		},
+	});
+}
+
 export async function removePlayerBlock(
 	discordUserId: string,
 	player: string,
@@ -121,14 +134,22 @@ export async function addPlayerBlockByWatch(
 	});
 }
 
-export async function removePlayerBlockByWatch(
+export async function removeWatchBlockById(id: number) {
+	return prisma.blockedPlayerByWatch.delete({
+		where: {
+			id,
+		},
+	});
+}
+
+export async function removeWatchBlockByPlayerName(
 	watchId: number,
 	player: string,
 ) {
-	return await prisma.blockedPlayerByWatch.delete({
+	return prisma.blockedPlayerByWatch.delete({
 		where: {
 			watchId_player: {
-				watchId: watchId,
+				watchId,
 				player: player.toUpperCase(),
 			},
 		},
