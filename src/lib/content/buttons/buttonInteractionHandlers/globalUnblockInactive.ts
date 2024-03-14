@@ -18,4 +18,5 @@ export default async function handleGlobalUnblockInactive<T>(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.soAndSoHasBeenUnblocked(data));
 }

@@ -17,4 +17,5 @@ export default async function handleUserSnoozeInactive(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.allYourWatchesHaveBeenSnoozed());
 }

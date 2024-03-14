@@ -21,4 +21,5 @@ export default async function handleWatchSnoozeInactive<T>(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.yourWatchHasBeenSnoozed());
 }

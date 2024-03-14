@@ -29,4 +29,5 @@ export default async function handleWatchBlockInactive<T>(
 		content: messageCopy.soAndSoHasBeenBlockedForThisWatch(data),
 		components,
 	});
+	debug_console(messageCopy.soAndSoHasBeenBlockedForThisWatch(data));
 }

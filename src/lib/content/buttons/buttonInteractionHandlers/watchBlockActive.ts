@@ -29,4 +29,5 @@ export default async function handleWatchBlockActive<T>(
 		content: messageCopy.soAndSoHasBeenUnblockedForThisWatch(data),
 		components,
 	});
+	debug_console(messageCopy.soAndSoHasBeenUnblockedForThisWatch(data));
 }

@@ -27,4 +27,10 @@ export default async function handleUnwatchActive<T>(
 		components,
 		embeds,
 	});
+	debug_console(
+		messageCopy.yourWatchHasBeenRestored(
+			typedWatch.itemName,
+			typedWatch.server,
+		),
+	);
 }

@@ -12,20 +12,24 @@ export default async function handleUnlinkCharacterInactive<T>(
 	const link = metadata as PlayerLink;
 	const success = await removePlayerLinkById(link.id);
 	let new_embed = playerlinkCommandResponseBuilder(link) as EmbedBuilder;
+	let message: string;
 	if (success) {
 		new_embed = new_embed
 			.setColor('NotQuiteBlack')
 			.setTitle(`⛓️‍💥 ${new_embed.data.title}`);
+		message = messageCopy.soAndSoHasBeenUnlinked(link);
 		await interaction.update({
-			content: messageCopy.soAndSoHasBeenUnlinked(link),
+			content: message,
 			embeds: [new_embed],
 			components: buttonRowBuilder(MessageTypes.link, [true]),
 		});
 	} else {
+		message = messageCopy.soAndSoHasFailedToBeUnlinked(link);
 		await interaction.update({
-			content: messageCopy.soAndSoHasFailedToBeUnlinked(link),
+			content: message,
 			embeds: [new_embed],
 			components: buttonRowBuilder(MessageTypes.link, [false]),
 		});
 	}
+	debug_console(message);
 }

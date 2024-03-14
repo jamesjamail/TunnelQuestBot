@@ -31,4 +31,10 @@ export default async function handleWatchNotificationUnwatchInactive<T>(
 		components,
 		embeds,
 	});
+	debug_console(
+		messageCopy.yourWatchHasBeenUnwatched(
+			typedWatch.itemName,
+			typedWatch.server,
+		),
+	);
 }

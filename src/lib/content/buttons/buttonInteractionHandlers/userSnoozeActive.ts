@@ -17,4 +17,5 @@ export default async function handleUserSnoozeActive(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.globalSnoozeHasBeenRemoved);
 }
