@@ -40,4 +40,4 @@ COPY --from=BUILD_IMAGE /app/src/prisma /app/src/prisma
 COPY --from=BUILD_IMAGE /app/src/lib/gameData/*.json /app/src/lib/gameData/
 
 # Use the FAKE_LOGS to decide whether to start in dev mode or start mode
-CMD if [[ "$FAKE_LOGS" =~ ^[tT] ]]; then npm run dev; else npm start; fi
+CMD if [[ "$FAKE_LOGS" =~ ^[tT] ]]; then npm run dev; elif [[ "$DEBUG_MODE" =~ ^[tT] ]]; then npm run debug; else npm start; fi
