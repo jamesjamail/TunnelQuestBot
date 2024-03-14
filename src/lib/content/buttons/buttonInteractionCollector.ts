@@ -7,7 +7,6 @@ import {
 } from 'discord.js';
 import { ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
-import { isDuplicateButtonInteraction } from '../../helpers/redis';
 
 export async function collectButtonInteractionAndReturnResponse<T>(
 	response: InteractionResponse,
@@ -21,13 +20,6 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 
 	//  map interaction types to specific handler functions.
 	collector.on('collect', async (interaction: ButtonInteraction) => {
-		// TODO: once this follow ups are removed, this can be removed as well.
-		// 		 leaving until we confirm this resolves the duplicate interaction id
-		const isDupe = await isDuplicateButtonInteraction(interaction);
-		if (isDupe) {
-			return;
-		}
-
 		const handlerMapping: {
 			[key: string]: (
 				interaction: ButtonInteraction,
