@@ -30,4 +30,5 @@ export default async function handleWatchNotificationRefreshInactive<T>(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.yourWatchHasBeenExtended);
 }

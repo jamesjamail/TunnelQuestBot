@@ -40,6 +40,7 @@
         SERVERS_RED_LOG_FILE_PATH: "/logfiles/${SERVERS_RED_LOG_FILE}"
         REDIS_SOCKET_DIR: "${REDIS_SOCKET_DIR}"
         FAKE_LOGS: "${FAKE_LOGS:-false}"
+        DEBUG_MODE: "${DEBUG_MODE:-false}"
       volumes:
         - type: bind
           source: "${LOG_SOURCE_PATH}"

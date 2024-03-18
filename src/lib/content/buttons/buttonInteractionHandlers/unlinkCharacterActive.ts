@@ -19,4 +19,5 @@ export default async function handleUnlinkCharacterActive<T>(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.soAndSoHasBeenLinked(data));
 }

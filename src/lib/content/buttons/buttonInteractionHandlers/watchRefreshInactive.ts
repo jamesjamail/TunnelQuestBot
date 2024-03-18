@@ -22,4 +22,5 @@ export default async function handleWatchRefreshInactive<T>(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.yourWatchHasBeenExtended);
 }

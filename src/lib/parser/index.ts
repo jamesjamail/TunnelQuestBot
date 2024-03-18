@@ -8,6 +8,17 @@ import { state, events } from './state';
 import { Server } from '@prisma/client';
 
 export async function startLoggingAllServers() {
+	// Set DEBUG_MODE variable for use elsewhere
+	globalThis.DEBUG_MODE = !!(process.env.DEBUG_MODE || 'false').match(
+		/^[tT]/,
+	);
+	globalThis.debug_console = function (message) {
+		if (globalThis.DEBUG_MODE) {
+			// eslint-disable-next-line no-console
+			console.log(message);
+		}
+	};
+
 	// Initial fetch
 	const allWatchedItems = await getWatchesGroupedByServer();
 	state.watchedItems = allWatchedItems;

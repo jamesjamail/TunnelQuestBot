@@ -3,41 +3,33 @@ import { PlayerLink } from '@prisma/client';
 import { messageCopy } from '../../copy/messageCopy';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
-import { confirmButtonInteraction } from '../buttonHelpers';
 import { removePlayerLinkById } from '../../../../prisma/dbExecutors/playerLink';
 
 export default async function handleUnlinkCharacterInactive<T>(
 	interaction: ButtonInteraction,
 	metadata: T,
 ) {
-	// TODO: This should "unlink" a player from a discord user.
-	return await confirmButtonInteraction(
-		interaction,
-		async (followUpMessage) => {
-			const link = metadata as PlayerLink;
-			const success = await removePlayerLinkById(link.id);
-			await followUpMessage.delete();
-			let new_embed = playerlinkCommandResponseBuilder(
-				link,
-			) as EmbedBuilder;
-			if (success) {
-				new_embed = new_embed
-					.setColor('NotQuiteBlack')
-					.setTitle(`⛓️‍💥 ${new_embed.data.title}`);
-				await interaction.editReply({
-					content: messageCopy.soAndSoHasBeenUnlinked(link),
-					embeds: [new_embed],
-					components: buttonRowBuilder(MessageTypes.link, [true]),
-				});
-			} else {
-				await interaction.editReply({
-					content: messageCopy.soAndSoHasFailedToBeUnlinked(link),
-					embeds: [new_embed],
-					components: buttonRowBuilder(MessageTypes.link, [false]),
-				});
-			}
-		},
-		'Are you sure wish to unlink this character?',
-		MessageTypes.unlink,
-	);
+	const link = metadata as PlayerLink;
+	const success = await removePlayerLinkById(link.id);
+	let new_embed = playerlinkCommandResponseBuilder(link) as EmbedBuilder;
+	let message: string;
+	if (success) {
+		new_embed = new_embed
+			.setColor('NotQuiteBlack')
+			.setTitle(`⛓️‍💥 ${new_embed.data.title}`);
+		message = messageCopy.soAndSoHasBeenUnlinked(link);
+		await interaction.update({
+			content: message,
+			embeds: [new_embed],
+			components: buttonRowBuilder(MessageTypes.link, [true]),
+		});
+	} else {
+		message = messageCopy.soAndSoHasFailedToBeUnlinked(link);
+		await interaction.update({
+			content: message,
+			embeds: [new_embed],
+			components: buttonRowBuilder(MessageTypes.link, [false]),
+		});
+	}
+	debug_console(message);
 }

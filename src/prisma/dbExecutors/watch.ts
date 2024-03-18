@@ -83,6 +83,7 @@ export async function setWatchActiveByWatchId(id: number) {
 		},
 		data: {
 			active: true,
+			snoozedUntil: null, //	reactivating a watch should unsnooze it
 		},
 	});
 }
@@ -192,10 +193,14 @@ export async function unsnoozeWatchByItemName(
 }
 
 export async function unwatch(metadata: MetadataType) {
-	// Delete the watch entry where the id matches metadata.id
-	return prisma.watch.delete({
+	// Update the watch entry where the id matches metadata.id
+	return prisma.watch.update({
 		where: {
 			id: metadata.id,
+		},
+		data: {
+			active: false,
+			snoozedUntil: null, //	unwatching should remove any snooze
 		},
 	});
 }
@@ -212,10 +217,13 @@ export async function unwatchByWatchName(
 		},
 	});
 
-	// Delete the watch entry found above
-	return prisma.watch.delete({
+	// Update the watch entry found above to set active to false
+	return prisma.watch.update({
 		where: {
 			id: watch.id,
+		},
+		data: {
+			active: false,
 		},
 	});
 }

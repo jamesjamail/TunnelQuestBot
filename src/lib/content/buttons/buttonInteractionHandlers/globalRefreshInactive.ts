@@ -17,4 +17,5 @@ export default async function handleGlobalRefreshInactive(
 		embeds,
 		components,
 	});
+	debug_console(messageCopy.globalSnoozeHasBeenRemoved);
 }
