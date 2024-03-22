@@ -31,7 +31,7 @@ export async function startLoggingAllServers() {
 	// Update watchedItems every 60 seconds
 	setInterval(async () => {
 		const updatedWatchedItems = await getWatchesGroupedByServer();
-		Object.assign(state.watchedItems, updatedWatchedItems);
+		state.watchedItems = updatedWatchedItems;
 		events.emit('watchedItemsUpdated');
 	}, 60000);
 
