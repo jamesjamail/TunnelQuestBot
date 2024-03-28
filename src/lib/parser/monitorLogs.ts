@@ -54,7 +54,6 @@ export function monitorLogFile(server: Server) {
 		flushAtEOF: true,
 		useWatchFile: true,
 	});
-	const watchedItemsForThisServer = state.watchedItems[server];
 
 	tail.on('line', async function (data) {
 		// filter for log lines that start with "soAndSo auctions,"
@@ -64,6 +63,7 @@ export function monitorLogFile(server: Server) {
 		);
 
 		if (auctionMatch) {
+			debug_console(`Auction Match: ${auctionMatch}`);
 			// extract the timestamp, player, and auction message from the log line
 			const [, playerName, auctionText] = auctionMatch;
 			const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
@@ -97,9 +97,9 @@ export function monitorLogFile(server: Server) {
 
 			for (const item of auctionData.selling) {
 				// 	"known" items are exact matches and can be looked up by key
-				if (watchedItemsForThisServer.WTS.knownItems[item.item]) {
+				if (state.watchedItems[server].WTS.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
-						watchedItemsForThisServer.WTS.knownItems[item.item],
+						state.watchedItems[server].WTS.knownItems[item.item],
 						playerName,
 						item.price,
 						auctionText,
@@ -109,9 +109,9 @@ export function monitorLogFile(server: Server) {
 
 			// Iterate over auctionData.buying array and check against watchedItems.WTB
 			for (const item of auctionData.buying) {
-				if (watchedItemsForThisServer.WTB.knownItems[item.item]) {
+				if (state.watchedItems[server].WTB.knownItems[item.item]) {
 					await triggerFoundWatchedItems(
-						watchedItemsForThisServer.WTB.knownItems[item.item],
+						state.watchedItems[server].WTB.knownItems[item.item],
 						playerName,
 						item.price,
 						auctionText,
@@ -125,7 +125,7 @@ export function monitorLogFile(server: Server) {
 			// response to /watch
 
 			// check WTS watches for unknown items
-			for (const unknownItem of watchedItemsForThisServer.WTS
+			for (const unknownItem of state.watchedItems[server].WTS
 				.unknownItems) {
 				if (
 					auctionIncludesUnknownItem(
@@ -144,7 +144,7 @@ export function monitorLogFile(server: Server) {
 			}
 
 			// check WTB watches for unknown items
-			for (const unknownItem of watchedItemsForThisServer.WTB
+			for (const unknownItem of state.watchedItems[server].WTB
 				.unknownItems) {
 				if (
 					auctionIncludesUnknownItem(
@@ -162,6 +162,7 @@ export function monitorLogFile(server: Server) {
 				}
 			}
 		} else if (linkMatch) {
+			debug_console(`Link Match: ${linkMatch}`);
 			const [, playerName, linkCode] = linkMatch;
 			// console.log(playerName, linkMatch);
 

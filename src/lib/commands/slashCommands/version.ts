@@ -3,7 +3,7 @@ import { SlashCommand } from '../../../types';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
-		.setName('version') // the display + machine name of the command - can't be duplicated, contain spaces, or capital letters
+		.setName('version')
 		.setDescription('display version information'),
 	execute: (interaction) => {
 		interaction.reply({
