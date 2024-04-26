@@ -282,10 +282,10 @@ export async function extendAllWatchesAndReturnUserAndWatches(
 	await prisma.watch.updateMany({
 		where: {
 			discordUserId: discordUserId,
+			active: true,
 		},
 		data: {
 			created: new Date(),
-			active: true,
 		},
 	});
 
