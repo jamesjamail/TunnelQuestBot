@@ -28,7 +28,7 @@ export function generateDebounceKey(
 	return prefix + hash;
 }
 
-export async function shouldUserByNotified(
+export async function shouldUserBeNotified(
 	watch: WatchWithUserAndBlockedWatches,
 	blockedPlayers: BlockedPlayer[],
 	player: string,
@@ -108,7 +108,7 @@ export async function triggerFoundWatchedItem(
 	const data = await getWatchByWatchIdForWatchNotification(watchId);
 	const blocks = await getPlayerBlocks(data.user.discordUserId);
 
-	if (!shouldUserByNotified(data, blocks, player, price)) {
+	if (!(await shouldUserBeNotified(data, blocks, player, price))) {
 		return;
 	}
 
