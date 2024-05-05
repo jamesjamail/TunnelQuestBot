@@ -3,6 +3,7 @@ import {
 	getWatchesGroupedByServer,
 	deleteWatchesOlderThanWatchdurationDays,
 } from '../../prisma/dbExecutors/watch';
+import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/removeMessagesFromCommandSpace';
 import { monitorLogFile } from './monitorLogs';
 import { state, events } from './state';
 import { Server } from '@prisma/client';
@@ -44,4 +45,9 @@ export async function startLoggingAllServers() {
 	setInterval(async () => {
 		await runPlayerLinkHousekeeping();
 	}, 60000);
+
+	// clean up non-commands in #public_command_space channel
+	setInterval(async () => {
+		await removeNoncommandMessagesFromPublicCommandSpace();
+	}, 10000);
 }
