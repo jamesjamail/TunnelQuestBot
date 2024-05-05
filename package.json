@@ -23,7 +23,8 @@
   "lint-staged": {
     "*.ts": [
       "prettier --write \"./**/*.ts\"",
-      "eslint --fix ."
+      "eslint --fix .",
+      "tsc --noEmit"
     ]
   },
   "keywords": [],
