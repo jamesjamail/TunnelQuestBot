@@ -30,14 +30,22 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		try {
 			const args = getInteractionArgs(interaction, ['player']);
-			if (args?.watch?.isAutoSuggestion) {
+			if (args?.player?.isAutoSuggestion) {
 				const metadata = args?.player?.autoSuggestionMetaData
-					?.player as BlockedPlayer;
+					?.blockedPlayer as BlockedPlayer;
+
 				const block = await removePlayerBlockById(metadata.id);
+
+				// we've encountered issues with the JSON metadata exceeding 100 characters.
+				// due to this, we are now only storing crucial data in the metadata, for /unblock
+				// this is simply the block id.  In order to populate the full response message,
+				// we need to backfill the additional info
+				metadata.player = block.player;
+				metadata.server = block.server;
 
 				const embeds = [blockCommandResponseBuilder(block)];
 				const components = buttonRowBuilder(MessageTypes.block, [
-					false,
+					true,
 					true,
 					false,
 				]);

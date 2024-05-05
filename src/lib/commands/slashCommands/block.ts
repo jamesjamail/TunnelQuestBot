@@ -36,6 +36,7 @@ const command: SlashCommand = {
 			const response = await interaction.reply({
 				embeds,
 				components,
+				ephemeral: true,
 			});
 
 			return await collectButtonInteractionAndReturnResponse(
