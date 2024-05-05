@@ -15,7 +15,6 @@ export async function collectButtonInteractionAndReturnResponse<T>(
 	const collector: InteractionCollector<ButtonInteraction> =
 		response.createMessageComponentCollector({
 			componentType: ComponentType.Button,
-			time: 3_600_000,
 		});
 
 	//  map interaction types to specific handler functions.
