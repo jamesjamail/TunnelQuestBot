@@ -238,7 +238,7 @@ export async function watchNotificationBuilder(
 		)
 		.addFields(fields)
 		.setFooter({
-			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ingore auctions by this player, click 🔕\nTo extend this watch, click ♻️',
+			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions from this player for this watch, click 🔕\nTo extend this watch, click ♻️',
 		});
 }
 
