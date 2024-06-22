@@ -62,12 +62,22 @@ export async function shouldUserBeNotified(
 		}
 	});
 
+	if (
+		blockedPlayers.some(
+			(blockedPlayer) => blockedPlayer.player === player.toUpperCase(),
+		)
+	) {
+		return false;
+	}
+
 	// ensure seller is not blocked by watch
-	watch.blockedWatches.forEach((blockedWatch) => {
-		if (blockedWatch.player === player.toUpperCase()) {
-			return false;
-		}
-	});
+	if (
+		watch.blockedWatches.some(
+			(blockedWatch) => blockedWatch.player === player.toUpperCase(),
+		)
+	) {
+		return false;
+	}
 
 	// if there is price criteria, ensure it is met
 	if (watch.priceRequirement) {
@@ -152,7 +162,8 @@ export async function triggerFoundWatchedItems(
 	price: number | undefined,
 	auctionMessage: string,
 ) {
-	watchIds.forEach(async (watchId) => {
+	const promises = watchIds.map(async (watchId) => {
 		await triggerFoundWatchedItem(watchId, player, price, auctionMessage);
 	});
+	await Promise.all(promises);
 }
