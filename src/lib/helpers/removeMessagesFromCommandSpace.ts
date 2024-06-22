@@ -22,12 +22,16 @@ export async function removeNoncommandMessagesFromPublicCommandSpace() {
 		// Fetch messages
 		const messages = await textChannel.messages.fetch();
 
-		messages.forEach(async (message, key) => {
+		// Create an array of promises for deleting messages
+		const deletePromises = messages.map(async (message, key) => {
 			// Skip the first message (the command syntax instructions)
 			if (key === messages.lastKey()) return;
 			// delete all others
 			await message.delete();
 		});
+
+		// Wait for all delete operations to complete
+		await Promise.all(deletePromises);
 	} catch (error) {
 		// Log and handle any errors
 		// eslint-disable-next-line no-console
