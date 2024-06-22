@@ -1,5 +1,5 @@
 import {
-	SlashCommandBuilder,
+	SlashCommandOptionsOnlyBuilder,
 	Collection,
 	PermissionResolvable,
 	Message,
@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 
 export interface SlashCommand {
-	command: SlashCommandBuilder;
+	command: SlashCommandOptionsOnlyBuilder;
 	execute: (interaction: ChatInputCommandInteraction) => void;
 	autocomplete?: (interaction: AutocompleteInteraction) => void;
 	cooldown?: number; // in seconds
