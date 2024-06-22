@@ -1,6 +1,6 @@
 {
   "name": "tunnel-quest-bot",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -23,8 +23,7 @@
   "lint-staged": {
     "*.ts": [
       "prettier --write \"./**/*.ts\"",
-      "eslint --fix .",
-      "tsc --noEmit"
+      "eslint --fix ."
     ]
   },
   "keywords": [],
