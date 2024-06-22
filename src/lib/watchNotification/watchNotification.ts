@@ -56,12 +56,6 @@ export async function shouldUserBeNotified(
 	}
 
 	// ensure seller is not globally blocked by user
-	blockedPlayers.forEach((blockedPlayer) => {
-		if (blockedPlayer.player === player.toUpperCase()) {
-			return false;
-		}
-	});
-
 	if (
 		blockedPlayers.some(
 			(blockedPlayer) => blockedPlayer.player === player.toUpperCase(),
