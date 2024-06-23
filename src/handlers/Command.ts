@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { Client, Routes, SlashCommandBuilder } from 'discord.js';
+import { Client, Routes, SlashCommandOptionsOnlyBuilder } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { readdirSync } from 'fs';
 import { join } from 'path';
@@ -8,7 +8,7 @@ import { SlashCommand } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 
 module.exports = (client: Client) => {
-	const slashCommands: SlashCommandBuilder[] = [];
+	const slashCommands: SlashCommandOptionsOnlyBuilder[] = [];
 	// this template also contained a /commands folder for non-slashCommands, but it was removed as TQB
 	// exclusively uses slashCommands.  If regular commmands are ever needed, refer to template (see readme).
 	const slashCommandsDir = join(__dirname, '../lib/commands/slashCommands');
