@@ -10,7 +10,11 @@ import {
 import { messageCopy } from '../../content/copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import { autocompleteWatchesWithAllWatchesOption } from '../autocomplete/autocompleteWatches';
-import { unwatch, unwatchByWatchName } from '../../../prisma/dbExecutors/watch';
+import {
+	unwatch,
+	unwatchAllWatches,
+	unwatchByWatchName,
+} from '../../../prisma/dbExecutors/watch';
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
 
@@ -24,33 +28,41 @@ const command: SlashCommand = {
 	},
 	execute: async (interaction) => {
 		try {
-			// TODO: add a "all watches" value first on the list and handle that accordingly
 			const args = getInteractionArgs(interaction, ['watch']);
 			if (args?.watch?.isAutoSuggestion) {
-				// unwatch watch by id
-				const watch = await unwatch(
-					args?.watch?.autoSuggestionMetaData?.watch as Watch,
-				);
-				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					false,
-					true,
-					false,
-				]);
-				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnwatched(
-						watch.itemName,
-						watch.server,
-					),
-					embeds,
-					components,
-					ephemeral: true,
-				});
+				const value = args?.watch?.value as string;
+				if (value.toUpperCase() === 'ALL WATCHES') {
+					await unwatchAllWatches(interaction);
+					return await interaction.reply({
+						content: messageCopy.allYourWatchesHaveBeenUnwatched,
+						ephemeral: true,
+					});
+				} else {
+					// unwatch watch by id
+					const watch = await unwatch(
+						args?.watch?.autoSuggestionMetaData?.watch as Watch,
+					);
+					const embeds = [watchCommandResponseBuilder(watch)];
+					const components = buttonRowBuilder(MessageTypes.watch, [
+						false,
+						true,
+						false,
+					]);
+					const response = await interaction.reply({
+						content: messageCopy.yourWatchHasBeenUnwatched(
+							watch.itemName,
+							watch.server,
+						),
+						embeds,
+						components,
+						ephemeral: true,
+					});
 
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
+					return await collectButtonInteractionAndReturnResponse(
+						response,
+						watch,
+					);
+				}
 			} else {
 				// make a good faith effort to unwatch based on raw string
 				const itemName = args?.watch?.value;

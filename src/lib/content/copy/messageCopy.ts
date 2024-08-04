@@ -82,6 +82,9 @@ export namespace messageCopy {
 		return `Your watch for \`${name}\` on \`${server}\` has been removed.`;
 	};
 
+	export const allYourWatchesHaveBeenUnwatched =
+		'All your watches have been unwatched.';
+
 	export const yourWatchHasBeenRestored = (name: string, server: Server) => {
 		return `Your watch for \`${name}\` on \`${server}\` has been restored.`;
 	};

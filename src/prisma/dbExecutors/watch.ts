@@ -228,6 +228,14 @@ export async function unwatchByWatchName(
 	});
 }
 
+export async function unwatchAllWatches(interaction: Interaction) {
+	const discordUserId = interaction.user.id;
+	await prisma.watch.updateMany({
+		where: { discordUserId },
+		data: { active: false },
+	});
+}
+
 export async function extendWatch(metadata: MetadataType) {
 	return prisma.watch.update({
 		where: {
