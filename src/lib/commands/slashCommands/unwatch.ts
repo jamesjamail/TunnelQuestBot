@@ -30,6 +30,31 @@ const command: SlashCommand = {
 		try {
 			const args = getInteractionArgs(interaction, ['watch']);
 			if (args?.watch?.isAutoSuggestion) {
+				// unwatch watch by id
+				const watch = await unwatch(
+					args?.watch?.autoSuggestionMetaData?.watch as Watch,
+				);
+				const embeds = [watchCommandResponseBuilder(watch)];
+				const components = buttonRowBuilder(MessageTypes.watch, [
+					false,
+					true,
+					false,
+				]);
+				const response = await interaction.reply({
+					content: messageCopy.yourWatchHasBeenUnwatched(
+						watch.itemName,
+						watch.server,
+					),
+					embeds,
+					components,
+					ephemeral: true,
+				});
+
+				return await collectButtonInteractionAndReturnResponse(
+					response,
+					watch,
+				);
+			} else {
 				const value = args?.watch?.value as string;
 				if (value.toUpperCase() === 'ALL WATCHES') {
 					await unwatchAllWatches(interaction);
@@ -38,10 +63,13 @@ const command: SlashCommand = {
 						ephemeral: true,
 					});
 				} else {
-					// unwatch watch by id
-					const watch = await unwatch(
-						args?.watch?.autoSuggestionMetaData?.watch as Watch,
+					// make a good faith effort to unwatch based on raw string
+					const itemName = args?.watch?.value;
+					const watch = await unwatchByWatchName(
+						interaction,
+						itemName as string, //	TODO: fix type error
 					);
+
 					const embeds = [watchCommandResponseBuilder(watch)];
 					const components = buttonRowBuilder(MessageTypes.watch, [
 						false,
@@ -63,34 +91,6 @@ const command: SlashCommand = {
 						watch,
 					);
 				}
-			} else {
-				// make a good faith effort to unwatch based on raw string
-				const itemName = args?.watch?.value;
-				const watch = await unwatchByWatchName(
-					interaction,
-					itemName as string, //	TODO: fix type error
-				);
-
-				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					false,
-					true,
-					false,
-				]);
-				const response = await interaction.reply({
-					content: messageCopy.yourWatchHasBeenUnwatched(
-						watch.itemName,
-						watch.server,
-					),
-					embeds,
-					components,
-					ephemeral: true,
-				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			}
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
