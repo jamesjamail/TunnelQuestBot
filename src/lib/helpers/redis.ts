@@ -7,6 +7,26 @@ export function generateButtonInteractionKey(interactionId: string) {
 	return `buttonInteraction:${interactionId}`;
 }
 
+export function generatePlayerLinkKey(playerId: string) {
+	return `playerLinkName:${playerId}`;
+}
+
+export async function getCachedPlayerDiscordName(playerId: string) {
+	const key = generatePlayerLinkKey(playerId);
+
+	let userName = await redis.get(key);
+	if (!userName) {
+		const user = await client.users.fetch(playerId);
+		const set = await redis.set(key, user.username);
+		if (set == 'OK') {
+			// Set a TTL for the key
+			await redis.expire(key, 60);
+			userName = user.username;
+		}
+	}
+	return userName;
+}
+
 // 	what a mess, discord sometimes fires the same button interaction multiple times
 // 	I notice it seldomly but usually when moving focus while /watches are being
 // 	deliverered and clicking very quickly once a message is delivered; it may be related

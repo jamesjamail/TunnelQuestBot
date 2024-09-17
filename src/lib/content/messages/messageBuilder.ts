@@ -31,6 +31,7 @@ import {
 import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
 import { gracefullyHandleError } from '../../helpers/errors';
+import { getCachedPlayerDiscordName } from '../../helpers/redis';
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	// Helper function to generate the field value based on conditions
@@ -501,9 +502,16 @@ export async function embeddedAuctionStreamMessageBuilder(
 
 	const playerLink = await getPlayerLink(player, server);
 	if (playerLink) {
+		let userLinkValue = `<@${playerLink.discordUserId}>`;
+		const userName = await getCachedPlayerDiscordName(
+			playerLink.discordUserId,
+		);
+		if (userName) {
+			userLinkValue = userLinkValue + ` (@${userName})`;
+		}
 		combinedFields.push({
 			name: 'Discord User',
-			value: `<@${playerLink.discordUserId}>`,
+			value: userLinkValue,
 		});
 	}
 
