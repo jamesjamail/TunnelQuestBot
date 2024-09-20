@@ -19,8 +19,8 @@ export async function getCachedPlayerDiscordName(playerId: string) {
 		const user = await client.users.fetch(playerId);
 		const set = await redis.set(key, user.username);
 		if (set == 'OK') {
-			// Set a TTL for the key
-			await redis.expire(key, 60);
+			// Set a one week TTL for the key (usernames don't change often)
+			await redis.expire(key, 7 * 24 * 60 * 60);
 			userName = user.username;
 		}
 	}
