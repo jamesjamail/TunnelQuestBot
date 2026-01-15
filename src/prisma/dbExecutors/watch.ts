@@ -39,7 +39,7 @@ export async function upsertWatch(
 		where: {
 			discordUserId_itemName_server_watchType: {
 				discordUserId,
-				itemName,
+				itemName: itemName.toUpperCase(),
 				server,
 				watchType,
 			},
