@@ -14,7 +14,7 @@ import {
 	getWatchByItemName,
 	getWatchByWatchId,
 } from '../../../prisma/dbExecutors/watch';
-import { Watch } from '.prisma/client';
+import { Watch } from '@prisma/client';
 import { isSnoozed } from '../../helpers/watches';
 import { gracefullyHandleError } from '../../helpers/errors';
 
