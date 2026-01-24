@@ -1,7 +1,7 @@
 ##########################
 ##  Create build image  ##
 ##########################
-FROM node:20-alpine AS build_image
+FROM node:22-alpine AS build_image
 
 # Set our working directory to /app
 WORKDIR /app
@@ -31,7 +31,7 @@ RUN npm prune --omit=dev
 ##########################
 ## Create runtime image ##
 ##########################
-FROM node:20-alpine AS runtime_image
+FROM node:22-alpine AS runtime_image
 
 # Set our working directory to /app
 WORKDIR /app
