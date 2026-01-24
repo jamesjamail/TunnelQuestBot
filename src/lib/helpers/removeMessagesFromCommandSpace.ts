@@ -34,7 +34,7 @@ export async function removeNoncommandMessagesFromPublicCommandSpace() {
 		await Promise.all(deletePromises);
 	} catch (error) {
 		// Log and handle any errors
-		// eslint-disable-next-line no-console
+
 		console.error(
 			'Error occurred while removing non-command messages from public command channel:',
 			error,

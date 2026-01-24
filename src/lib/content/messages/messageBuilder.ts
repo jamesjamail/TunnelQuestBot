@@ -57,7 +57,7 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 	const price = watchData?.priceRequirement
 		? `Price Criteria: ${formatPriceNumberToReadableString(
 				watchData?.priceRequirement,
-		  )}`
+			)}`
 		: 'No Price Criteria';
 	const formattedExpirationTimestamp = formatWatchExpirationTimestamp(
 		watchData.created,
@@ -230,8 +230,8 @@ export async function watchNotificationBuilder(
 			} **${toTitleCase(watchData.itemName)}** ${
 				auctionedPrice
 					? 'for **' +
-					  formatPriceNumberToReadableString(auctionedPrice) +
-					  '**'
+						formatPriceNumberToReadableString(auctionedPrice) +
+						'**'
 					: ''
 			} on **Project 1999 ${formatserverEnumToReadableString(
 				watchData.server,

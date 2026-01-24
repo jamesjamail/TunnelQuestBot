@@ -45,7 +45,7 @@ const parser = new AuctionParser();
 
 export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
-	// eslint-disable-next-line no-console
+
 	console.log(
 		'Starting log monitoring for server ' + server + ': ' + logFilePath,
 	);

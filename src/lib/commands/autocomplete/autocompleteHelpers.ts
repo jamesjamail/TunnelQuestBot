@@ -37,7 +37,6 @@ export function parseInput(input: string): {
 				autoSuggestedValue: jsonValue,
 			};
 		} catch (error) {
-			// eslint-disable-next-line no-console
 			console.warn('Failed to parse input as JSON', error);
 			return { userSubmittedValue: input }; // if failed, return the original string as value
 		}

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Interaction, TextChannel } from 'discord.js';
 import { client } from '../..';
 import { SlashCommand } from '../../types';

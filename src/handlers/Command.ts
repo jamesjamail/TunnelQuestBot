@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Client, Routes, SlashCommandOptionsOnlyBuilder } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { readdirSync } from 'fs';
@@ -15,7 +14,7 @@ module.exports = (client: Client) => {
 
 	readdirSync(slashCommandsDir).forEach((file) => {
 		if (!file.endsWith('.js') || file.startsWith('_')) return;
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 		const command: SlashCommand = require(
 			`${slashCommandsDir}/${file}`,
 		).default;

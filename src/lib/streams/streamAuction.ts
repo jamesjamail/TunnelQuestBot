@@ -59,7 +59,6 @@ export async function streamAuctionToAllStreamChannels(
 			allowedMentions: { users: [] },
 		});
 	} catch (err) {
-		// eslint-disable-next-line no-console
 		await gracefullyHandleError(err);
 	}
 
@@ -72,7 +71,6 @@ export async function streamAuctionToAllStreamChannels(
 		}
 		await (classicChannel as TextChannel).send(rawAuction);
 	} catch (err) {
-		// eslint-disable-next-line no-console
 		await gracefullyHandleError(err);
 	}
 }

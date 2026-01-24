@@ -17,7 +17,6 @@ const themeColors = {
 export const getThemeColor = (color: colorType) =>
 	Number(`0x${themeColors[color].substring(1)}`);
 
-// eslint-disable-next-line no-shadow
 export const color = (color: colorType, message: string) => {
 	return chalk.hex(themeColors[color])(message);
 };

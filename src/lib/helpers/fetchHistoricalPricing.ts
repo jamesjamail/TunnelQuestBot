@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Server } from '@prisma/client';
 import { redis } from '../../redis/init';
 import { AuctionData } from '../streams/streamAuction';
@@ -34,7 +33,6 @@ export async function fetchHistoricalPricingForItem(
 		}
 
 		if (!res.ok) {
-			// eslint-disable-next-line no-console
 			console.error(res.status, endpoint);
 			return null;
 		}

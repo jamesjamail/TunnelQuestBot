@@ -480,7 +480,6 @@ export async function deleteWatchesOlderThanWatchdurationDays() {
 	});
 
 	if (result.count > 0) {
-		// eslint-disable-next-line no-console
 		console.info(`Deleted ${result.count} expired watches.`);
 	}
 }

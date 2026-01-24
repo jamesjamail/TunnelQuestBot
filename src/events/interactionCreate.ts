@@ -49,7 +49,6 @@ const event: BotEvent = {
 				interaction.commandName,
 			);
 			if (!command) {
-				// eslint-disable-next-line no-console
 				console.error(
 					`No command matching ${interaction.commandName} was found.`,
 				);

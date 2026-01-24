@@ -71,7 +71,6 @@ export async function runPlayerLinkHousekeeping() {
 	});
 
 	if (deletedPlayerLinks.count > 0) {
-		// eslint-disable-next-line no-console
 		console.info(
 			`Deleted ${deletedPlayerLinks.count} expired PlayerLink entries.`,
 		);
@@ -104,22 +103,20 @@ export async function authPlayerLink(
 		if (e instanceof Prisma.PrismaClientKnownRequestError) {
 			if (e.code == 'P2002') {
 				// Unique Constraint Violation
-				// eslint-disable-next-line no-console
+
 				console.log(
 					`Player \`${server}.${player}\` tried to use a new linkCode, but is already linked.`,
 				);
 			} else if (e.code == 'P2025') {
 				// Record Not Found
-				// eslint-disable-next-line no-console
+
 				console.log(
 					`Player \`${server}.${player}\` attempted to link with invalid linkCode \`${linkCode}\``,
 				);
 			} else {
-				// eslint-disable-next-line no-console
 				console.log(e);
 			}
 		} else {
-			// eslint-disable-next-line no-console
 			console.log(
 				`Unknown Error when player \`${server}.${player}\` attempted to link with linkCode \`${linkCode}\`: ${e}`,
 			);
