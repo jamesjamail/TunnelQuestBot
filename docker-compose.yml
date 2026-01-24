@@ -1,14 +1,14 @@
 version: "3.9"
 services:
   postgres:
-    image: postgres:alpine
+    image: postgres:18-alpine
     container_name: postgres
     environment:
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: "${POSTGRES_DB}"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres18-data:/var/lib/postgresql
       - db-socket:/var/run/postgresql
     restart: unless-stopped
 
@@ -50,7 +50,7 @@ services:
     restart: always
 
 volumes:
-  postgres-data:
+  postgres18-data:
   db-socket:
   redis-socket:
   redis-data:
