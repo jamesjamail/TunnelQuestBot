@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { parseInput } from './autocomplete/autocompleteHelpers';
 
 type AllowedOptionValues = string | number | boolean;
@@ -18,7 +18,7 @@ type ArgType<T extends Record<string, AllowedOptionValues>> = {
 export function getInteractionArgs<
 	T extends Record<string, AllowedOptionValues>,
 >(
-	interaction: CommandInteraction,
+	interaction: ChatInputCommandInteraction,
 	mandatoryArgs: (keyof T)[],
 	optionalArgs: (keyof T)[] = [],
 ): ArgType<T> {

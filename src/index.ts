@@ -24,7 +24,7 @@ client.cooldowns = new Collection<string, number>();
 const handlersDir = join(__dirname, './handlers');
 readdirSync(handlersDir).forEach((handler) => {
 	if (!handler.endsWith('.js')) return;
-	// eslint-disable-next-line @typescript-eslint/no-var-requires
+
 	require(`${handlersDir}/${handler}`)(client);
 });
 

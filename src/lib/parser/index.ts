@@ -15,7 +15,6 @@ export async function startLoggingAllServers() {
 	);
 	globalThis.debug_console = function (message) {
 		if (globalThis.DEBUG_MODE) {
-			// eslint-disable-next-line no-console
 			console.log(message);
 		}
 	};

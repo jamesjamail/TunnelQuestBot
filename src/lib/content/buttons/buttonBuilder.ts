@@ -1,6 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-// eslint-disable-next-line no-shadow
 export enum ButtonInteractionTypes {
 	ConfirmActionActive,
 	ConfirmActionInactive,

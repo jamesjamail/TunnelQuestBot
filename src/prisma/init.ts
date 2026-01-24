@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { PrismaClient } from '@prisma/client';
 import { color } from '../functions';
 import { gracefullyHandleError } from '../lib/helpers/errors';

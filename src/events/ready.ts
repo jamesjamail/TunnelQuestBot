@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { Client } from 'discord.js';
 import { BotEvent } from '../types';
 import { color } from '../functions';

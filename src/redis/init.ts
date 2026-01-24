@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import Redis from 'ioredis';
 import { color } from '../functions';
 import { join } from 'path';

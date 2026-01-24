@@ -118,7 +118,7 @@ const command: SlashCommand = {
 						response,
 						watch,
 					);
-				} catch (err) {
+				} catch {
 					return await interaction.reply({
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(
 							itemName as string,

@@ -2,7 +2,7 @@ import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
 import { ItemType } from '../streams/streamAuction';
 
 // Oldschool JS lib works the best of all the options :(
-// eslint-disable-next-line @typescript-eslint/no-var-requires -- Need JS lib
+
 const AhoCorasick = require('ahocorasick');
 
 export enum AuctionTypes {
@@ -54,7 +54,7 @@ export class AuctionParser {
 			active = 0;
 		const n = ranges.length;
 		const combined: { start: number; end: number }[] = [];
-		// eslint-disable-next-line no-constant-condition
+
 		while (true) {
 			if (i < n && starts[i] < ends[j]) {
 				if (active++ === 0)
