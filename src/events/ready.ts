@@ -5,7 +5,7 @@ import { startLoggingAllServers } from '../lib/parser';
 import { initializePrisma } from '../prisma/init';
 
 const event: BotEvent = {
-	name: 'ready',
+	name: 'clientReady',
 	once: true,
 	execute: async (client: Client) => {
 		console.log(
