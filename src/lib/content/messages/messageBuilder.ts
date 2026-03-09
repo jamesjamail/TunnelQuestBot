@@ -457,15 +457,22 @@ export async function embeddedAuctionStreamMessageBuilder(
 	const generateItemFields = (
 		items: ItemType[],
 		type: 'buying' | 'selling',
+		labelType: boolean,
 	) => {
 		if (items.length === 0) {
 			return [];
 		}
 
+		const typePrefix = labelType
+			? type === 'selling'
+				? 'WTS: '
+				: 'WTB: '
+			: '';
+
 		return items.map((item) => {
 			const priceField = item.price
-				? `${formatPriceNumberToReadableString(item.price)}`
-				: 'No Price Listed';
+				? `${typePrefix}${formatPriceNumberToReadableString(item.price)}${item.perItem ? ' ea' : ''}`
+				: `${typePrefix}No Price Listed`;
 			const historicalData =
 				(historicalPricing[item.item] as HistoricalData) || null;
 			const wikiLink = getWikiUrlFromItem(item.item) || '';
@@ -486,11 +493,22 @@ export async function embeddedAuctionStreamMessageBuilder(
 		});
 	};
 
-	const buyingFields = generateItemFields(auctionData.buying, 'buying');
-	const sellingFields = generateItemFields(auctionData.selling, 'selling');
+	const hasBothTypes =
+		auctionData.buying.length > 0 && auctionData.selling.length > 0;
+
+	const sellingFields = generateItemFields(
+		auctionData.selling,
+		'selling',
+		hasBothTypes,
+	);
+	const buyingFields = generateItemFields(
+		auctionData.buying,
+		'buying',
+		hasBothTypes,
+	);
 
 	let title = '';
-	if (auctionData.buying.length > 0 && auctionData.selling.length > 0) {
+	if (hasBothTypes) {
 		title += 'WTS/WTB';
 	} else if (auctionData.buying.length > 0) {
 		title += 'WTB';
@@ -515,7 +533,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 		});
 	}
 
-	combinedFields.push(...buyingFields, ...sellingFields);
+	combinedFields.push(...sellingFields, ...buyingFields);
 
 	embeds.push(
 		new EmbedBuilder()
