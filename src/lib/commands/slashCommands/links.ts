@@ -1,11 +1,10 @@
-import { InteractionResponse, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { playerlinkCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
 	buttonRowBuilder,
 	MessageTypes,
 } from '../../content/buttons/buttonRowBuilder';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { getPlayerLinksForUser } from '../../../prisma/dbExecutors/playerLink';
 import { gracefullyHandleError } from '../../helpers/errors';
@@ -32,7 +31,11 @@ const command: SlashCommand = {
 					if (embed != undefined) {
 						linkCount += 1;
 						const embeds = [embed];
-						const components = buttonRowBuilder(MessageTypes.link);
+						const components = buttonRowBuilder(
+							MessageTypes.link,
+							[false],
+							String(link.id),
+						);
 
 						const message = await interaction.user.send({
 							embeds,
@@ -40,10 +43,6 @@ const command: SlashCommand = {
 						});
 
 						lastDmChannelId = message.channelId;
-						await collectButtonInteractionAndReturnResponse(
-							message as unknown as InteractionResponse<boolean>,
-							link,
-						);
 					}
 				}),
 			);

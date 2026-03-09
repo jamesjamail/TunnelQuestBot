@@ -12,7 +12,11 @@ export default async function handleUnlinkCharacterActive<T>(
 	// TODO: This should "re-link" a player to a discord user.
 	const link = metadata as PlayerLink;
 	const data = await insertPlayerLinkFull(link);
-	const components = buttonRowBuilder(MessageTypes.link, [false]);
+	const components = buttonRowBuilder(
+		MessageTypes.link,
+		[false],
+		String(data.id),
+	);
 	const embeds = [playerlinkCommandResponseBuilder(data) as EmbedBuilder];
 	await interaction.update({
 		content: messageCopy.soAndSoHasBeenLinked(data),

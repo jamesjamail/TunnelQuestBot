@@ -115,6 +115,7 @@ function getButtonType(
 export function buttonRowBuilder(
 	commandType: MessageTypes,
 	activeButtons = [false, false, false],
+	entityId?: string,
 ) {
 	const mappings = commandTypeButtonMappings[commandType];
 
@@ -126,5 +127,5 @@ export function buttonRowBuilder(
 		getButtonType(activeButtons[index], mapping),
 	);
 
-	return buttonBuilder(buttonTypes.map((type) => ({ type })));
+	return buttonBuilder(buttonTypes.map((type) => ({ type, entityId })));
 }

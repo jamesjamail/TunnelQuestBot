@@ -11,11 +11,11 @@ export default async function handleWatchRefreshInactive<T>(
 	metadata: T,
 ) {
 	const data = await extendWatch(metadata as Watch);
-	const components = buttonRowBuilder(MessageTypes.watch, [
-		isSnoozed(data.snoozedUntil),
-		false,
-		true,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watch,
+		[isSnoozed(data.snoozedUntil), false, true],
+		String(data.id),
+	);
 	const embeds = [watchCommandResponseBuilder(data)];
 	await interaction.update({
 		content: messageCopy.yourWatchHasBeenExtended,

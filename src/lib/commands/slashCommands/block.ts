@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { Server } from '@prisma/client';
 import { addPlayerBlock } from '../../../prisma/dbExecutors/block';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -31,18 +30,17 @@ const command: SlashCommand = {
 			);
 
 			const embeds = [blockCommandResponseBuilder(block)];
-			const components = buttonRowBuilder(MessageTypes.block);
+			const components = buttonRowBuilder(
+				MessageTypes.block,
+				[false],
+				String(block.id),
+			);
 
-			const response = await interaction.reply({
+			return await interaction.reply({
 				embeds,
 				components,
 				ephemeral: true,
 			});
-
-			return await collectButtonInteractionAndReturnResponse(
-				response,
-				block,
-			);
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

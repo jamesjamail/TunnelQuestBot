@@ -12,7 +12,7 @@ export default async function handleGlobalUnblockInactive<T>(
 	const { id } = metadata as BlockedPlayer;
 	const data = await removePlayerBlockById(id);
 	const embeds = [blockCommandResponseBuilder(data)];
-	const components = buttonRowBuilder(MessageTypes.block, [true]);
+	const components = buttonRowBuilder(MessageTypes.block, [true], String(id));
 	await interaction.update({
 		content: messageCopy.soAndSoHasBeenUnblocked(data),
 		embeds,

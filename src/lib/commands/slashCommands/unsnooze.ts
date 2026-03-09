@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForSnooze } from '../commandOptions';
 import { Watch } from '@prisma/client';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -37,18 +36,17 @@ const command: SlashCommand = {
 				);
 
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.watch,
+					[false, false, false],
+					String(watch.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.yourWatchHasBeenSnoozed(),
 					embeds,
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			} else {
 				// make a good faith effort to snooze based on raw string
 				const itemName = args?.watch?.value;
@@ -59,18 +57,17 @@ const command: SlashCommand = {
 				);
 
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.watch,
+					[false, false, false],
+					String(watch.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.yourWatchHasBeenUnsnoozed,
 					embeds,
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			}
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

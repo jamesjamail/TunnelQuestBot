@@ -11,11 +11,11 @@ export default async function handleWatchNotificationUnwatchInactive<T>(
 ) {
 	const typedWatch = metadata as WatchNotificationMetadata;
 	const data = await unwatch(typedWatch);
-	const components = buttonRowBuilder(MessageTypes.watchNotification, [
-		false,
-		true,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watchNotification,
+		[false, true, false],
+		`${data.id}:${typedWatch.player}`,
+	);
 
 	const { player, price, auctionMessage } = typedWatch;
 

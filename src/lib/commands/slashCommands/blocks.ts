@@ -1,6 +1,5 @@
-import { InteractionResponse, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -41,7 +40,11 @@ const command: SlashCommand = {
 			await Promise.all(
 				data.map(async (block) => {
 					const embeds = [blockCommandResponseBuilder(block)];
-					const components = buttonRowBuilder(MessageTypes.block);
+					const components = buttonRowBuilder(
+						MessageTypes.block,
+						[false],
+						String(block.id),
+					);
 
 					const message = await interaction.user.send({
 						embeds,
@@ -49,10 +52,6 @@ const command: SlashCommand = {
 					});
 
 					lastDmChannelId = message.channelId;
-					await collectButtonInteractionAndReturnResponse(
-						message as unknown as InteractionResponse<boolean>,
-						block,
-					);
 				}),
 			);
 

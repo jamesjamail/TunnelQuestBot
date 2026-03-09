@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { listCommandResponseBuilder } from '../../content/messages/messageBuilder';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	MessageTypes,
 	buttonRowBuilder,
@@ -36,17 +35,12 @@ const command: SlashCommand = {
 				globalSnoozeActive,
 				false,
 			]);
-			const response = await interaction.reply({
+			return await interaction.reply({
 				content: messageCopy.heresAListOfYourWatches,
 				embeds,
 				components,
 				ephemeral: true,
 			});
-
-			return await collectButtonInteractionAndReturnResponse(
-				response,
-				user,
-			);
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

@@ -11,16 +11,15 @@ export default async function handleWatchNotificationRefreshInactive<T>(
 	interaction: ButtonInteraction,
 	metadata: T,
 ) {
+	const typedMeta = metadata as WatchNotificationMetadata;
 	const data = await extendWatch(metadata as Watch);
-	const components = buttonRowBuilder(MessageTypes.watchNotification, [
-		isSnoozed(data.snoozedUntil),
-		false,
-		false,
-		true,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watchNotification,
+		[isSnoozed(data.snoozedUntil), false, false, true],
+		`${data.id}:${typedMeta.player}`,
+	);
 
-	const { player, price, auctionMessage } =
-		metadata as WatchNotificationMetadata;
+	const { player, price, auctionMessage } = typedMeta;
 
 	const embeds = [
 		await watchNotificationBuilder(data, player, price, auctionMessage),

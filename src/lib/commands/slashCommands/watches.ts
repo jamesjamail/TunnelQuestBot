@@ -1,11 +1,10 @@
 import { SlashCommand } from '../../../types';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	MessageTypes,
 	buttonRowBuilder,
 } from '../../content/buttons/buttonRowBuilder';
 import { watchFilterOptions } from '../commandOptions';
-import { InteractionResponse, SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { getWatchesByItemName } from '../../../prisma/dbExecutors/watch';
@@ -35,7 +34,11 @@ const command: SlashCommand = {
 			await Promise.all(
 				data.map(async (watch) => {
 					const embeds = [watchCommandResponseBuilder(watch)];
-					const components = buttonRowBuilder(MessageTypes.watch);
+					const components = buttonRowBuilder(
+						MessageTypes.watch,
+						[false, false, false],
+						String(watch.id),
+					);
 
 					const message = await interaction.user.send({
 						embeds,
@@ -43,10 +46,6 @@ const command: SlashCommand = {
 					});
 
 					lastDmChannelId = message.channelId;
-					await collectButtonInteractionAndReturnResponse(
-						message as unknown as InteractionResponse<boolean>,
-						watch,
-					);
 				}),
 			);
 

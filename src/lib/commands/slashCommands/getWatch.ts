@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForInfoCommand } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	MessageTypes,
 	buttonRowBuilder,
@@ -46,13 +45,13 @@ const command: SlashCommand = {
 				);
 
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					isSnoozed(watch.snoozedUntil),
-					false,
-					false,
-				]);
+				const components = buttonRowBuilder(
+					MessageTypes.watch,
+					[isSnoozed(watch.snoozedUntil), false, false],
+					String(watch.id),
+				);
 
-				const response = await interaction.reply({
+				return await interaction.reply({
 					content: messageCopy.heresInformationOnYourWatch(
 						watch.itemName,
 					),
@@ -60,11 +59,6 @@ const command: SlashCommand = {
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			}
 
 			//  if it's not an auto suggestion, let's make a good faith effort to find the watch by name
@@ -77,12 +71,12 @@ const command: SlashCommand = {
 						itemName as string,
 					);
 					const embeds = [watchCommandResponseBuilder(watch)];
-					const components = buttonRowBuilder(MessageTypes.watch, [
-						isSnoozed(watch.snoozedUntil),
-						false,
-						false,
-					]);
-					const response = await interaction.reply({
+					const components = buttonRowBuilder(
+						MessageTypes.watch,
+						[isSnoozed(watch.snoozedUntil), false, false],
+						String(watch.id),
+					);
+					return await interaction.reply({
 						content: messageCopy.heresInformationOnYourWatch(
 							watch.itemName,
 						),
@@ -90,10 +84,6 @@ const command: SlashCommand = {
 						components,
 						ephemeral: true,
 					});
-					return await collectButtonInteractionAndReturnResponse(
-						response,
-						watch,
-					);
 				} catch {
 					return await interaction.reply({
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(

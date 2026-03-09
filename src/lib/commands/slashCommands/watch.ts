@@ -9,7 +9,6 @@ import {
 	watchNotesOptions,
 } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	MessageTypes,
 	buttonRowBuilder,
@@ -54,18 +53,17 @@ const command: SlashCommand = {
 			});
 
 			const embeds = [watchCommandResponseBuilder(data)];
-			const components = buttonRowBuilder(MessageTypes.watch);
+			const components = buttonRowBuilder(
+				MessageTypes.watch,
+				[false, false, false],
+				String(data.id),
+			);
 
-			const response = await interaction.reply({
+			return await interaction.reply({
 				embeds,
 				components,
 				ephemeral: true,
 			});
-
-			return await collectButtonInteractionAndReturnResponse(
-				response,
-				data,
-			);
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}
