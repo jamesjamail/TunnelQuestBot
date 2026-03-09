@@ -521,7 +521,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 		new EmbedBuilder()
 			.setColor(getServerColorFromString(server))
 			.setAuthor({ name: `[ ${title} ]   ${player}` })
-			.setTitle(`\`\`\`${auctionText}\`\`\``)
+			.setDescription(`\`\`\`${auctionText}\`\`\``)
 			.addFields(combinedFields)
 			.setFooter({ text: `Project 1999 ${formatCapitalCase(server)}` })
 			.setTimestamp(timestamp),
