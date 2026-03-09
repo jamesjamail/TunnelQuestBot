@@ -1,6 +1,7 @@
 import { Interaction } from 'discord.js';
 import { BotEvent } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
+import { handleButtonInteraction } from '../lib/content/buttons/persistentButtonHandler';
 
 const event: BotEvent = {
 	name: 'interactionCreate',
@@ -43,6 +44,12 @@ const event: BotEvent = {
 				command.execute(interaction);
 			} catch (e) {
 				await gracefullyHandleError(e, interaction, command);
+			}
+		} else if (interaction.isButton()) {
+			try {
+				await handleButtonInteraction(interaction);
+			} catch (error) {
+				await gracefullyHandleError(error, interaction);
 			}
 		} else if (interaction.isAutocomplete()) {
 			const command = interaction.client.slashCommands.get(

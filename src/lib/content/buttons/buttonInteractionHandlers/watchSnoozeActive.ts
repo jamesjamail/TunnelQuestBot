@@ -10,11 +10,11 @@ export default async function handleWatchSnoozeActive<T>(
 	metadata: T,
 ) {
 	const data = await unsnoozeWatch(metadata as Watch);
-	const components = buttonRowBuilder(MessageTypes.watch, [
-		false,
-		false,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watch,
+		[false, false, false],
+		String(data.id),
+	);
 	const embeds = [watchCommandResponseBuilder(data)];
 	await interaction.update({
 		content: messageCopy.yourWatchHasBeenUnsnoozed,

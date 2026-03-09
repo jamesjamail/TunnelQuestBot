@@ -13,11 +13,11 @@ export default async function handleUnwatchActive<T>(
 	const typedWatch = metadata as Watch;
 	const data = await setWatchActiveByWatchId(typedWatch.id);
 	const embeds = [watchCommandResponseBuilder(data)];
-	const components = buttonRowBuilder(MessageTypes.watch, [
-		isSnoozed(data.snoozedUntil),
-		false,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watch,
+		[isSnoozed(data.snoozedUntil), false, false],
+		String(data.id),
+	);
 
 	await interaction.update({
 		content: messageCopy.yourWatchHasBeenRestored(

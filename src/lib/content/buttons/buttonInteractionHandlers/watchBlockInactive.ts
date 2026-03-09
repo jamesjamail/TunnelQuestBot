@@ -19,12 +19,11 @@ export default async function handleWatchBlockInactive<T>(
 	const { id, player, user } = metadata as WatchBlockInactiveMetadata;
 	const data = await addPlayerBlockByWatch(user.discordUserId, id, player);
 	const watch = await getWatchByWatchId(id);
-	const components = buttonRowBuilder(MessageTypes.watchNotification, [
-		isSnoozed(watch.snoozedUntil),
-		false,
-		true,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watchNotification,
+		[isSnoozed(watch.snoozedUntil), false, true, false],
+		`${id}:${player}`,
+	);
 	await interaction.update({
 		content: messageCopy.soAndSoHasBeenBlockedForThisWatch(data),
 		components,

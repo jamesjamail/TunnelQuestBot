@@ -33,102 +33,81 @@ export enum ButtonInteractionTypes {
 
 type ButtonConfig = {
 	type: ButtonInteractionTypes;
+	entityId?: string;
 };
+
+export function parseCustomId(customId: string): {
+	actionType: string;
+	entityId?: string;
+	extra?: string;
+} {
+	const [actionType, entityId, ...rest] = customId.split(':');
+	return {
+		actionType,
+		entityId: entityId || undefined,
+		extra: rest.length > 0 ? rest.join(':') : undefined,
+	};
+}
 
 export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 	const row = new ActionRowBuilder<ButtonBuilder>();
 
 	const buttons = buttonsToBuild.map((buttonConfig) => {
-		const isActive =
-			ButtonInteractionTypes[buttonConfig.type].endsWith('Active');
+		const typeName = ButtonInteractionTypes[buttonConfig.type];
+		const isActive = typeName.endsWith('Active');
+		const customId = buttonConfig.entityId
+			? `${typeName}:${buttonConfig.entityId}`
+			: typeName;
 		const builder = new ButtonBuilder().setStyle(
 			isActive ? ButtonStyle.Primary : ButtonStyle.Secondary,
 		);
 
 		switch (true) {
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchSnooze',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'UserSnooze',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationSnooze',
-			):
-				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
-					.setLabel('💤');
+			case typeName.startsWith('WatchSnooze'):
+			case typeName.startsWith('UserSnooze'):
+			case typeName.startsWith('WatchNotificationSnooze'):
+				builder.setCustomId(customId).setLabel('💤');
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'Unwatch',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'GlobalUnblock',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationUnwatch',
-			):
-				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
-					.setLabel('❌');
+			case typeName.startsWith('Unwatch'):
+			case typeName.startsWith('GlobalUnblock'):
+			case typeName.startsWith('WatchNotificationUnwatch'):
+				builder.setCustomId(customId).setLabel('❌');
 				if (isActive) {
 					builder.setStyle(ButtonStyle.Danger);
 				}
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchRefresh',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'GlobalRefresh',
-			):
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchNotificationWatchRefresh',
-			):
-				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
-					.setLabel('♻️');
+			case typeName.startsWith('WatchRefresh'):
+			case typeName.startsWith('GlobalRefresh'):
+			case typeName.startsWith('WatchNotificationWatchRefresh'):
+				builder.setCustomId(customId).setLabel('♻️');
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'ConfirmAction',
-			):
+			case typeName.startsWith('ConfirmAction'):
 				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setCustomId(customId)
 					.setLabel('Confirm')
 					.setStyle(
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'CancelAction',
-			):
+			case typeName.startsWith('CancelAction'):
 				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setCustomId(customId)
 					.setLabel('Cancel')
 					.setStyle(
 						isActive ? ButtonStyle.Danger : ButtonStyle.Secondary,
 					);
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'UnlinkCharacter',
-			):
+			case typeName.startsWith('UnlinkCharacter'):
 				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
-					.setLabel(
-						ButtonInteractionTypes[buttonConfig.type].endsWith(
-							'Active',
-						)
-							? 'Relink'
-							: 'Unlink',
-					)
+					.setCustomId(customId)
+					.setLabel(isActive ? 'Relink' : 'Unlink')
 					.setStyle(
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);
 				break;
-			case ButtonInteractionTypes[buttonConfig.type].startsWith(
-				'WatchBlock',
-			):
+			case typeName.startsWith('WatchBlock'):
 				builder
-					.setCustomId(ButtonInteractionTypes[buttonConfig.type])
+					.setCustomId(customId)
 					.setLabel('🔕')
 					.setStyle(
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
@@ -136,11 +115,7 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 				break;
 
 			default:
-				throw new Error(
-					`No button type defined for: ${
-						ButtonInteractionTypes[buttonConfig.type]
-					}`,
-				);
+				throw new Error(`No button type defined for: ${typeName}`);
 		}
 
 		return builder;

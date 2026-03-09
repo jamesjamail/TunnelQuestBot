@@ -4,8 +4,6 @@ import {
 	buttonRowBuilder,
 	MessageTypes,
 } from '../content/buttons/buttonRowBuilder';
-import { InteractionResponse } from 'discord.js';
-import { collectButtonInteractionAndReturnResponse } from '../content/buttons/buttonInteractionCollector';
 import { client } from '../..';
 import { getPlayerBlocks } from '../../prisma/dbExecutors/block';
 import {
@@ -125,25 +123,16 @@ export async function triggerFoundWatchedItem(
 		await gracefullyHandleError(error, undefined, undefined, data);
 		return;
 	}
-	const components = buttonRowBuilder(MessageTypes.watchNotification);
+	const components = buttonRowBuilder(
+		MessageTypes.watchNotification,
+		[false, false, false, false],
+		`${data.id}:${player}`,
+	);
 
-	const message = await client.users.send(data.discordUserId, {
+	await client.users.send(data.discordUserId, {
 		embeds,
 		components,
 	});
-
-	// player is sourced from the function args, not the db
-	const metadata = {
-		...data,
-		player,
-		price,
-		auctionMessage,
-	} as WatchNotificationMetadata;
-
-	await collectButtonInteractionAndReturnResponse(
-		message as unknown as InteractionResponse<boolean>,
-		metadata,
-	);
 
 	// Set the debounce key in Redis with a 15-minute expiration
 	const debounceKey = generateDebounceKey(watchId, player, price);

@@ -21,14 +21,22 @@ export default async function handleUnlinkCharacterInactive<T>(
 		await interaction.update({
 			content: message,
 			embeds: [new_embed],
-			components: buttonRowBuilder(MessageTypes.link, [true]),
+			components: buttonRowBuilder(
+				MessageTypes.link,
+				[true],
+				String(link.id),
+			),
 		});
 	} else {
 		message = messageCopy.soAndSoHasFailedToBeUnlinked(link);
 		await interaction.update({
 			content: message,
 			embeds: [new_embed],
-			components: buttonRowBuilder(MessageTypes.link, [false]),
+			components: buttonRowBuilder(
+				MessageTypes.link,
+				[false],
+				String(link.id),
+			),
 		});
 	}
 	debug_console(message);

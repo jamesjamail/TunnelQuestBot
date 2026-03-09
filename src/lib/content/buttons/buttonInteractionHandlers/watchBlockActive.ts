@@ -19,12 +19,11 @@ export default async function handleWatchBlockActive<T>(
 	const { id, player } = metadata as WatchBlockInactiveMetadata;
 	const data = await removeWatchBlockByPlayerName(id, player);
 	const watch = await getWatchByWatchId(id);
-	const components = buttonRowBuilder(MessageTypes.watchNotification, [
-		isSnoozed(watch.snoozedUntil),
-		false,
-		false,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watchNotification,
+		[isSnoozed(watch.snoozedUntil), false, false, false],
+		`${id}:${player}`,
+	);
 	await interaction.update({
 		content: messageCopy.soAndSoHasBeenUnblockedForThisWatch(data),
 		components,

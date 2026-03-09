@@ -13,11 +13,11 @@ export default async function handleUnwatchInactive<T>(
 	const typedWatch = metadata as Watch;
 	const data = await unwatch(typedWatch);
 	const embeds = [watchCommandResponseBuilder(data)];
-	const components = buttonRowBuilder(MessageTypes.watch, [
-		isSnoozed(data.snoozedUntil),
-		true,
-		false,
-	]);
+	const components = buttonRowBuilder(
+		MessageTypes.watch,
+		[isSnoozed(data.snoozedUntil), true, false],
+		String(data.id),
+	);
 	await interaction.update({
 		content: messageCopy.yourWatchHasBeenUnwatched(
 			typedWatch.itemName,

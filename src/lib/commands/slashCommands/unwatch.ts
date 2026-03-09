@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForUnwatch } from '../commandOptions';
 import { Watch } from '@prisma/client';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -35,12 +34,12 @@ const command: SlashCommand = {
 					args?.watch?.autoSuggestionMetaData?.watch as Watch,
 				);
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					false,
-					true,
-					false,
-				]);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.watch,
+					[false, true, false],
+					String(watch.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.yourWatchHasBeenUnwatched(
 						watch.itemName,
 						watch.server,
@@ -49,11 +48,6 @@ const command: SlashCommand = {
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			} else {
 				const value = args?.watch?.value as string;
 				if (value.toUpperCase() === 'ALL WATCHES') {
@@ -71,12 +65,12 @@ const command: SlashCommand = {
 					);
 
 					const embeds = [watchCommandResponseBuilder(watch)];
-					const components = buttonRowBuilder(MessageTypes.watch, [
-						false,
-						true,
-						false,
-					]);
-					const response = await interaction.reply({
+					const components = buttonRowBuilder(
+						MessageTypes.watch,
+						[false, true, false],
+						String(watch.id),
+					);
+					return await interaction.reply({
 						content: messageCopy.yourWatchHasBeenUnwatched(
 							watch.itemName,
 							watch.server,
@@ -85,11 +79,6 @@ const command: SlashCommand = {
 						components,
 						ephemeral: true,
 					});
-
-					return await collectButtonInteractionAndReturnResponse(
-						response,
-						watch,
-					);
 				}
 			}
 		} catch (error) {

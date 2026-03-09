@@ -9,7 +9,6 @@ import {
 	watchCommandResponseBuilder,
 } from '../../content/messages/messageBuilder';
 import { Watch } from '@prisma/client';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import { messageCopy } from '../../content/copy/messageCopy';
 import {
 	MessageTypes,
@@ -47,7 +46,7 @@ const command: SlashCommand = {
 					true,
 					false,
 				]);
-				const response = await interaction.reply({
+				return await interaction.reply({
 					content: messageCopy.allYourWatchesHaveBeenSnoozed(
 						hours as number,
 					),
@@ -55,10 +54,6 @@ const command: SlashCommand = {
 					components,
 					ephemeral: true,
 				});
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					data,
-				);
 			}
 			// check if watch option is user submitted or from an auto suggestion
 			if (args?.watch?.isAutoSuggestion) {
@@ -70,12 +65,12 @@ const command: SlashCommand = {
 				);
 
 				const embeds = [watchCommandResponseBuilder(watch)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					true,
-					false,
-					false,
-				]);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.watch,
+					[true, false, false],
+					String(watch.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.yourWatchHasBeenSnoozed(
 						hours as number,
 					),
@@ -83,20 +78,10 @@ const command: SlashCommand = {
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					watch,
-				);
 			}
 
 			const itemName = args?.watch?.value;
 
-			// components below are for list responses
-			const components = buttonRowBuilder(MessageTypes.list, [
-				true,
-				false,
-			]);
 			// if it's not an auto suggestion, if there's a value for watch let's
 			// try to snooze the watch by name
 			if (itemName) {
@@ -106,7 +91,12 @@ const command: SlashCommand = {
 						itemName as string,
 					);
 					const embeds = [watchCommandResponseBuilder(watch)];
-					const response = await interaction.reply({
+					const components = buttonRowBuilder(
+						MessageTypes.watch,
+						[true, false, false],
+						String(watch.id),
+					);
+					return await interaction.reply({
 						content: messageCopy.yourWatchHasBeenSnoozed(
 							hours as number,
 						),
@@ -114,10 +104,6 @@ const command: SlashCommand = {
 						components,
 						ephemeral: true,
 					});
-					return await collectButtonInteractionAndReturnResponse(
-						response,
-						watch,
-					);
 				} catch {
 					return await interaction.reply({
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(

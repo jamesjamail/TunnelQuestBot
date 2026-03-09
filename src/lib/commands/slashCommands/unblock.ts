@@ -3,7 +3,6 @@ import { SlashCommand } from '../../../types';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { autoCompletePlayerNameOptions } from '../commandOptions';
 import { BlockedPlayer } from '@prisma/client';
-import { collectButtonInteractionAndReturnResponse } from '../../content/buttons/buttonInteractionCollector';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -44,22 +43,17 @@ const command: SlashCommand = {
 				metadata.server = block.server;
 
 				const embeds = [blockCommandResponseBuilder(block)];
-				const components = buttonRowBuilder(MessageTypes.block, [
-					true,
-					true,
-					false,
-				]);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.block,
+					[true, true, false],
+					String(block.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.soAndSoHasBeenUnblocked(metadata),
 					embeds,
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					block,
-				);
 			} else {
 				// make a good faith effort to unblock based on raw string
 				// TODO: if no block found, this will throw.  catch it and respond accordingly
@@ -70,22 +64,17 @@ const command: SlashCommand = {
 				);
 
 				const embeds = [blockCommandResponseBuilder(block)];
-				const components = buttonRowBuilder(MessageTypes.watch, [
-					false,
-					true,
-					false,
-				]);
-				const response = await interaction.reply({
+				const components = buttonRowBuilder(
+					MessageTypes.block,
+					[true],
+					String(block.id),
+				);
+				return await interaction.reply({
 					content: messageCopy.soAndSoHasBeenUnblocked(block),
 					embeds,
 					components,
 					ephemeral: true,
 				});
-
-				return await collectButtonInteractionAndReturnResponse(
-					response,
-					block,
-				);
 			}
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
