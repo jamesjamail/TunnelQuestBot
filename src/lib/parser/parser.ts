@@ -13,18 +13,18 @@ export enum AuctionTypes {
 export class AuctionParser {
 	private aho;
 
-	constructor() {
-		this.aho = new AhoCorasick(Object.keys(consolidatedItemsAndAliases));
+	constructor(items?: string[]) {
+		this.aho = new AhoCorasick(
+			items ?? Object.keys(consolidatedItemsAndAliases),
+		);
 	}
 
 	private preprocessMessage(msg: string): string {
-		// Replace 'WTT' with 'WTS'
 		let processedMsg = msg.replace(/\bWTT\b/gi, 'WTS');
 
-		// Remove specific patterns and exclamation marks
 		processedMsg = processedMsg
 			.replace(
-				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|TRADE|OR TRADE|PST|EACH|EA)\b|!/gi,
+				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|TRADE|OR TRADE|PST)\b|!/gi,
 				'',
 			)
 			.trim();
@@ -87,94 +87,104 @@ export class AuctionParser {
 				end: item[0] + 1,
 			});
 		}
-		// Getting the composed set of ranges solves the "substring" (overlap) problem
 		const composedRanges = this.composeRanges(matchRanges);
 
-		// Pull together a list of matches with their corresponding "segments"
-		// A "segment" is all text from the start of the match to just before the
-		// start of the next match. This is useful for capturing price data.
-		const matches: {
-			item: string;
-			segment: string;
-			price: number | undefined;
-		}[] = [];
-		let lastRange = { start: 0, end: 0 };
-		for (const range of composedRanges) {
-			if (lastRange.end === 0) {
-				lastRange = range;
-				continue;
-			}
-			matches.push({
-				item: preprocessedMessage.substring(
-					lastRange.start,
-					lastRange.end,
-				),
-				segment: preprocessedMessage.substring(
-					lastRange.start,
-					range.start,
-				),
-				price: undefined,
-			});
-			lastRange = range;
-		}
-		matches.push({
-			item: preprocessedMessage.substring(lastRange.start, lastRange.end),
-			segment: preprocessedMessage.substring(lastRange.start),
-			price: undefined,
-		});
-
-		// Default to WTS or whichever is earlier in the message
 		let currentAuctionType = AuctionTypes.WTS;
-		const wtbMatch = preprocessedMessage.match(/WTB/);
-		const wtsMatch = preprocessedMessage.match(/WTS/);
-		if (wtbMatch && wtsMatch) {
-			// Typescript barks wtbMatch and wtsMatch might be undefined, even though
-			// they are tested above.  ! is used to assert non-nullness
-			if (wtbMatch.index! < wtsMatch.index!) {
-				currentAuctionType = AuctionTypes.WTB;
-			}
-		} else if (wtbMatch) {
-			currentAuctionType = AuctionTypes.WTB;
-		}
 
-		// Go through each segment and categorize it as WTB/WTS, and add price data
-		for (const segment of matches) {
-			if (segment.segment.match(/WTS/)) {
-				currentAuctionType = AuctionTypes.WTS;
-			} else if (segment.segment.match(/WTB/)) {
-				currentAuctionType = AuctionTypes.WTB;
-			}
+		for (let i = 0; i < composedRanges.length; i++) {
+			const range = composedRanges[i];
+			const item = preprocessedMessage
+				.substring(range.start, range.end)
+				.trim();
+			if (item === '') continue;
 
-			// Figure out price
-			const priceMatch = Array.from(
-				segment.segment.matchAll(
-					/(?<price>[0-9]+(\.[0-9]+)?)(?<kpp>k?p{0,2})/gi,
-				),
+			// Prefix gap: text between previous item's end (or message start)
+			// and this item's start — used for WTB/WTS detection
+			const gapStart = i > 0 ? composedRanges[i - 1].end : 0;
+			const prefixGap = preprocessedMessage.substring(
+				gapStart,
+				range.start,
 			);
-			if (priceMatch.length > 0) {
-				const singlePriceMatch = priceMatch[priceMatch.length - 1];
-				let price: number = +singlePriceMatch[1];
-				if (singlePriceMatch[3] && singlePriceMatch[3].match(/k/i)) {
-					price *= 1000;
-				}
-				segment.price = price;
+
+			const wtbGapMatches = [...prefixGap.matchAll(/WTB/gi)];
+			const wtsGapMatches = [...prefixGap.matchAll(/WTS/gi)];
+			const lastWtb =
+				wtbGapMatches.length > 0
+					? wtbGapMatches[wtbGapMatches.length - 1].index!
+					: -1;
+			const lastWts =
+				wtsGapMatches.length > 0
+					? wtsGapMatches[wtsGapMatches.length - 1].index!
+					: -1;
+
+			if (lastWtb > lastWts) {
+				currentAuctionType = AuctionTypes.WTB;
+			} else if (lastWts > lastWtb) {
+				currentAuctionType = AuctionTypes.WTS;
 			}
 
-			// Put it in the right bucket only if item name is not empty
-			if (segment.item.trim() !== '') {
-				const theItem: ItemType = {
-					item: segment.item.trim(),
-					price: segment.price,
-				};
-				if (currentAuctionType == AuctionTypes.WTS) {
-					selling.push(theItem);
-				} else {
-					buying.push(theItem);
-				}
+			// Price tail: text from this item's end to next item's start
+			// (or end of message) — used for price parsing
+			const tailEnd =
+				i < composedRanges.length - 1
+					? composedRanges[i + 1].start
+					: preprocessedMessage.length;
+			const priceTail = preprocessedMessage.substring(range.end, tailEnd);
+
+			const { price, perItem } = this.parsePrice(priceTail);
+
+			const theItem: ItemType = { item, price };
+			if (perItem) theItem.perItem = true;
+
+			if (currentAuctionType === AuctionTypes.WTS) {
+				selling.push(theItem);
+			} else {
+				buying.push(theItem);
 			}
 		}
 
 		return { buying, selling };
+	}
+
+	private parsePrice(text: string): {
+		price: number | undefined;
+		perItem: boolean;
+	} {
+		const PRICE_WITH_SUFFIX =
+			/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k|m|mil|pp?|plat(?:inum)?)\b/gi;
+		const BARE_NUMBER = /\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\b/g;
+
+		const suffixMatches = Array.from(text.matchAll(PRICE_WITH_SUFFIX));
+
+		let match: RegExpExecArray | RegExpMatchArray | undefined;
+		let suffix = '';
+
+		if (suffixMatches.length > 0) {
+			match = suffixMatches[suffixMatches.length - 1];
+			suffix = match[2].toLowerCase();
+		} else {
+			const bareMatches = Array.from(text.matchAll(BARE_NUMBER));
+			if (bareMatches.length > 0) {
+				match = bareMatches[bareMatches.length - 1];
+			}
+		}
+
+		if (!match) {
+			return { price: undefined, perItem: false };
+		}
+
+		let price = parseFloat(match[1].replace(/,/g, ''));
+
+		if (suffix === 'k') {
+			price *= 1000;
+		} else if (suffix === 'm' || suffix.startsWith('mil')) {
+			price *= 1000000;
+		}
+
+		const afterPrice = text.substring(match.index! + match[0].length);
+		const perItem = /^\s*\bea(?:ch)?\b/i.test(afterPrice);
+
+		return { price, perItem };
 	}
 }
 

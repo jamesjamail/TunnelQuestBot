@@ -61,7 +61,8 @@
     "lint-staged": "^16.2.7",
     "prettier": "^3.0.3",
     "prisma": "^6.19.2",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^4.0.18"
   },
   "prisma": {
     "schema": "./src/prisma/schema.prisma"
