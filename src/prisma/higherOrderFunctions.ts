@@ -14,17 +14,24 @@ export async function attemptAndCreateUserIfNeeded(
 		return await action();
 	} catch (error) {
 		if (isForeignKeyViolationError(error)) {
-			await createUser(interaction.user);
+			await ensureUserExists(interaction.user);
 			return await action();
 		}
-		throw error; // If it's not the foreign key error we're expecting, re-throw it
+		throw error;
+	}
+}
+
+async function ensureUserExists(user: Interaction['user']): Promise<void> {
+	try {
+		await createUser(user);
+	} catch (error: any) {
+		if (error.code !== 'P2002') {
+			throw error;
+		}
 	}
 }
 
 function isForeignKeyViolationError(error: any): boolean {
-	// Check if the error is related to a foreign key violation on our user table
-	return (
-		error.code === 'P2003' &&
-		error.meta?.field_name?.includes('discordUserId_fkey')
-	);
+	const field = error.meta?.constraint ?? error.meta?.field_name ?? '';
+	return error.code === 'P2003' && field.includes('discordUserId');
 }
