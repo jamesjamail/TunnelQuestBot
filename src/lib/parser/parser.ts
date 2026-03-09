@@ -20,8 +20,11 @@ export class AuctionParser {
 	}
 
 	private preprocessMessage(msg: string): string {
+		// Replace 'WTT' (want to trade) with 'WTS' so it's treated as selling
 		let processedMsg = msg.replace(/\bWTT\b/gi, 'WTS');
 
+		// Remove noise patterns and exclamation marks that interfere with parsing.
+		// Note: EA/EACH are intentionally preserved so we can detect per-item pricing.
 		processedMsg = processedMsg
 			.replace(
 				/\/WTT\b|\b(ASKING|OBO|OFFERS|OR BEST OFFER|TRADE|OR TRADE|PST)\b|!/gi,
@@ -78,6 +81,8 @@ export class AuctionParser {
 		const selling: ItemType[] = [];
 
 		const preprocessedMessage = this.preprocessMessage(message);
+
+		// Use Aho-Corasick to find all known item name matches in the message
 		const results = this.aho.search(preprocessedMessage);
 		const matchRanges: { start: number; end: number }[] = [];
 		for (const i in results) {
@@ -87,10 +92,21 @@ export class AuctionParser {
 				end: item[0] + 1,
 			});
 		}
+
+		// Compose overlapping ranges to solve the substring/overlap problem
+		// (e.g. "FLOWING BLACK SILK SASH" and "FBSS" overlapping with longer items)
 		const composedRanges = this.composeRanges(matchRanges);
 
+		// Default to WTS if no auction type keyword appears before the first item
 		let currentAuctionType = AuctionTypes.WTS;
 
+		// For each matched item, examine two text regions:
+		//   "prefix gap" = text BEFORE the item (between prev item's end and this item's start)
+		//                  -> used to detect WTB/WTS keywords that apply to this item
+		//   "price tail"  = text AFTER the item (between this item's end and next item's start)
+		//                  -> used to extract price and per-item indicators
+		// This decoupling prevents a WTB/WTS keyword in the trailing text of item A
+		// from being misattributed to item A (the old segment-based bug).
 		for (let i = 0; i < composedRanges.length; i++) {
 			const range = composedRanges[i];
 			const item = preprocessedMessage
@@ -98,8 +114,7 @@ export class AuctionParser {
 				.trim();
 			if (item === '') continue;
 
-			// Prefix gap: text between previous item's end (or message start)
-			// and this item's start — used for WTB/WTS detection
+			// Check the prefix gap for the last WTB/WTS keyword to determine auction type
 			const gapStart = i > 0 ? composedRanges[i - 1].end : 0;
 			const prefixGap = preprocessedMessage.substring(
 				gapStart,
@@ -117,14 +132,14 @@ export class AuctionParser {
 					? wtsGapMatches[wtsGapMatches.length - 1].index!
 					: -1;
 
+			// Whichever keyword appeared last in the gap wins
 			if (lastWtb > lastWts) {
 				currentAuctionType = AuctionTypes.WTB;
 			} else if (lastWts > lastWtb) {
 				currentAuctionType = AuctionTypes.WTS;
 			}
 
-			// Price tail: text from this item's end to next item's start
-			// (or end of message) — used for price parsing
+			// Extract price from the tail text after this item
 			const tailEnd =
 				i < composedRanges.length - 1
 					? composedRanges[i + 1].start
@@ -133,6 +148,7 @@ export class AuctionParser {
 
 			const { price, perItem } = this.parsePrice(priceTail);
 
+			// Put the item in the appropriate bucket
 			const theItem: ItemType = { item, price };
 			if (perItem) theItem.perItem = true;
 
@@ -146,14 +162,21 @@ export class AuctionParser {
 		return { buying, selling };
 	}
 
+	// Extract a price from the text that follows an item name (the "price tail").
+	// Prefers numbers with a recognized suffix (k, pp, plat, m, mil, etc.) to
+	// avoid false positives from quantity patterns like "x4" or "(x20)".
+	// Falls back to a bare number only if no suffixed match exists.
 	private parsePrice(text: string): {
 		price: number | undefined;
 		perItem: boolean;
 	} {
+		// Matches numbers with a price suffix: 3.5k, 500pp, 10,000plat, 1.5mil, etc.
 		const PRICE_WITH_SUFFIX =
 			/(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(k|m|mil|pp?|plat(?:inum)?)\b/gi;
+		// Fallback: bare numbers without a suffix (less reliable, used only if no suffix match)
 		const BARE_NUMBER = /\b(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\b/g;
 
+		// Prefer the last suffixed match (closest to the item, after any quantity indicators)
 		const suffixMatches = Array.from(text.matchAll(PRICE_WITH_SUFFIX));
 
 		let match: RegExpExecArray | RegExpMatchArray | undefined;
@@ -163,6 +186,7 @@ export class AuctionParser {
 			match = suffixMatches[suffixMatches.length - 1];
 			suffix = match[2].toLowerCase();
 		} else {
+			// No suffixed price found — fall back to the last bare number
 			const bareMatches = Array.from(text.matchAll(BARE_NUMBER));
 			if (bareMatches.length > 0) {
 				match = bareMatches[bareMatches.length - 1];
@@ -173,14 +197,18 @@ export class AuctionParser {
 			return { price: undefined, perItem: false };
 		}
 
+		// Strip commas and parse the numeric value
 		let price = parseFloat(match[1].replace(/,/g, ''));
 
+		// Apply multiplier based on suffix
 		if (suffix === 'k') {
 			price *= 1000;
 		} else if (suffix === 'm' || suffix.startsWith('mil')) {
 			price *= 1000000;
 		}
+		// p, pp, plat, platinum — already in platinum units, no multiplier needed
 
+		// Check if "ea" or "each" follows the price, indicating a per-item price
 		const afterPrice = text.substring(match.index! + match[0].length);
 		const perItem = /^\s*\bea(?:ch)?\b/i.test(afterPrice);
 
