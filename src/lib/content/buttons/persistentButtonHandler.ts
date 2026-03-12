@@ -2,7 +2,10 @@ import { ButtonInteraction } from 'discord.js';
 import { PlayerLink, Server } from '@prisma/client';
 import { parseCustomId, ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
-import { getWatchByWatchId } from '../../../prisma/dbExecutors/watch';
+import {
+	getWatchByWatchId,
+	getWatchByWatchIdForWatchNotification,
+} from '../../../prisma/dbExecutors/watch';
 import { prisma } from '../../../prisma/init';
 import { WatchNotificationMetadata } from '../../watchNotification/watchNotification';
 
@@ -152,13 +155,15 @@ async function fetchMetadata(
 		return reconstructPlayerLinkFromEmbed(interaction, id);
 	}
 
-	// WatchNotification and WatchBlock buttons encode watchId:playerName
+	// WatchNotification and WatchBlock buttons encode watchId:playerName.
+	// Use getWatchByWatchIdForWatchNotification to include the user and
+	// blockedWatches relations that the WatchBlock handlers require.
 	if (
 		actionType.startsWith('WatchNotification') ||
 		actionType.startsWith('WatchBlock')
 	) {
 		if (!id) return undefined;
-		const watch = await getWatchByWatchId(id);
+		const watch = await getWatchByWatchIdForWatchNotification(id);
 		const player = extra ?? extractNotificationContext(interaction).player;
 		const { price, auctionMessage } =
 			extractNotificationContext(interaction);
