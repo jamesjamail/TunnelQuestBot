@@ -514,6 +514,17 @@ export async function embeddedAuctionStreamMessageBuilder(
 		title += 'WTB';
 	} else if (auctionData.selling.length > 0) {
 		title += 'WTS';
+	} else {
+		// No items matched — detect WTB/WTS from the raw auction text
+		const hasWtb = /\bWTB\b/i.test(auctionText);
+		const hasWts = /\b(WTS|WTT)\b/i.test(auctionText);
+		if (hasWtb && hasWts) {
+			title += 'WTS/WTB';
+		} else if (hasWtb) {
+			title += 'WTB';
+		} else if (hasWts) {
+			title += 'WTS';
+		}
 	}
 
 	const combinedFields: APIEmbedField[] = [];
