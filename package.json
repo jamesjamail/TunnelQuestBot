@@ -62,7 +62,7 @@
     "prettier": "^3.0.3",
     "prisma": "^6.19.2",
     "typescript": "^5.2.2",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.0"
   },
   "prisma": {
     "schema": "./src/prisma/schema.prisma"
