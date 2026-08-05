@@ -39,6 +39,12 @@ function truncateForField(text: string, reservedChars = 0): string {
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+const MAX_DESCRIPTION = 4096;
+function truncateForDescription(text: string, reservedChars = 0): string {
+	const max = MAX_DESCRIPTION - reservedChars;
+	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
 export function watchCommandResponseBuilder(watchData: Watch) {
 	// Helper function to generate the field value based on conditions
 	function generateFieldValue(watchData: Watch, isKnownItem: boolean) {
@@ -226,23 +232,25 @@ export async function watchNotificationBuilder(
 		playerLinkString = ` (<@${playerLink.discordUserId}>)`;
 	}
 
+	const description = `\n\n\n**${player}**${playerLinkString} is currently ${
+		watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
+	} **${toTitleCase(watchData.itemName)}** ${
+		auctionedPrice
+			? 'for **' +
+				formatPriceNumberToReadableString(auctionedPrice) +
+				'**'
+			: ''
+	} on **Project 1999 ${formatserverEnumToReadableString(
+		watchData.server,
+	)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`;
+
+	const title = `Watch Notification: ${toTitleCase(watchData.itemName)}`;
+
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor(authorProperties)
-		.setTitle(`Watch Notification: ${toTitleCase(watchData.itemName)}`)
-		.setDescription(
-			`\n\n\n**${player}**${playerLinkString} is currently ${
-				watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
-			} **${toTitleCase(watchData.itemName)}** ${
-				auctionedPrice
-					? 'for **' +
-						formatPriceNumberToReadableString(auctionedPrice) +
-						'**'
-					: ''
-			} on **Project 1999 ${formatserverEnumToReadableString(
-				watchData.server,
-			)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`,
-		)
+		.setTitle(title.length > 256 ? title.slice(0, 256) : title)
+		.setDescription(truncateForDescription(description))
 		.addFields(fields)
 		.setFooter({
 			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions from this player for this watch, click 🔕\nTo extend this watch, click ♻️',
@@ -546,7 +554,9 @@ export async function embeddedAuctionStreamMessageBuilder(
 		if (index === 0) {
 			embed
 				.setAuthor({ name: `[ ${title} ]   ${player}` })
-				.setDescription(`\`\`\`${auctionText}\`\`\``);
+				.setDescription(
+					`\`\`\`${truncateForDescription(auctionText, 6)}\`\`\``,
+				);
 		}
 		if (index === Math.min(fieldChunks.length, MAX_EMBEDS) - 1) {
 			embed.setFooter({

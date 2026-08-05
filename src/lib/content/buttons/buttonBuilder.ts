@@ -19,8 +19,6 @@ export enum ButtonInteractionTypes {
 	GlobalUnblockInactive,
 	WatchBlockActive,
 	WatchBlockInactive,
-	WatchUnblockActive,
-	WatchUnblockInactive,
 	WatchNotificationSnoozeActive,
 	WatchNotificationSnoozeInactive,
 	WatchNotificationUnwatchActive,

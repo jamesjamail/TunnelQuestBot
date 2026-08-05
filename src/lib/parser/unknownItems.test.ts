@@ -61,4 +61,94 @@ describe('auctionIncludesUnknownItem', () => {
 			),
 		).toBe(false);
 	});
+
+	it('matches WTS watch for SELLING keyword before the item', () => {
+		expect(
+			auctionIncludesUnknownItem(
+				'SELLING CUSTOM ROBE 100PP',
+				'CUSTOM ROBE',
+				AuctionTypes.WTS,
+			),
+		).toBe(true);
+		expect(
+			auctionIncludesUnknownItem(
+				'SELLING CUSTOM ROBE 100PP',
+				'CUSTOM ROBE',
+				AuctionTypes.WTB,
+			),
+		).toBe(false);
+	});
+
+	it('matches WTB watch for BUYING keyword before the item', () => {
+		expect(
+			auctionIncludesUnknownItem(
+				'BUYING CUSTOM ROBE',
+				'CUSTOM ROBE',
+				AuctionTypes.WTB,
+			),
+		).toBe(true);
+		expect(
+			auctionIncludesUnknownItem(
+				'BUYING CUSTOM ROBE',
+				'CUSTOM ROBE',
+				AuctionTypes.WTS,
+			),
+		).toBe(false);
+	});
+
+	it('defaults to selling when item appears before any keyword', () => {
+		expect(
+			auctionIncludesUnknownItem(
+				'CUSTOM ROBE 500PP WTB FOO',
+				'CUSTOM ROBE',
+				AuctionTypes.WTS,
+			),
+		).toBe(true);
+		expect(
+			auctionIncludesUnknownItem(
+				'CUSTOM ROBE 500PP WTB FOO',
+				'CUSTOM ROBE',
+				AuctionTypes.WTB,
+			),
+		).toBe(false);
+	});
+
+	it('matches lowercase auction text with uppercase item', () => {
+		expect(
+			auctionIncludesUnknownItem(
+				'wts custom robe 100pp',
+				'CUSTOM ROBE',
+				AuctionTypes.WTS,
+			),
+		).toBe(true);
+	});
+
+	it('returns false when item is not present regardless of watch type', () => {
+		expect(
+			auctionIncludesUnknownItem(
+				'WTS SOMETHING ELSE',
+				'CUSTOM ROBE',
+				AuctionTypes.WTB,
+			),
+		).toBe(false);
+	});
+
+	it('gives WTS watch the tie when neither keyword precedes the item', () => {
+		// No keyword before item: both lastSellingIndex and lastBuyingIndex are -1.
+		// WTS uses >= (true), WTB uses > (false).
+		expect(
+			auctionIncludesUnknownItem(
+				'CUSTOM ROBE 500PP',
+				'CUSTOM ROBE',
+				AuctionTypes.WTS,
+			),
+		).toBe(true);
+		expect(
+			auctionIncludesUnknownItem(
+				'CUSTOM ROBE 500PP',
+				'CUSTOM ROBE',
+				AuctionTypes.WTB,
+			),
+		).toBe(false);
+	});
 });

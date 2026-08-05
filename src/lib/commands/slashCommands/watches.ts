@@ -29,6 +29,12 @@ const command: SlashCommand = {
 				args?.filter?.value as string,
 			);
 
+			if (data.length === 0) {
+				return await interaction.editReply(
+					messageCopy.youDontHaveAnyWatches,
+				);
+			}
+
 			let lastDmChannelId = '';
 
 			await Promise.all(

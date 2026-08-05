@@ -42,7 +42,7 @@ const command: SlashCommand = {
 					String(watch.id),
 				);
 				return await interaction.reply({
-					content: messageCopy.yourWatchHasBeenSnoozed(),
+					content: messageCopy.yourWatchHasBeenUnsnoozed,
 					embeds,
 					components,
 					flags: MessageFlags.Ephemeral,

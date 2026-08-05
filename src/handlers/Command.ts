@@ -1,45 +1,9 @@
-import { Client, Routes, SlashCommandOptionsOnlyBuilder } from 'discord.js';
-import { REST } from '@discordjs/rest';
-import { readdirSync } from 'fs';
+import { Client } from 'discord.js';
 import { join } from 'path';
-import { color } from '../functions';
-import { SlashCommand } from '../types';
-import { gracefullyHandleError } from '../lib/helpers/errors';
+import { loadSlashCommands, registerSlashCommands } from './commandLoader';
 
 module.exports = (client: Client) => {
-	const slashCommands: SlashCommandOptionsOnlyBuilder[] = [];
-	// this template also contained a /commands folder for non-slashCommands, but it was removed as TQB
-	// exclusively uses slashCommands.  If regular commmands are ever needed, refer to template (see readme).
 	const slashCommandsDir = join(__dirname, '../lib/commands/slashCommands');
-
-	readdirSync(slashCommandsDir).forEach((file) => {
-		if (!file.endsWith('.js') || file.startsWith('_')) return;
-
-		const command: SlashCommand = require(
-			`${slashCommandsDir}/${file}`,
-		).default;
-		slashCommands.push(command.command);
-		client.slashCommands.set(command.command.name, command);
-	});
-
-	const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
-	rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
-		body: slashCommands.map((command) => command.toJSON()),
-	})
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		.then((data: any) => {
-			console.log(
-				color(
-					'text',
-					`🔥 Successfully loaded ${color(
-						'variable',
-						data.length,
-					)} slash command(s)`,
-				),
-			);
-		})
-		.catch(async (e) => {
-			await gracefullyHandleError(e);
-		});
+	const slashCommands = loadSlashCommands(slashCommandsDir, client);
+	void registerSlashCommands(slashCommands);
 };

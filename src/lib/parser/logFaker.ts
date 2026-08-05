@@ -24,7 +24,7 @@ function generatePrice(): string {
 	return ' ' + amount + currency;
 }
 
-function generateLogLine() {
+export function generateLogLine() {
 	const playerName = getRandomElement(players);
 	const action = getRandomElement(actions);
 	const itemCount = Math.floor(Math.random() * 5) + 1;
@@ -89,5 +89,8 @@ function appendFakeLogs() {
 	});
 }
 
-appendFakeLogs();
-setInterval(appendFakeLogs, 1000);
+// 	Only self-start when run directly, so tests can import the helpers.
+if (require.main === module) {
+	appendFakeLogs();
+	setInterval(appendFakeLogs, 1000);
+}

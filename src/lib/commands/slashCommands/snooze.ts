@@ -113,6 +113,11 @@ const command: SlashCommand = {
 					});
 				}
 			}
+
+			return await interaction.reply({
+				content: `You didn't enter an item name. Instead of selecting the option \`start typing an item name for suggestions\`, either select a suggested option or enter your own.`,
+				flags: MessageFlags.Ephemeral,
+			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}
