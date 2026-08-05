@@ -49,6 +49,7 @@ model Watch {
   blockedWatches BlockedPlayerByWatch[]
 
   @@unique([discordUserId, itemName, server, watchType])
+  @@index([active])
 }
 
 model BlockedPlayerByWatch {

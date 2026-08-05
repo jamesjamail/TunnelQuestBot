@@ -13,6 +13,7 @@ import path from 'path';
 import { handleLinkMatch } from '../playerLink/playerLink';
 import crypto from 'crypto';
 import { gracefullyHandleError } from '../helpers/errors';
+import { resolveCanonicalItemName } from '../gameData/consolidatedItems';
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
@@ -43,7 +44,7 @@ export function generateAuctionKey(auctionText: string) {
 
 const parser = new AuctionParser();
 
-async function handleLogLine(server: Server, data: string) {
+export async function handleLogLine(server: Server, data: string) {
 	// filter for log lines that start with "soAndSo auctions,"
 	const auctionMatch = data.match(/(\w+) auctions?, '(.+)'/);
 	const linkMatch = data.match(
@@ -62,7 +63,12 @@ async function handleLogLine(server: Server, data: string) {
 			// Parse the auction message if not in cache
 			auctionData = parser.parseAuctionMessage(auctionText.toUpperCase());
 			// Cache the parsed data
-			await redis.set(auctionLogKey, JSON.stringify(auctionData));
+			await redis.set(
+				auctionLogKey,
+				JSON.stringify(auctionData),
+				'EX',
+				60 * 60 * 24,
+			);
 		} else {
 			// Use the cached data
 			auctionData = JSON.parse(cachedAuctionData);
@@ -82,10 +88,10 @@ async function handleLogLine(server: Server, data: string) {
 		);
 
 		for (const item of auctionData.selling) {
-			// 	"known" items are exact matches and can be looked up by key
-			if (state.watchedItems[server].WTS.knownItems[item.item]) {
+			const canonicalName = resolveCanonicalItemName(item.item);
+			if (state.watchedItems[server].WTS.knownItems[canonicalName]) {
 				await triggerFoundWatchedItems(
-					state.watchedItems[server].WTS.knownItems[item.item],
+					state.watchedItems[server].WTS.knownItems[canonicalName],
 					playerName,
 					item.price,
 					auctionText,
@@ -95,9 +101,10 @@ async function handleLogLine(server: Server, data: string) {
 
 		// Iterate over auctionData.buying array and check against watchedItems.WTB
 		for (const item of auctionData.buying) {
-			if (state.watchedItems[server].WTB.knownItems[item.item]) {
+			const canonicalName = resolveCanonicalItemName(item.item);
+			if (state.watchedItems[server].WTB.knownItems[canonicalName]) {
 				await triggerFoundWatchedItems(
-					state.watchedItems[server].WTB.knownItems[item.item],
+					state.watchedItems[server].WTB.knownItems[canonicalName],
 					playerName,
 					item.price,
 					auctionText,

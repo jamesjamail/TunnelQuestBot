@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../../lib/helpers/datetime';
 import { isKnownItem } from '../../lib/helpers/watches';
+import { resolveCanonicalItemName } from '../../lib/gameData/consolidatedItems';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
 
@@ -98,12 +99,7 @@ export async function getWatchesByUser(discordUserId: string) {
 }
 
 export async function getWatchesByDiscordUser(user: DiscordUser) {
-	return prisma.watch.findMany({
-		where: {
-			discordUserId: user.id,
-			active: true,
-		},
-	});
+	return getWatchesByUser(user.id);
 }
 
 export async function getSnoozedWatchesByDiscordUser(user: DiscordUser) {
@@ -176,7 +172,7 @@ export async function unsnoozeWatchByItemName(
 ) {
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName,
+			itemName: watchName.toUpperCase(),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -344,7 +340,7 @@ export async function snoozeWatchByItemName(
 	// why not use updateMany? because the response is a mere record count.
 	const foundWatch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: itemName,
+			itemName: itemName.toUpperCase(),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -400,10 +396,12 @@ export async function getWatchesGroupedByServer() {
 		const itemName = watch.itemName;
 
 		if (isKnownItem(itemName)) {
-			if (!groupedWatches[server][watchType].knownItems[itemName]) {
-				groupedWatches[server][watchType].knownItems[itemName] = [];
+			const canonicalName = resolveCanonicalItemName(itemName);
+			if (!groupedWatches[server][watchType].knownItems[canonicalName]) {
+				groupedWatches[server][watchType].knownItems[canonicalName] =
+					[];
 			}
-			groupedWatches[server][watchType].knownItems[itemName].push(
+			groupedWatches[server][watchType].knownItems[canonicalName].push(
 				watch.id,
 			);
 		} else {

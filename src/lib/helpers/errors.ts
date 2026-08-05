@@ -97,6 +97,10 @@ async function reportErrorToDiscord(
 	error: Error,
 	extraData?: object,
 ) {
+	const MAX_DISCORD_MESSAGE = 2000;
+	const truncateForDiscord = (text: string, max = MAX_DISCORD_MESSAGE) =>
+		text.length > max ? `${text.slice(0, max - 1)}…` : text;
+
 	const errorChannelId = process.env.ERROR_LOG_CHANNEL_ID;
 
 	if (!errorChannelId) {
@@ -124,7 +128,9 @@ async function reportErrorToDiscord(
 	}
 
 	const textChannel = channel as TextChannel;
-	const sentMessage = await textChannel.send(errorMessage);
+	const sentMessage = await textChannel.send(
+		truncateForDiscord(errorMessage),
+	);
 
 	// 	the thread is a nicety - losing it should not discard the message above
 	try {
@@ -132,10 +138,12 @@ async function reportErrorToDiscord(
 			name: `error-${Math.floor(Date.now() / 1000)}`,
 			autoArchiveDuration: 60 * 24, // One Day
 		});
-		await errorThread.send(`Stack:\n\`\`\`\n${error.stack}\n\`\`\``);
+		await errorThread.send(
+			`Stack:\n\`\`\`\n${truncateForDiscord(error.stack ?? '', 1900)}\n\`\`\``,
+		);
 		if (extraData) {
 			await errorThread.send(
-				`Extra data:\n\`\`\`json\n${JSON.stringify(extraData)}\n\`\`\``,
+				`Extra data:\n\`\`\`json\n${truncateForDiscord(JSON.stringify(extraData), 1900)}\n\`\`\``,
 			);
 		}
 	} catch (threadError) {

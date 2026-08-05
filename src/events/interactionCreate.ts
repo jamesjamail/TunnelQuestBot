@@ -10,38 +10,31 @@ const event: BotEvent = {
 			const command = interaction.client.slashCommands.get(
 				interaction.commandName,
 			);
-			const cooldown = interaction.client.cooldowns.get(
-				`${interaction.commandName}-${interaction.user.username}`,
-			);
+			const cooldownKey = `${interaction.commandName}-${interaction.user.id}`;
+			const cooldown = interaction.client.cooldowns.get(cooldownKey);
 			if (!command) return;
-			if (command.cooldown && cooldown) {
-				if (Date.now() < cooldown) {
-					await interaction.reply({
-						content: `You have to wait ${Math.floor(
-							Math.abs(Date.now() - cooldown) / 1000,
-						)} second(s) to use this command again.`,
-						flags: MessageFlags.Ephemeral,
-					});
-					setTimeout(() => {
-						// 	the user may have dismissed the reply already
-						void interaction.deleteReply().catch(() => null);
-					}, 5000);
-					return;
-				}
+			if (command.cooldown && cooldown && Date.now() < cooldown) {
+				const secondsLeft = Math.max(
+					1,
+					Math.ceil((cooldown - Date.now()) / 1000),
+				);
+				await interaction.reply({
+					content: `You have to wait ${secondsLeft} second(s) to use this command again.`,
+					flags: MessageFlags.Ephemeral,
+				});
+				setTimeout(() => {
+					void interaction.deleteReply().catch(() => null);
+				}, 5000);
+				return;
+			}
+			if (command.cooldown) {
 				interaction.client.cooldowns.set(
-					`${interaction.commandName}-${interaction.user.username}`,
+					cooldownKey,
 					Date.now() + command.cooldown * 1000,
 				);
 				setTimeout(() => {
-					interaction.client.cooldowns.delete(
-						`${interaction.commandName}-${interaction.user.username}`,
-					);
+					interaction.client.cooldowns.delete(cooldownKey);
 				}, command.cooldown * 1000);
-			} else if (command.cooldown && !cooldown) {
-				interaction.client.cooldowns.set(
-					`${interaction.commandName}-${interaction.user.username}`,
-					Date.now() + command.cooldown * 1000,
-				);
 			}
 			try {
 				await command.execute(interaction);

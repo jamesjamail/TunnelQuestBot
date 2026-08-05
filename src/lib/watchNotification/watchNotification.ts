@@ -45,18 +45,12 @@ export async function shouldUserBeNotified(
 		return false;
 	}
 
-	// Check if notification was already sent within the last 15 minutes
-	const debounceKey = generateDebounceKey(watch.id, player, price);
-	const alreadyNotified = await redis.exists(debounceKey);
-
-	if (alreadyNotified) {
-		return false;
-	}
-
 	// ensure seller is not globally blocked by user
 	if (
 		blockedPlayers.some(
-			(blockedPlayer) => blockedPlayer.player === player.toUpperCase(),
+			(blockedPlayer) =>
+				blockedPlayer.player === player.toUpperCase() &&
+				blockedPlayer.server === watch.server,
 		)
 	) {
 		return false;
@@ -77,12 +71,12 @@ export async function shouldUserBeNotified(
 		if (!price) {
 			return false;
 		}
-		// if watching for WTS, auctioned price must be lower than the price criteria
+		// if watching for WTS, auctioned price must be at or below the price criteria (a budget cap)
 		if (watch.watchType === WatchType.WTS) {
-			if (watch.priceRequirement > price) {
+			if (price > watch.priceRequirement) {
 				return false;
 			}
-			// if watching for WTB, auctioned price must be higher than the price criteria
+			// if watching for WTB, auctioned price must be at or above the price criteria (a minimum offer)
 		} else {
 			if (watch.priceRequirement > price) {
 				return false;
@@ -121,6 +115,22 @@ export async function triggerFoundWatchedItem(
 		return;
 	}
 
+	// Atomically claim the debounce key BEFORE doing any work. SET NX returns
+	// null when another concurrent trigger already claimed it. The key is
+	// claimed even if the send later fails, deliberately: a user with closed
+	// DMs must not produce an error for every matching auction line.
+	const debounceKey = generateDebounceKey(watchId, player, price);
+	const claimed = await redis.set(
+		debounceKey,
+		'notified',
+		'EX',
+		15 * 60,
+		'NX',
+	);
+	if (!claimed) {
+		return;
+	}
+
 	const embeds = [];
 	try {
 		embeds.push(
@@ -136,18 +146,13 @@ export async function triggerFoundWatchedItem(
 		`${data.id}:${player}`,
 	);
 
-	const debounceKey = generateDebounceKey(watchId, player, price);
-
 	try {
 		await client.users.send(data.discordUserId, {
 			embeds,
 			components,
 		});
-	} finally {
-		// Set the debounce key in Redis with a 15-minute expiration.
-		// 	Set it even when the send failed, otherwise a user who has closed
-		// 	their DMs produces an error for every matching auction line.
-		await redis.set(debounceKey, 'notified', 'EX', 15 * 60);
+	} catch (error) {
+		await gracefullyHandleError(error, undefined, undefined, data);
 	}
 }
 

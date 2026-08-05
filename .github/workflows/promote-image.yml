@@ -13,8 +13,8 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull latest dev image
-        run: docker pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+        run: docker pull ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:latest
       - name: Re-tag image for prod
-        run: docker tag ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
+        run: docker tag ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:latest ghcr.io/${{ github.repository_owner }}/tunnelquestbot/prod/tunnelquestbot:latest
       - name: Push image to prod
-        run: docker push ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
+        run: docker push ghcr.io/${{ github.repository_owner }}/tunnelquestbot/prod/tunnelquestbot:latest

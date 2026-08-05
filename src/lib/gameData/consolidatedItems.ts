@@ -45,3 +45,27 @@ export const consolidatedItemsAndAliases: InGameItemNamesType = {
 	...consolidatedItems,
 	...inGameAliasesRaw,
 };
+
+// Wiki path -> canonical item name (first canonical wins; apostrophe-variant
+// duplicates created by fixApostrophes share the path and must not overwrite it)
+const canonicalNameByWikiPath: Record<string, string> = {};
+for (const [name, wikiPath] of Object.entries(consolidatedItems)) {
+	if (!canonicalNameByWikiPath[wikiPath]) {
+		canonicalNameByWikiPath[wikiPath] = name;
+	}
+}
+
+// Resolves aliases (e.g. FBSS) to the canonical item name watches are usually
+// keyed by. Identity for canonical names and for strings we know nothing about.
+export function resolveCanonicalItemName(itemName: string): string {
+	const upper = itemName.toUpperCase();
+	if (consolidatedItems[upper]) {
+		return upper;
+	}
+	const aliases: Record<string, string> = inGameAliasesRaw;
+	const aliasWikiPath = aliases[upper];
+	if (aliasWikiPath && canonicalNameByWikiPath[aliasWikiPath]) {
+		return canonicalNameByWikiPath[aliasWikiPath];
+	}
+	return upper;
+}

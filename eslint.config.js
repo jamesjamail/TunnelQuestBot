@@ -6,7 +6,16 @@ const path = require('path');
 
 module.exports = [
   {
-    ignores: ['build/**', 'node_modules/**', 'dist/**', '**/*.js'],
+    ignores: [
+      'build/**',
+      'node_modules/**',
+      'dist/**',
+      '**/*.js',
+      '**/*.test.ts',
+      'src/test/**',
+      'test/**',
+      'vitest.config.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

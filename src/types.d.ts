@@ -1,8 +1,6 @@
 import {
 	SlashCommandOptionsOnlyBuilder,
 	Collection,
-	PermissionResolvable,
-	Message,
 	AutocompleteInteraction,
 	ChatInputCommandInteraction,
 } from 'discord.js';
@@ -16,23 +14,12 @@ export interface SlashCommand {
 	cooldown?: number; // in seconds
 }
 
-export interface Command {
-	name: string;
-	execute: (message: Message, args: Array<string>) => void;
-	permissions: Array<PermissionResolvable>;
-	aliases: Array<string>;
-	cooldown?: number;
-}
-
-interface GuildOptions {
-	prefix: string;
-}
-
-export type GuildOption = keyof GuildOptions;
 export interface BotEvent {
 	name: string;
 	once?: boolean | false;
-	execute: (...args) => Promise<unknown> | void;
+	// discord.js passes heterogeneous event args; callers cast at the boundary
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	execute: (...args: any[]) => Promise<unknown> | void;
 }
 
 declare global {
@@ -40,9 +27,6 @@ declare global {
 		interface ProcessEnv {
 			TOKEN: string;
 			CLIENT_ID: string;
-			PREFIX: string;
-			MONGO_URI: string;
-			MONGO_DATABASE_NAME: string;
 		}
 	}
 }
@@ -50,7 +34,6 @@ declare global {
 declare module 'discord.js' {
 	export interface Client {
 		slashCommands: Collection<string, SlashCommand>;
-		commands: Collection<string, Command>;
 		cooldowns: Collection<string, number>;
 	}
 }

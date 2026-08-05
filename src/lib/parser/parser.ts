@@ -222,8 +222,8 @@ export function auctionIncludesUnknownItem(
 	watchType: AuctionTypes,
 ) {
 	// Regular expressions for auction types
-	const sellingRegex = /\b(WTS|SELLING|WTSELL)\b/i;
-	const buyingRegex = /\b(WTB|BUYING|WTBUY)\b/i;
+	const sellingRegex = /\b(WTS|SELLING|WTSELL)\b/gi;
+	const buyingRegex = /\b(WTB|BUYING|WTBUY)\b/gi;
 
 	const uppercaseAuctionText = auctionText.toUpperCase();
 
@@ -236,22 +236,27 @@ export function auctionIncludesUnknownItem(
 	// Extract the text before the item
 	const textBeforeItem = uppercaseAuctionText.substring(0, itemIndex);
 
-	// Find the last occurrence of any auction type
-	const lastSellingIndex = textBeforeItem.search(sellingRegex);
-	const lastBuyingIndex = textBeforeItem.search(buyingRegex);
+	// Find the LAST occurrence of each auction type keyword before the item
+	const lastIndexOf = (regex: RegExp) => {
+		let last = -1;
+		for (const match of textBeforeItem.matchAll(regex)) {
+			last = match.index ?? last;
+		}
+		return last;
+	};
+	const lastSellingIndex = lastIndexOf(sellingRegex);
+	const lastBuyingIndex = lastIndexOf(buyingRegex);
 
-	// Determine the latest auction type declaration before the item
-	const lastAuctionTypeIndex = Math.max(lastSellingIndex, lastBuyingIndex);
-
-	// If no auction type declaration is found, assume selling
-	if (lastAuctionTypeIndex === -1 && watchType === AuctionTypes.WTS) {
-		return true;
+	// No auction type declared before the item: auctions default to selling,
+	// so only WTS watches may match
+	if (lastSellingIndex === -1 && lastBuyingIndex === -1) {
+		return watchType === AuctionTypes.WTS;
 	}
 
-	// Check if the last auction type matches the type we are watching for
+	// The keyword closest to (before) the item decides its section
 	if (watchType === AuctionTypes.WTS) {
 		return lastSellingIndex >= lastBuyingIndex;
 	} else {
-		return lastBuyingIndex >= lastSellingIndex;
+		return lastBuyingIndex > lastSellingIndex;
 	}
 }

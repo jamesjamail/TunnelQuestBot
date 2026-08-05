@@ -11,7 +11,7 @@ export const client = new Client({
 	],
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction], //	needed for handling interactions from DM's
 });
-import { Command, SlashCommand } from './types';
+import { SlashCommand } from './types';
 import { config } from 'dotenv';
 import { readdirSync } from 'fs';
 import { join } from 'path';
@@ -31,7 +31,6 @@ process.on('uncaughtException', (error) => {
 });
 
 client.slashCommands = new Collection<string, SlashCommand>();
-client.commands = new Collection<string, Command>();
 client.cooldowns = new Collection<string, number>();
 
 const handlersDir = join(__dirname, './handlers');

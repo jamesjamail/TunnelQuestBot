@@ -88,6 +88,12 @@ export async function authPlayerLink(
 				linkCode: linkCode,
 			},
 		});
+		if (linkEntry.linkCodeExpiry && linkEntry.linkCodeExpiry < new Date()) {
+			console.log(
+				`Player \`${server}.${player}\` attempted to link with expired linkCode \`${linkCode}\``,
+			);
+			return undefined;
+		}
 		return await prisma.playerLink.update({
 			where: {
 				id: linkEntry.id,
@@ -115,11 +121,13 @@ export async function authPlayerLink(
 				);
 			} else {
 				console.log(e);
+				throw e;
 			}
 		} else {
 			console.log(
 				`Unknown Error when player \`${server}.${player}\` attempted to link with linkCode \`${linkCode}\`: ${e}`,
 			);
+			throw e;
 		}
 	}
 }

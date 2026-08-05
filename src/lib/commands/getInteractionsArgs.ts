@@ -35,7 +35,7 @@ export function getInteractionArgs<
 
 			// Assigning the parsed value with the desired structure
 			result[arg] = {
-				value: parsed.userSubmittedValue || '', // Ensuring there's always a value
+				value: parsed.userSubmittedValue ?? '', // Ensuring there's always a value
 				autoSuggestionMetaData: parsed.autoSuggestedValue,
 				isAutoSuggestion: !!parsed.autoSuggestedValue,
 			};

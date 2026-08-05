@@ -15,10 +15,9 @@ export async function autocompleteWatchesWithAllWatchesOption(
 		{ name: 'All Watches', value: 'ALL WATCHES' },
 		...parseWatchesForAutocomplete(watches),
 	];
-	const filtered = watchNames.filter(
-		(choice, index) =>
-			choice.name.toUpperCase().startsWith(focusedValue) && index < 25,
-	);
+	const filtered = watchNames
+		.filter((choice) => choice.name.toUpperCase().startsWith(focusedValue))
+		.slice(0, 25);
 	await respondToAutocomplete(interaction, filtered);
 }
 
@@ -29,9 +28,8 @@ export async function autocompleteWatches(
 	const focusedValue = interaction.options.getFocused().toUpperCase();
 	const watches = await getWatchesByDiscordUser(interaction.user);
 	const watchNames = parseWatchesForAutocomplete(watches);
-	const filtered = watchNames.filter(
-		(choice, index) =>
-			choice.name.toUpperCase().startsWith(focusedValue) && index < 25,
-	);
+	const filtered = watchNames
+		.filter((choice) => choice.name.toUpperCase().startsWith(focusedValue))
+		.slice(0, 25);
 	await respondToAutocomplete(interaction, filtered);
 }

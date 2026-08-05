@@ -12,7 +12,7 @@ import { WatchNotificationMetadata } from '../../watchNotification/watchNotifica
 // Extract notification context (player, price, auctionMessage) from an
 // existing watch notification embed so we can reconstruct metadata after
 // a bot restart when in-memory state is gone.
-function extractNotificationContext(interaction: ButtonInteraction): {
+export function extractNotificationContext(interaction: ButtonInteraction): {
 	player: string;
 	price: number | undefined;
 	auctionMessage: string;
@@ -29,8 +29,15 @@ function extractNotificationContext(interaction: ButtonInteraction): {
 	let price: number | undefined;
 	const priceMatch = description.match(/for \*\*(.+?)\*\*/);
 	if (priceMatch) {
-		const cleaned = priceMatch[1].replace(/,/g, '').replace(/[^0-9.]/g, '');
-		price = parseFloat(cleaned) || undefined;
+		const cleaned = priceMatch[1].replace(/,/g, '');
+		const valueMatch = cleaned.match(/([0-9.]+)\s*(k|m)?/i);
+		if (valueMatch) {
+			let parsed = parseFloat(valueMatch[1]);
+			const suffix = valueMatch[2]?.toLowerCase();
+			if (suffix === 'k') parsed *= 1000;
+			if (suffix === 'm') parsed *= 1000000;
+			price = parsed || undefined;
+		}
 	}
 
 	return { player, price, auctionMessage };

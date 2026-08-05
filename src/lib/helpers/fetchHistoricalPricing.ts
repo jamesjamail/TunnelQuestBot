@@ -38,7 +38,12 @@ export async function fetchHistoricalPricingForItem(
 		}
 
 		historicalPrice = await res.json();
-		await redis.set(key, JSON.stringify(historicalPrice));
+		await redis.set(
+			key,
+			JSON.stringify(historicalPrice),
+			'EX',
+			60 * 60 * 6,
+		);
 	} else {
 		historicalPrice = JSON.parse(historicalPrice);
 	}

@@ -45,5 +45,6 @@ COPY --from=build_image /app/build /app/build
 COPY --from=build_image /app/src/prisma /app/src/prisma
 COPY --from=build_image /app/src/lib/gameData/*.json /app/src/lib/gameData/
 
-# Use the FAKE_LOGS to decide whether to start in dev mode or start mode
-CMD if [[ "$FAKE_LOGS" =~ ^[tT] ]]; then npm run dev; elif [[ "$DEBUG_MODE" =~ ^[tT] ]]; then npm run debug; else npm start; fi
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+CMD ["/app/docker-entrypoint.sh"]

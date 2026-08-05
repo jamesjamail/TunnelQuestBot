@@ -39,6 +39,7 @@ export async function addPlayerBlock(
 			discordUserId,
 			player: player.toUpperCase(),
 			server,
+			active: true,
 		},
 		create: {
 			discordUserId,
@@ -86,7 +87,7 @@ export async function removePlayerBlockWithoutServer(
 ) {
 	const blockedPlayer = await prisma.blockedPlayer.findFirstOrThrow({
 		where: {
-			player: playerName,
+			player: playerName.toUpperCase(),
 			discordUserId: interaction.user.id,
 		},
 	});

@@ -44,7 +44,7 @@ export async function streamAuctionToAllStreamChannels(
 			embeddedChannel.type !== ChannelType.GuildText
 		) {
 			throw Error(
-				`could not fetch classic stream channel ${classicChannelId}`,
+				`could not fetch embedded stream channel ${embeddedChannelId}`,
 			);
 		}
 

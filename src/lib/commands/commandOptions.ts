@@ -104,7 +104,8 @@ export const watchFilterOptions = (option: SlashCommandStringOption) =>
 export const watchNotesOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('notes')
-		.setDescription('notes about this watch - only visible to you');
+		.setDescription('notes about this watch - only visible to you')
+		.setMaxLength(1000);
 
 export const blockFilterOptions = (option: SlashCommandStringOption) =>
 	option
