@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import {
 	autoCompleteWatchOptionsForSnooze,
@@ -52,7 +52,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 			// check if watch option is user submitted or from an auto suggestion
@@ -76,7 +76,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -102,14 +102,14 @@ const command: SlashCommand = {
 						),
 						embeds,
 						components,
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				} catch {
 					return await interaction.reply({
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(
 							itemName as string,
 						),
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 			}

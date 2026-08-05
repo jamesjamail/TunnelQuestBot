@@ -1,4 +1,4 @@
-import { ButtonInteraction } from 'discord.js';
+import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { PlayerLink, Server } from '@prisma/client';
 import { parseCustomId, ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
@@ -208,7 +208,7 @@ export async function handleButtonInteraction(
 		await interaction.reply({
 			content:
 				'This item no longer exists. It may have been deleted or expired.',
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 		return;
 	}

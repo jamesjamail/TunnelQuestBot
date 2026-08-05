@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 
 const command: SlashCommand = {
@@ -8,7 +8,7 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		return await interaction.reply({
 			content: `TunnelQuestBot version: ${process.env.npm_package_version}`,
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 	cooldown: 10,

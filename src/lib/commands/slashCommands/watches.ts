@@ -4,7 +4,7 @@ import {
 	buttonRowBuilder,
 } from '../../content/buttons/buttonRowBuilder';
 import { watchFilterOptions } from '../commandOptions';
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { getWatchesByItemName } from '../../../prisma/dbExecutors/watch';
@@ -20,7 +20,7 @@ const command: SlashCommand = {
 		try {
 			// defer reply immediately as it may take a while to send watches
 			await interaction.deferReply({
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 			const args = getInteractionArgs(interaction, [], ['filter']);
 

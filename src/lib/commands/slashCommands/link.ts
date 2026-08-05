@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { insertPlayerLinkSafely } from '../../../prisma/dbExecutors/playerLink';
 import { gracefullyHandleError } from '../../helpers/errors';
@@ -15,7 +15,7 @@ const command: SlashCommand = {
 				`within one hour:\n\`/ooc Link me: ${linkCode}\``;
 			await interaction.reply({
 				content: user_message,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

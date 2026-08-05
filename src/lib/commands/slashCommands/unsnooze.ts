@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForSnooze } from '../commandOptions';
 import { Watch } from '@prisma/client';
@@ -45,7 +45,7 @@ const command: SlashCommand = {
 					content: messageCopy.yourWatchHasBeenSnoozed(),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			} else {
 				// make a good faith effort to snooze based on raw string
@@ -66,7 +66,7 @@ const command: SlashCommand = {
 					content: messageCopy.yourWatchHasBeenUnsnoozed,
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} catch (error) {

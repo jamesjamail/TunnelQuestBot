@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
 import { getThemeColor } from '../../../functions';
 import { SlashCommand } from '../../../types';
 
@@ -18,7 +18,7 @@ const command: SlashCommand = {
 					)
 					.setColor(getThemeColor('text')),
 			],
-			ephemeral: true,
+			flags: MessageFlags.Ephemeral,
 		});
 	},
 	cooldown: 10,

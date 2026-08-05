@@ -1,4 +1,4 @@
-import { Interaction } from 'discord.js';
+import { Interaction, MessageFlags } from 'discord.js';
 import { BotEvent } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 import { handleButtonInteraction } from '../lib/content/buttons/persistentButtonHandler';
@@ -20,7 +20,7 @@ const event: BotEvent = {
 						content: `You have to wait ${Math.floor(
 							Math.abs(Date.now() - cooldown) / 1000,
 						)} second(s) to use this command again.`,
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 					setTimeout(() => {
 						// 	the user may have dismissed the reply already

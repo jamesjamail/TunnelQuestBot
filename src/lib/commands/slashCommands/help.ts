@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { gracefullyHandleError } from '../../helpers/errors';
@@ -11,7 +11,7 @@ const command: SlashCommand = {
 		try {
 			await interaction.reply({
 				content: messageCopy.helpMsg,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

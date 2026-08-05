@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { playerlinkCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
@@ -16,7 +16,7 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		try {
 			await interaction.deferReply({
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 
 			const data = await getPlayerLinksForUser(interaction.user.id);

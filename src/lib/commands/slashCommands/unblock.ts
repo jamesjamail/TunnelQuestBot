@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { autoCompletePlayerNameOptions } from '../commandOptions';
@@ -52,7 +52,7 @@ const command: SlashCommand = {
 					content: messageCopy.soAndSoHasBeenUnblocked(metadata),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			} else {
 				// make a good faith effort to unblock based on raw string
@@ -73,7 +73,7 @@ const command: SlashCommand = {
 					content: messageCopy.soAndSoHasBeenUnblocked(block),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 		} catch (error) {
