@@ -1,6 +1,81 @@
 import { Interaction, TextChannel } from 'discord.js';
+import crypto from 'crypto';
 import { client } from '../..';
 import { SlashCommand } from '../../types';
+
+// 	A repeating failure - a database outage, a duplicate-interaction storm - can
+// 	raise an error for every auction line. Each report costs a message, a thread
+// 	and a stack post, so unthrottled reporting buries the channel in threads and
+// 	burns the rate limit exactly when the bot is already struggling.
+//
+// 	State is deliberately in-memory rather than in Redis: the reporter must not
+// 	depend on a service that may itself be the thing that is failing.
+const DEDUPE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_TRACKED_ERRORS = 500;
+const MAX_REPORTS_PER_MINUTE = 10;
+
+const lastReportedAt = new Map<string, number>();
+let rateWindowStartedAt = 0;
+let reportsInRateWindow = 0;
+
+function pruneReportHistory(now: number) {
+	for (const [key, reportedAt] of lastReportedAt) {
+		if (now - reportedAt >= DEDUPE_WINDOW_MS) {
+			lastReportedAt.delete(key);
+		}
+	}
+
+	// 	errors carrying unique ids never collide, so cap the map regardless.
+	// 	Map iterates in insertion order, so this drops the oldest entries.
+	for (const key of lastReportedAt.keys()) {
+		if (lastReportedAt.size <= MAX_TRACKED_ERRORS) break;
+		lastReportedAt.delete(key);
+	}
+}
+
+// 	backstop for floods that dedupe cannot catch, such as errors whose message
+// 	embeds a unique interaction id
+function hasExceededReportRate(now: number) {
+	if (now - rateWindowStartedAt >= 60 * 1000) {
+		rateWindowStartedAt = now;
+		reportsInRateWindow = 0;
+	}
+
+	reportsInRateWindow += 1;
+
+	if (reportsInRateWindow === MAX_REPORTS_PER_MINUTE + 1) {
+		console.warn(
+			`Reached ${MAX_REPORTS_PER_MINUTE} error reports in a minute; suppressing further reports to Discord until the next minute. Errors are still logged here.`,
+		);
+	}
+
+	return reportsInRateWindow > MAX_REPORTS_PER_MINUTE;
+}
+
+function shouldReportToDiscord(error: Error, now: number) {
+	pruneReportHistory(now);
+
+	// 	the stack already begins with the error message, so it identifies both
+	// 	what failed and where
+	const key = crypto
+		.createHash('sha256')
+		.update(error.stack ?? `${error.name}: ${error.message}`)
+		.digest('hex');
+
+	const reportedAt = lastReportedAt.get(key);
+	if (reportedAt !== undefined && now - reportedAt < DEDUPE_WINDOW_MS) {
+		return false;
+	}
+
+	if (hasExceededReportRate(now)) {
+		return false;
+	}
+
+	// 	recorded only once the report actually goes out, so an error dropped by
+	// 	the rate limit is not also silenced by the dedupe window
+	lastReportedAt.set(key, now);
+	return true;
+}
 
 // 	catch blocks and rejected promises can carry anything, not just Errors
 export function normalizeError(error: unknown): Error {
@@ -90,6 +165,11 @@ export async function gracefullyHandleError(
 	// error-logging-to-discord failures
 	console.warn(errorMessage);
 	console.warn(normalizedError);
+
+	// 	throttling applies only to Discord; the console above keeps every error
+	if (!shouldReportToDiscord(normalizedError, Date.now())) {
+		return;
+	}
 
 	// 	this is the last line of defense for most callers, so it must never reject -
 	// 	a throw here would replace a handled error with an unhandled one
