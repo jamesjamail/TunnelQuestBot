@@ -1,6 +1,9 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
 import { getSnoozedWatchesByDiscordUser } from '../../../prisma/dbExecutors/watch';
-import { parseWatchesForAutocomplete } from './autocompleteHelpers';
+import {
+	parseWatchesForAutocomplete,
+	respondToAutocomplete,
+} from './autocompleteHelpers';
 
 // TODO: handle for situations where users don't have any watches - or test if that is a problem
 export async function autocompleteSnoozedWatches(
@@ -18,5 +21,5 @@ export async function autocompleteSnoozedWatches(
 			choice.name.toUpperCase().startsWith(focusedValue) && index < 25,
 	);
 
-	await interaction.respond(filtered);
+	await respondToAutocomplete(interaction, filtered);
 }

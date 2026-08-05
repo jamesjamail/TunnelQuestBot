@@ -16,13 +16,16 @@ const event: BotEvent = {
 			if (!command) return;
 			if (command.cooldown && cooldown) {
 				if (Date.now() < cooldown) {
-					interaction.reply({
+					await interaction.reply({
 						content: `You have to wait ${Math.floor(
 							Math.abs(Date.now() - cooldown) / 1000,
 						)} second(s) to use this command again.`,
 						ephemeral: true,
 					});
-					setTimeout(() => interaction.deleteReply(), 5000);
+					setTimeout(() => {
+						// 	the user may have dismissed the reply already
+						void interaction.deleteReply().catch(() => null);
+					}, 5000);
 					return;
 				}
 				interaction.client.cooldowns.set(
@@ -41,7 +44,7 @@ const event: BotEvent = {
 				);
 			}
 			try {
-				command.execute(interaction);
+				await command.execute(interaction);
 			} catch (e) {
 				await gracefullyHandleError(e, interaction, command);
 			}
@@ -63,7 +66,7 @@ const event: BotEvent = {
 			}
 			try {
 				if (!command.autocomplete) return;
-				command.autocomplete(interaction);
+				await command.autocomplete(interaction);
 			} catch (error) {
 				await gracefullyHandleError(error, interaction, command);
 			}

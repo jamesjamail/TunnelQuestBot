@@ -5,8 +5,8 @@ const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('version')
 		.setDescription('display version information'),
-	execute: (interaction) => {
-		interaction.reply({
+	execute: async (interaction) => {
+		return await interaction.reply({
 			content: `TunnelQuestBot version: ${process.env.npm_package_version}`,
 			ephemeral: true,
 		});

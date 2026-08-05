@@ -108,6 +108,13 @@ export async function triggerFoundWatchedItem(
 ) {
 	//  get the watch and user from the db, as well as blocks by user and watch
 	const data = await getWatchByWatchIdForWatchNotification(watchId);
+
+	// 	the in-memory watch index refreshes on an interval, so it can still name a
+	// 	watch that expired since the last refresh - nothing to notify about
+	if (!data) {
+		return;
+	}
+
 	const blocks = await getPlayerBlocks(data.user.discordUserId);
 
 	if (!(await shouldUserBeNotified(data, blocks, player, price))) {
@@ -129,14 +136,19 @@ export async function triggerFoundWatchedItem(
 		`${data.id}:${player}`,
 	);
 
-	await client.users.send(data.discordUserId, {
-		embeds,
-		components,
-	});
-
-	// Set the debounce key in Redis with a 15-minute expiration
 	const debounceKey = generateDebounceKey(watchId, player, price);
-	await redis.set(debounceKey, 'notified', 'EX', 15 * 60);
+
+	try {
+		await client.users.send(data.discordUserId, {
+			embeds,
+			components,
+		});
+	} finally {
+		// Set the debounce key in Redis with a 15-minute expiration.
+		// 	Set it even when the send failed, otherwise a user who has closed
+		// 	their DMs produces an error for every matching auction line.
+		await redis.set(debounceKey, 'notified', 'EX', 15 * 60);
+	}
 }
 
 export async function triggerFoundWatchedItems(
@@ -145,8 +157,21 @@ export async function triggerFoundWatchedItems(
 	price: number | undefined,
 	auctionMessage: string,
 ) {
-	const promises = watchIds.map(async (watchId) => {
-		await triggerFoundWatchedItem(watchId, player, price, auctionMessage);
-	});
-	await Promise.all(promises);
+	// 	each watch belongs to a different user, so one failure must not stop the
+	// 	rest from being notified or bubble up and kill the log parser
+	const results = await Promise.allSettled(
+		watchIds.map((watchId) =>
+			triggerFoundWatchedItem(watchId, player, price, auctionMessage),
+		),
+	);
+
+	for (const result of results) {
+		if (result.status === 'rejected') {
+			await gracefullyHandleError(result.reason, undefined, undefined, {
+				player,
+				price,
+				auctionMessage,
+			});
+		}
+	}
 }

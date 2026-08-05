@@ -1,7 +1,39 @@
 import { Watch, BlockedPlayer } from '@prisma/client';
+import {
+	ApplicationCommandOptionChoiceData,
+	AutocompleteInteraction,
+	CacheType,
+	DiscordAPIError,
+	RESTJSONErrorCodes,
+} from 'discord.js';
 import { toTitleCase } from '../../helpers/titleCase';
 
 const jsonPrefix = '::JSON::';
+
+// 	Discord discards an autocomplete interaction after 3 seconds and rejects any
+// 	later reply. That is routine (the user kept typing, the gateway was slow) and
+// 	must not be treated as an error.
+const EXPIRED_INTERACTION_CODES: (string | number)[] = [
+	RESTJSONErrorCodes.UnknownInteraction,
+	RESTJSONErrorCodes.InteractionHasAlreadyBeenAcknowledged,
+];
+
+export async function respondToAutocomplete(
+	interaction: AutocompleteInteraction<CacheType>,
+	choices: ApplicationCommandOptionChoiceData[],
+) {
+	try {
+		await interaction.respond(choices);
+	} catch (error) {
+		if (
+			error instanceof DiscordAPIError &&
+			EXPIRED_INTERACTION_CODES.includes(error.code)
+		) {
+			return;
+		}
+		throw error;
+	}
+}
 
 /**
  * Check if a given option value has the special prefix and is possibly JSON.

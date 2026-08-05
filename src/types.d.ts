@@ -7,10 +7,12 @@ import {
 	ChatInputCommandInteraction,
 } from 'discord.js';
 
+// 	these return promises rather than void so the compiler flags callers that
+// 	forget to await them - a floating rejection here takes down the process
 export interface SlashCommand {
 	command: SlashCommandOptionsOnlyBuilder;
-	execute: (interaction: ChatInputCommandInteraction) => void;
-	autocomplete?: (interaction: AutocompleteInteraction) => void;
+	execute: (interaction: ChatInputCommandInteraction) => Promise<unknown>;
+	autocomplete?: (interaction: AutocompleteInteraction) => Promise<unknown>;
 	cooldown?: number; // in seconds
 }
 
@@ -30,7 +32,7 @@ export type GuildOption = keyof GuildOptions;
 export interface BotEvent {
 	name: string;
 	once?: boolean | false;
-	execute: (...args) => void;
+	execute: (...args) => Promise<unknown> | void;
 }
 
 declare global {

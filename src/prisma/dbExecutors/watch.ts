@@ -444,10 +444,13 @@ export type WatchWithUserAndBlockedWatches = Watch & {
 	blockedWatches: BlockedPlayerByWatch[];
 };
 
+// 	Returns null when the watch is gone. Watches expire and are deleted
+// 	continuously, so callers routinely hold an id that no longer resolves - that
+// 	is an expected outcome to handle, not an error to throw on.
 export async function getWatchByWatchIdForWatchNotification(
 	watchId: number,
-): Promise<WatchWithUserAndBlockedWatches> {
-	const data = await prisma.watch.findUnique({
+): Promise<WatchWithUserAndBlockedWatches | null> {
+	return prisma.watch.findUnique({
 		where: {
 			id: watchId,
 		},
@@ -456,12 +459,6 @@ export async function getWatchByWatchIdForWatchNotification(
 			blockedWatches: true, // Include related BlockedPlayerByWatch data
 		},
 	});
-
-	if (!data) {
-		throw new Error(`Error querying db for watch id ${watchId}`);
-	}
-
-	return data;
 }
 
 export async function deleteWatchesOlderThanWatchdurationDays() {

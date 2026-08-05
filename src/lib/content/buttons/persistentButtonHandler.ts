@@ -164,6 +164,7 @@ async function fetchMetadata(
 	) {
 		if (!id) return undefined;
 		const watch = await getWatchByWatchIdForWatchNotification(id);
+		if (!watch) return undefined;
 		const player = extra ?? extractNotificationContext(interaction).player;
 		const { price, auctionMessage } =
 			extractNotificationContext(interaction);

@@ -8,8 +8,8 @@ const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('exampleCommand') // the display + machine name of the command - can't be duplicated, contain spaces, or capital letters
 		.setDescription('Demonstrates an example command'),
-	execute: (interaction) => {
-		interaction.reply({
+	execute: async (interaction) => {
+		return await interaction.reply({
 			embeds: [
 				new EmbedBuilder()
 					.setAuthor({ name: 'TunnelQuestBot' })
