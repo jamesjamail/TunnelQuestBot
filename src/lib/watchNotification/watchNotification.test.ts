@@ -28,6 +28,7 @@ import { gracefullyHandleError } from '../helpers/errors';
 import { client } from '../../test/mocks/discordClient';
 import { prisma } from '../../test/mocks/prisma';
 import { redis } from '../../test/mocks/redis';
+import { watchNotificationBuilder } from '../content/messages/messageBuilder';
 import {
 	makeBlockedPlayer,
 	makeBlockedPlayerByWatch,
@@ -274,6 +275,9 @@ describe('triggerFoundWatchedItem debounce', () => {
 		);
 		vi.mocked(prisma.blockedPlayer.findMany).mockResolvedValue([]);
 		vi.mocked(client.users.send).mockResolvedValue({} as never);
+		vi.mocked(watchNotificationBuilder).mockResolvedValue({
+			data: { title: 'watch' },
+		} as never);
 	});
 
 	it('claims the debounce key before attempting the DM send', async () => {
@@ -313,7 +317,7 @@ describe('triggerFoundWatchedItem debounce', () => {
 		expect(client.users.send).toHaveBeenCalledTimes(1);
 	});
 
-	it('leaves the debounce key claimed and routes send failures to gracefullyHandleError', async () => {
+	it('releases the debounce key after a transient send failure', async () => {
 		vi.mocked(client.users.send).mockRejectedValueOnce(
 			new Error('cannot DM'),
 		);
@@ -340,6 +344,49 @@ describe('triggerFoundWatchedItem debounce', () => {
 			100,
 			'WTS FLOWING BLACK SILK SASH 100pp',
 		);
+		expect(redis.del).toHaveBeenCalled();
+		expect(client.users.send).toHaveBeenCalledTimes(2);
+	});
+
+	it('keeps the debounce key after Discord reports closed DMs', async () => {
+		vi.mocked(client.users.send).mockRejectedValueOnce({ code: 50007 });
+
+		await triggerFoundWatchedItem(
+			1,
+			'Soandso',
+			100,
+			'WTS FLOWING BLACK SILK SASH 100pp',
+		);
+		await triggerFoundWatchedItem(
+			1,
+			'Soandso',
+			100,
+			'WTS FLOWING BLACK SILK SASH 100pp',
+		);
+
+		expect(redis.del).not.toHaveBeenCalled();
+		expect(client.users.send).toHaveBeenCalledTimes(1);
+	});
+
+	it('releases the debounce key after embed construction fails', async () => {
+		vi.mocked(watchNotificationBuilder).mockRejectedValueOnce(
+			new Error('pricing unavailable'),
+		);
+
+		await triggerFoundWatchedItem(
+			1,
+			'Soandso',
+			100,
+			'WTS FLOWING BLACK SILK SASH 100pp',
+		);
+		await triggerFoundWatchedItem(
+			1,
+			'Soandso',
+			100,
+			'WTS FLOWING BLACK SILK SASH 100pp',
+		);
+
+		expect(redis.del).toHaveBeenCalled();
 		expect(client.users.send).toHaveBeenCalledTimes(1);
 	});
 

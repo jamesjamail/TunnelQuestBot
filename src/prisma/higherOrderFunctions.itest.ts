@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-vi.mock('../../index', () => import('../../test/mocks/discordClient'));
+vi.mock('../index', () => import('../test/mocks/discordClient'));
 
 import { describe, it, expect } from 'vitest';
 import { Server, WatchType } from './client';

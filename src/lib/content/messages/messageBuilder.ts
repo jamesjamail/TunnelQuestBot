@@ -45,6 +45,56 @@ function truncateForDescription(text: string, reservedChars = 0): string {
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+const MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000;
+const MAX_EMBEDS_PER_MESSAGE = 10;
+
+export function getEmbedCharacterCount(embed: EmbedBuilder): number {
+	const data = embed.toJSON();
+	return (
+		(data.title?.length ?? 0) +
+		(data.description?.length ?? 0) +
+		(data.author?.name.length ?? 0) +
+		(data.footer?.text.length ?? 0) +
+		(data.fields ?? []).reduce(
+			(total, field) => total + field.name.length + field.value.length,
+			0,
+		)
+	);
+}
+
+export function packEmbedsForDiscord(embeds: EmbedBuilder[]): EmbedBuilder[][] {
+	const batches: EmbedBuilder[][] = [];
+	let batch: EmbedBuilder[] = [];
+	let batchCharacters = 0;
+
+	for (const embed of embeds) {
+		const embedCharacters = getEmbedCharacterCount(embed);
+		if (embedCharacters > MAX_EMBED_CHARACTERS_PER_MESSAGE) {
+			throw new RangeError(
+				`Embed contains ${embedCharacters} characters; Discord allows ${MAX_EMBED_CHARACTERS_PER_MESSAGE}.`,
+			);
+		}
+
+		if (
+			batch.length === MAX_EMBEDS_PER_MESSAGE ||
+			batchCharacters + embedCharacters > MAX_EMBED_CHARACTERS_PER_MESSAGE
+		) {
+			batches.push(batch);
+			batch = [];
+			batchCharacters = 0;
+		}
+
+		batch.push(embed);
+		batchCharacters += embedCharacters;
+	}
+
+	if (batch.length > 0) {
+		batches.push(batch);
+	}
+
+	return batches;
+}
+
 export function watchCommandResponseBuilder(watchData: Watch) {
 	// Helper function to generate the field value based on conditions
 	function generateFieldValue(watchData: Watch, isKnownItem: boolean) {
@@ -272,7 +322,6 @@ export function listCommandResponseBuilder(
 	user: User,
 ): EmbedBuilder[] {
 	const FIELDS_PER_EMBED = 25;
-	const MAX_EMBEDS = 10;
 	const embeds: EmbedBuilder[] = [];
 
 	if (isSnoozed(user.snoozedUntil)) {
@@ -289,7 +338,6 @@ export function listCommandResponseBuilder(
 		watchesByServer[watch.server].push(watch);
 	});
 
-	let truncated = false;
 	const serverEntries = Object.entries(watchesByServer);
 	serverEntries.forEach(([server, serverWatches], serverIndex) => {
 		const fields: EmbedField[] = serverWatches.map((watch) => {
@@ -308,10 +356,6 @@ export function listCommandResponseBuilder(
 
 		const isLastServer = serverIndex === serverEntries.length - 1;
 		for (let i = 0; i < fields.length; i += FIELDS_PER_EMBED) {
-			if (embeds.length >= MAX_EMBEDS - 1) {
-				truncated = true;
-				break;
-			}
 			const chunk = fields.slice(i, i + FIELDS_PER_EMBED);
 			const isLastChunk = i + FIELDS_PER_EMBED >= fields.length;
 			embeds.push(
@@ -320,15 +364,37 @@ export function listCommandResponseBuilder(
 		}
 	});
 
-	if (truncated) {
-		embeds.push(
-			createInfoEmbed(
-				'You have more watches than can be displayed in a single message. Some have been omitted.',
-			),
-		);
+	const totalCharacters = embeds.reduce(
+		(total, embed) => total + getEmbedCharacterCount(embed),
+		0,
+	);
+	if (
+		embeds.length <= MAX_EMBEDS_PER_MESSAGE &&
+		totalCharacters <= MAX_EMBED_CHARACTERS_PER_MESSAGE
+	) {
+		return embeds;
 	}
 
-	return embeds;
+	const omissionNotice = createInfoEmbed(
+		'You have more watches than can be displayed in a single message. Some have been omitted.',
+	);
+	const noticeCharacters = getEmbedCharacterCount(omissionNotice);
+	const fittedEmbeds: EmbedBuilder[] = [];
+	let fittedCharacters = noticeCharacters;
+	for (const embed of embeds) {
+		const embedCharacters = getEmbedCharacterCount(embed);
+		if (
+			fittedEmbeds.length >= MAX_EMBEDS_PER_MESSAGE - 1 ||
+			fittedCharacters + embedCharacters >
+				MAX_EMBED_CHARACTERS_PER_MESSAGE
+		) {
+			break;
+		}
+		fittedEmbeds.push(embed);
+		fittedCharacters += embedCharacters;
+	}
+
+	return [...fittedEmbeds, omissionNotice];
 }
 
 function createInfoEmbed(content: string): EmbedBuilder {

@@ -14,7 +14,11 @@ export const client = new Client({
 import { SlashCommand } from './types';
 import { config } from 'dotenv';
 import { expand } from 'dotenv-expand';
-import { gracefullyHandleError, normalizeError } from './lib/helpers/errors';
+import {
+	gracefullyHandleError,
+	handleFatalError,
+	normalizeError,
+} from './lib/helpers/errors';
 //	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
 //	longer expands those references for us.
 expand(config());
@@ -27,8 +31,11 @@ process.on('unhandledRejection', (reason) => {
 	void gracefullyHandleError(reason);
 });
 
+let handlingFatalException = false;
 process.on('uncaughtException', (error) => {
-	void gracefullyHandleError(error);
+	if (handlingFatalException) return;
+	handlingFatalException = true;
+	void handleFatalError(error);
 });
 
 client.slashCommands = new Collection<string, SlashCommand>();

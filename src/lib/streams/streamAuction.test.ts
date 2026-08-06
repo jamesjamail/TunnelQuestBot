@@ -7,6 +7,7 @@ vi.mock('../helpers/errors', () => ({
 }));
 vi.mock('../content/messages/messageBuilder', () => ({
 	embeddedAuctionStreamMessageBuilder: vi.fn(async () => []),
+	packEmbedsForDiscord: vi.fn((embeds: unknown[]) => [embeds]),
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -17,7 +18,10 @@ import {
 	getEnvironmentVariable,
 } from './streamAuction';
 import { gracefullyHandleError } from '../helpers/errors';
-import { embeddedAuctionStreamMessageBuilder } from '../content/messages/messageBuilder';
+import {
+	embeddedAuctionStreamMessageBuilder,
+	packEmbedsForDiscord,
+} from '../content/messages/messageBuilder';
 import {
 	client,
 	makeTextChannelStub,
@@ -50,6 +54,9 @@ describe('streamAuctionToAllStreamChannels', () => {
 	beforeEach(() => {
 		resetChannelCache();
 		vi.mocked(embeddedAuctionStreamMessageBuilder).mockResolvedValue([]);
+		vi.mocked(packEmbedsForDiscord).mockImplementation((embeds) => [
+			embeds,
+		]);
 	});
 
 	it('sends plain text to classic and embeds to embedded for one auction', async () => {
@@ -187,6 +194,36 @@ describe('streamAuctionToAllStreamChannels', () => {
 		const sendArg = vi.mocked(getChannelSend('BLUE-embedded')).mock
 			.calls[0]?.[0] as { embeds: unknown[] };
 		expect(sendArg.embeds.length).toBeLessThanOrEqual(10);
+	});
+
+	it('sends aggregate-limit batches as separate messages', async () => {
+		const first = { data: { title: 'first' } };
+		const second = { data: { title: 'second' } };
+		vi.mocked(embeddedAuctionStreamMessageBuilder).mockResolvedValue([
+			first,
+			second,
+		] as never);
+		vi.mocked(packEmbedsForDiscord).mockReturnValue([
+			[first],
+			[second],
+		] as never);
+
+		await streamAuctionToAllStreamChannels(
+			'Soandso',
+			Server.BLUE,
+			'WTS MANY ITEMS',
+			{ buying: [], selling: [] },
+		);
+
+		expect(getChannelSend('BLUE-embedded')).toHaveBeenCalledTimes(2);
+		expect(getChannelSend('BLUE-embedded')).toHaveBeenNthCalledWith(1, {
+			embeds: [first],
+			allowedMentions: { users: [] },
+		});
+		expect(getChannelSend('BLUE-embedded')).toHaveBeenNthCalledWith(2, {
+			embeds: [second],
+			allowedMentions: { users: [] },
+		});
 	});
 
 	it('throws from getEnvironmentVariable when server stream env is missing', async () => {

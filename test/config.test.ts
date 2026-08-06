@@ -41,4 +41,10 @@ describe('deployment and config invariants', () => {
 		expect(indexSource).toMatch(/client\.login/);
 		expect(indexSource).toMatch(/process\.exit\(1\)/);
 	});
+
+	it('routes uncaught exceptions through fatal shutdown', () => {
+		const indexSource = readRepoFile('src/index.ts');
+		expect(indexSource).toMatch(/process\.on\('uncaughtException'/);
+		expect(indexSource).toMatch(/handleFatalError\(error\)/);
+	});
 });

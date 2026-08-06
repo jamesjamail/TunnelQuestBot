@@ -94,6 +94,26 @@ export type WatchNotificationMetadata = Watch & {
 	auctionMessage: string;
 };
 
+function isClosedDmError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: number }).code === 50007
+	);
+}
+
+async function releaseDebounceClaim(
+	debounceKey: string,
+	context: object,
+): Promise<void> {
+	try {
+		await redis.del(debounceKey);
+	} catch (error) {
+		await gracefullyHandleError(error, undefined, undefined, context);
+	}
+}
+
 export async function triggerFoundWatchedItem(
 	watchId: number,
 	player: string,
@@ -137,6 +157,7 @@ export async function triggerFoundWatchedItem(
 			await watchNotificationBuilder(data, player, price, auctionMessage),
 		);
 	} catch (error) {
+		await releaseDebounceClaim(debounceKey, data);
 		await gracefullyHandleError(error, undefined, undefined, data);
 		return;
 	}
@@ -152,6 +173,9 @@ export async function triggerFoundWatchedItem(
 			components,
 		});
 	} catch (error) {
+		if (!isClosedDmError(error)) {
+			await releaseDebounceClaim(debounceKey, data);
+		}
 		await gracefullyHandleError(error, undefined, undefined, data);
 	}
 }

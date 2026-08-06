@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 vi.mock('../../index', () => import('../../test/mocks/discordClient'));
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { gracefullyHandleError } from './errors';
+import { gracefullyHandleError, handleFatalError } from './errors';
 import { client, makeTextChannelStub } from '../../test/mocks/discordClient';
 
 async function loadErrorsModule() {
@@ -138,6 +138,58 @@ describe('error report throttling', () => {
 		expect(await getSendCount(activeClient)).toBe(1);
 	});
 
+	it('allows the same error to retry when the Discord send fails', async () => {
+		const { gracefullyHandleError: handleError, client: activeClient } =
+			await loadErrorsModule();
+		vi.mocked(activeClient.isReady).mockReturnValue(true);
+		const channelStub = makeTextChannelStub();
+		vi.mocked(channelStub.send).mockRejectedValueOnce(
+			new Error('Discord unavailable'),
+		);
+		vi.mocked(activeClient.channels.fetch).mockResolvedValue(
+			channelStub as never,
+		);
+		const consoleError = vi
+			.spyOn(console, 'error')
+			.mockImplementation(() => undefined);
+		const error = new Error('retry-report');
+
+		await handleError(error);
+		await handleError(error);
+
+		expect(channelStub.send).toHaveBeenCalledTimes(2);
+		consoleError.mockRestore();
+	});
+
+	it('suppresses concurrent reports with the same signature', async () => {
+		const { gracefullyHandleError: handleError, client: activeClient } =
+			await loadErrorsModule();
+		vi.mocked(activeClient.isReady).mockReturnValue(true);
+		const channelStub = makeTextChannelStub();
+		let finishSend: (() => void) | undefined;
+		vi.mocked(channelStub.send).mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					finishSend = () =>
+						resolve({
+							startThread: vi.fn(async () => ({
+								send: vi.fn(async () => ({})),
+							})),
+						});
+				}),
+		);
+		vi.mocked(activeClient.channels.fetch).mockResolvedValue(
+			channelStub as never,
+		);
+		const error = new Error('concurrent-report');
+
+		const first = handleError(error);
+		await handleError(error);
+		expect(channelStub.send).toHaveBeenCalledTimes(1);
+		finishSend?.();
+		await first;
+	});
+
 	it('posts the same signature again after the dedupe window expires', async () => {
 		const { gracefullyHandleError: handleError, client: activeClient } =
 			await loadErrorsModule();
@@ -213,5 +265,35 @@ describe('error report throttling', () => {
 		expect(await getSendCount(activeClient)).toBeGreaterThan(
 			sendsBeforeRoll,
 		);
+	});
+});
+
+describe('handleFatalError', () => {
+	it('exits after error reporting completes', async () => {
+		const report = vi.fn(async () => undefined);
+		const exit = vi.fn();
+		const error = new Error('fatal');
+
+		await handleFatalError(error, { report, exit });
+
+		expect(report).toHaveBeenCalledWith(error);
+		expect(exit).toHaveBeenCalledWith(1);
+	});
+
+	it('bounds error reporting before exiting', async () => {
+		vi.useFakeTimers();
+		const report = vi.fn(() => new Promise<void>(() => undefined));
+		const exit = vi.fn();
+
+		const handling = handleFatalError(new Error('fatal'), {
+			timeoutMs: 100,
+			report,
+			exit,
+		});
+		await vi.advanceTimersByTimeAsync(100);
+		await handling;
+
+		expect(exit).toHaveBeenCalledWith(1);
+		vi.useRealTimers();
 	});
 });

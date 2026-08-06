@@ -22,7 +22,9 @@ import {
 	formatHoverText,
 	formatserverEnumToReadableString,
 	HistoricalData,
+	getEmbedCharacterCount,
 	listCommandResponseBuilder,
+	packEmbedsForDiscord,
 	playerlinkCommandResponseBuilder,
 	watchCommandResponseBuilder,
 	watchNotificationBuilder,
@@ -65,6 +67,16 @@ function assertEmbedWithinDiscordLimits(embed: EmbedBuilder) {
 			0,
 		);
 	expect(total).toBeLessThanOrEqual(6000);
+}
+
+function assertMessageWithinDiscordLimits(embeds: EmbedBuilder[]) {
+	expect(embeds.length).toBeLessThanOrEqual(10);
+	expect(
+		embeds.reduce(
+			(total, embed) => total + getEmbedCharacterCount(embed),
+			0,
+		),
+	).toBeLessThanOrEqual(6000);
 }
 
 function makeHistoricalData(
@@ -452,7 +464,7 @@ describe('listCommandResponseBuilder', () => {
 		);
 	});
 
-	it('caps at 10 embeds with a truncation notice when watches exceed the limit', () => {
+	it('caps the message with a truncation notice when watches exceed Discord limits', () => {
 		const watches = Array.from({ length: 230 }, (_, i) =>
 			makeWatch({
 				id: i + 1,
@@ -461,8 +473,8 @@ describe('listCommandResponseBuilder', () => {
 			}),
 		);
 		const embeds = listCommandResponseBuilder(watches, makeUser());
-		expect(embeds).toHaveLength(10);
-		const lastField = (embeds[9].toJSON().fields ?? [])[0];
+		assertMessageWithinDiscordLimits(embeds);
+		const lastField = (embeds.at(-1)?.toJSON().fields ?? [])[0];
 		expect(lastField?.value).toContain('Some have been omitted');
 	});
 
@@ -483,6 +495,7 @@ describe('listCommandResponseBuilder', () => {
 		for (const embed of embeds) {
 			assertEmbedWithinDiscordLimits(embed);
 		}
+		assertMessageWithinDiscordLimits(embeds);
 	});
 });
 
@@ -689,6 +702,11 @@ describe('embeddedAuctionStreamMessageBuilder', () => {
 		);
 		for (const embed of embeds) {
 			assertEmbedWithinDiscordLimits(embed);
+		}
+		const batches = packEmbedsForDiscord(embeds);
+		expect(batches.length).toBeGreaterThan(1);
+		for (const batch of batches) {
+			assertMessageWithinDiscordLimits(batch);
 		}
 	});
 });

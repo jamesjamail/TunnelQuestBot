@@ -15,6 +15,7 @@ const MAX_TRACKED_ERRORS = 500;
 const MAX_REPORTS_PER_MINUTE = 10;
 
 const lastReportedAt = new Map<string, number>();
+const reportsInFlight = new Set<string>();
 let rateWindowStartedAt = 0;
 let reportsInRateWindow = 0;
 
@@ -52,7 +53,7 @@ function hasExceededReportRate(now: number) {
 	return reportsInRateWindow > MAX_REPORTS_PER_MINUTE;
 }
 
-function shouldReportToDiscord(error: Error, now: number) {
+function beginDiscordReport(error: Error, now: number): string | undefined {
 	pruneReportHistory(now);
 
 	// 	the stack already begins with the error message, so it identifies both
@@ -63,18 +64,19 @@ function shouldReportToDiscord(error: Error, now: number) {
 		.digest('hex');
 
 	const reportedAt = lastReportedAt.get(key);
-	if (reportedAt !== undefined && now - reportedAt < DEDUPE_WINDOW_MS) {
-		return false;
+	if (
+		reportsInFlight.has(key) ||
+		(reportedAt !== undefined && now - reportedAt < DEDUPE_WINDOW_MS)
+	) {
+		return undefined;
 	}
 
 	if (hasExceededReportRate(now)) {
-		return false;
+		return undefined;
 	}
 
-	// 	recorded only once the report actually goes out, so an error dropped by
-	// 	the rate limit is not also silenced by the dedupe window
-	lastReportedAt.set(key, now);
-	return true;
+	reportsInFlight.add(key);
+	return key;
 }
 
 // 	catch blocks and rejected promises can carry anything, not just Errors
@@ -175,7 +177,8 @@ export async function gracefullyHandleError(
 	console.warn(normalizedError);
 
 	// 	throttling applies only to Discord; the console above keeps every error
-	if (!shouldReportToDiscord(normalizedError, Date.now())) {
+	const reportKey = beginDiscordReport(normalizedError, Date.now());
+	if (!reportKey) {
 		return;
 	}
 
@@ -183,8 +186,41 @@ export async function gracefullyHandleError(
 	// 	a throw here would replace a handled error with an unhandled one
 	try {
 		await reportErrorToDiscord(errorMessage, normalizedError, extraData);
+		lastReportedAt.set(reportKey, Date.now());
 	} catch (loggingError) {
 		console.error('ERROR LOGGING ERROR TO DISCORD: ', loggingError);
 		console.error('ORIGINAL ERROR THAT FAILED TO SEND: ', normalizedError);
+	} finally {
+		reportsInFlight.delete(reportKey);
+	}
+}
+
+type FatalErrorOptions = {
+	timeoutMs?: number;
+	report?: (error: unknown) => Promise<void>;
+	exit?: (code: number) => void;
+};
+
+export async function handleFatalError(
+	error: unknown,
+	{
+		timeoutMs = 5000,
+		report = gracefullyHandleError,
+		exit = (code) => process.exit(code),
+	}: FatalErrorOptions = {},
+): Promise<void> {
+	let timeout: ReturnType<typeof setTimeout> | undefined;
+	try {
+		await Promise.race([
+			report(error),
+			new Promise<void>((resolve) => {
+				timeout = setTimeout(resolve, timeoutMs);
+			}),
+		]);
+	} finally {
+		if (timeout) {
+			clearTimeout(timeout);
+		}
+		exit(1);
 	}
 }

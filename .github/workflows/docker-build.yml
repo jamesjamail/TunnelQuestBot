@@ -21,7 +21,10 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run lint
-      - run: npm test
+      - run: npm run test:coverage
+      - run: npm run build
+      - if: github.event_name == 'pull_request'
+        run: docker build --tag tunnelquestbot:pr .
 
   integration:
     runs-on: ubuntu-latest
