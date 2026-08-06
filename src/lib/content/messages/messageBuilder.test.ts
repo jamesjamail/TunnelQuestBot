@@ -24,7 +24,6 @@ import {
 	HistoricalData,
 	listCommandResponseBuilder,
 	playerlinkCommandResponseBuilder,
-	watchesCommandResponseBuilder,
 	watchCommandResponseBuilder,
 	watchNotificationBuilder,
 } from './messageBuilder';
@@ -232,41 +231,6 @@ describe('watchCommandResponseBuilder', () => {
 			}),
 		);
 		assertEmbedWithinDiscordLimits(embed);
-	});
-});
-
-describe('watchesCommandResponseBuilder', () => {
-	it('returns an empty array for no watches', () => {
-		expect(watchesCommandResponseBuilder([])).toEqual([]);
-	});
-
-	it('returns one embed per watch in order', () => {
-		const watches = [
-			makeWatch({ id: 1, itemName: 'FIRST ITEM' }),
-			makeWatch({ id: 2, itemName: 'SECOND ITEM' }),
-			makeWatch({ id: 3, itemName: 'THIRD ITEM' }),
-		];
-		const embeds = watchesCommandResponseBuilder(watches);
-		expect(embeds).toHaveLength(3);
-		expect(embeds[0].toJSON().author?.name).toBe('FIRST ITEM');
-		expect(embeds[1].toJSON().author?.name).toBe('SECOND ITEM');
-		expect(embeds[2].toJSON().author?.name).toBe('THIRD ITEM');
-	});
-
-	it('does not chunk — 15 watches yields 15 embeds for callers to send individually', () => {
-		const watches = Array.from({ length: 15 }, (_, i) =>
-			makeWatch({ id: i + 1 }),
-		);
-		expect(watchesCommandResponseBuilder(watches)).toHaveLength(15);
-	});
-
-	it('stays within Discord limits under hostile input', () => {
-		const embeds = watchesCommandResponseBuilder([
-			makeWatch({ itemName: 'x'.repeat(255), notes: 'n'.repeat(5000) }),
-		]);
-		for (const embed of embeds) {
-			assertEmbedWithinDiscordLimits(embed);
-		}
 	});
 });
 

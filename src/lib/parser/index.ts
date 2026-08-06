@@ -5,7 +5,7 @@ import {
 } from '../../prisma/dbExecutors/watch';
 import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/removeMessagesFromCommandSpace';
 import { monitorLogFile } from './monitorLogs';
-import { state, events } from './state';
+import { state } from './state';
 import { Server } from '@prisma/client';
 import { gracefullyHandleError } from '../helpers/errors';
 
@@ -41,7 +41,6 @@ export async function startLoggingAllServers() {
 	safeInterval(async () => {
 		const updatedWatchedItems = await getWatchesGroupedByServer();
 		state.watchedItems = updatedWatchedItems;
-		events.emit('watchedItemsUpdated');
 	}, 60000);
 
 	// remove expired watches

@@ -62,25 +62,6 @@ export async function restorePlayerBlockById(id: number) {
 	});
 }
 
-export async function removePlayerBlock(
-	discordUserId: string,
-	player: string,
-	server: Server,
-) {
-	return prisma.blockedPlayer.update({
-		where: {
-			discordUserId_server_player: {
-				discordUserId,
-				player: player.toUpperCase(),
-				server,
-			},
-		},
-		data: {
-			active: false,
-		},
-	});
-}
-
 export async function removePlayerBlockWithoutServer(
 	interaction: Interaction,
 	playerName: string,
@@ -131,14 +112,6 @@ export async function addPlayerBlockByWatch(
 			watchId: watchId,
 			player: player.toUpperCase(),
 			discordUserId,
-		},
-	});
-}
-
-export async function removeWatchBlockById(id: number) {
-	return prisma.blockedPlayerByWatch.delete({
-		where: {
-			id,
 		},
 	});
 }

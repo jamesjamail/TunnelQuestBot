@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import {
 	GroupedWatchesType,
 	initializeGroupedWatches,
@@ -7,5 +6,3 @@ import {
 export const state: { watchedItems: GroupedWatchesType } = {
 	watchedItems: initializeGroupedWatches(),
 };
-
-export const events = new EventEmitter();

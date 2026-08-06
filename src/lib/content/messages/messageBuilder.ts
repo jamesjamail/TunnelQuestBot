@@ -130,12 +130,6 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 		});
 }
 
-export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
-	return dataForWatches.map((watchData) => {
-		return watchCommandResponseBuilder(watchData);
-	});
-}
-
 export async function watchNotificationBuilder(
 	watchData: Watch,
 	player: string,

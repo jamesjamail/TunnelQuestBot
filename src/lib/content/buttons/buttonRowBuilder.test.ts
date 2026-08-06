@@ -21,12 +21,6 @@ describe('buttonRowBuilder', () => {
 		[MessageTypes.link, 1],
 		[MessageTypes.unlink, 1],
 		[MessageTypes.watchNotification, 4],
-		[MessageTypes.blocks, 0],
-		[MessageTypes.help, 0],
-		[MessageTypes.snooze, 0],
-		[MessageTypes.unsnooze, 0],
-		[MessageTypes.unwatch, 0],
-		[MessageTypes.watches, 0],
 	])('MessageTypes.%s produces %i buttons', (messageType, count) => {
 		expect(customIdsFor(messageType)).toHaveLength(count);
 	});

@@ -10,12 +10,6 @@ export const watchTypeOptions = (option: SlashCommandStringOption) =>
 		)
 		.setRequired(true);
 
-export const itemNameOptions = (option: SlashCommandStringOption) =>
-	option
-		.setName('item')
-		.setDescription('the name of the item you want to watch')
-		.setRequired(true);
-
 export const autoCompleteItemNameOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('item')
@@ -85,16 +79,6 @@ export const autoCompletePlayerNameOptions = (
 		.setDescription('the name of the player you want to unblock')
 		.setAutocomplete(true)
 		.setRequired(true);
-
-export const optionalServerOptions = (option: SlashCommandStringOption) =>
-	option
-		.setName('server')
-		.setDescription('select a server')
-		.addChoices(
-			{ name: 'blue server', value: 'BLUE' },
-			{ name: 'green server', value: 'GREEN' },
-			{ name: 'red server', value: 'RED' },
-		);
 
 export const watchFilterOptions = (option: SlashCommandStringOption) =>
 	option

@@ -2,7 +2,6 @@ import { vi } from 'vitest';
 vi.mock('../../index', () => import('../../test/mocks/discordClient'));
 
 import { describe, it, expect } from 'vitest';
-import { Interaction } from 'discord.js';
 
 async function getRedis() {
 	const { redis } = await import('../../redis/init');
@@ -40,18 +39,6 @@ describe('redis helpers (integration)', () => {
 
 		await new Promise((resolve) => setTimeout(resolve, 1100));
 		expect(await redis.get(key)).toBeNull();
-	});
-
-	it('isDuplicateButtonInteraction returns false then true', async () => {
-		const { isDuplicateButtonInteraction } = await import('./redis');
-		const interaction = {
-			id: 'button-itest-1',
-			channelId: null,
-			user: { id: '100' },
-		} as unknown as Interaction;
-
-		expect(await isDuplicateButtonInteraction(interaction)).toBe(false);
-		expect(await isDuplicateButtonInteraction(interaction)).toBe(true);
 	});
 
 	it('flushall between tests leaves no keys from prior tests', async () => {

@@ -1,44 +1,11 @@
 import { vi } from 'vitest';
 vi.mock('../../index', () => import('../../test/mocks/discordClient'));
 vi.mock('../../redis/init', () => import('../../test/mocks/redis'));
-vi.mock('./errors', () => ({
-	gracefullyHandleError: vi.fn(async () => undefined),
-}));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Interaction } from 'discord.js';
-import {
-	generateButtonInteractionKey,
-	generatePlayerLinkKey,
-	getCachedPlayerDiscordName,
-	isDuplicateButtonInteraction,
-} from './redis';
-import { gracefullyHandleError } from './errors';
+import { generatePlayerLinkKey, getCachedPlayerDiscordName } from './redis';
 import { client } from '../../test/mocks/discordClient';
 import { redis } from '../../test/mocks/redis';
-
-describe('isDuplicateButtonInteraction', () => {
-	it('uses atomic SET EX NX for dedupe keys', async () => {
-		const interaction = {
-			id: 'i-1',
-			channelId: null,
-			user: { id: '100' },
-		} as unknown as Interaction;
-
-		expect(await isDuplicateButtonInteraction(interaction)).toBe(false);
-		expect(redis.set).toHaveBeenCalledWith(
-			generateButtonInteractionKey('i-1'),
-			'acknowledged',
-			'EX',
-			15,
-			'NX',
-		);
-		expect(redis.setnx).not.toHaveBeenCalled();
-
-		expect(await isDuplicateButtonInteraction(interaction)).toBe(true);
-		expect(gracefullyHandleError).toHaveBeenCalled();
-	});
-});
 
 describe('getCachedPlayerDiscordName', () => {
 	beforeEach(() => {
@@ -96,12 +63,6 @@ describe('getCachedPlayerDiscordName', () => {
 });
 
 describe('redis key helpers', () => {
-	it('scopes button interaction keys by interaction id', () => {
-		expect(generateButtonInteractionKey('abc')).toBe(
-			'buttonInteraction:abc',
-		);
-	});
-
 	it('scopes player link name keys by player id', () => {
 		expect(generatePlayerLinkKey('99')).toBe('playerLinkName:99');
 	});

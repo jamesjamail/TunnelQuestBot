@@ -72,22 +72,13 @@ describe('buttonBuilder', () => {
 		).toBe(ButtonStyle.Danger);
 	});
 
-	it('uses Success for ConfirmActionActive, UnlinkCharacterActive, and WatchBlockActive', () => {
-		expect(
-			buttonFromRow(ButtonInteractionTypes.ConfirmActionActive).style,
-		).toBe(ButtonStyle.Success);
+	it('uses Success for UnlinkCharacterActive and WatchBlockActive', () => {
 		expect(
 			buttonFromRow(ButtonInteractionTypes.UnlinkCharacterActive).style,
 		).toBe(ButtonStyle.Success);
 		expect(
 			buttonFromRow(ButtonInteractionTypes.WatchBlockActive).style,
 		).toBe(ButtonStyle.Success);
-	});
-
-	it('uses Danger for CancelActionActive', () => {
-		expect(
-			buttonFromRow(ButtonInteractionTypes.CancelActionActive).style,
-		).toBe(ButtonStyle.Danger);
 	});
 
 	it('sets snooze labels to the sleep emoji', () => {
@@ -134,15 +125,6 @@ describe('buttonBuilder', () => {
 		expect(
 			buttonFromRow(ButtonInteractionTypes.WatchBlockActive).label,
 		).toBe('🔕');
-	});
-
-	it('sets Confirm and Cancel labels', () => {
-		expect(
-			buttonFromRow(ButtonInteractionTypes.ConfirmActionActive).label,
-		).toBe('Confirm');
-		expect(
-			buttonFromRow(ButtonInteractionTypes.CancelActionActive).label,
-		).toBe('Cancel');
 	});
 
 	it('uses Relink when active and Unlink when inactive for UnlinkCharacter', () => {

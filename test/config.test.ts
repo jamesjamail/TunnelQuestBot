@@ -27,6 +27,8 @@ describe('deployment and config invariants', () => {
 			false,
 		);
 		expect(dependencyNames).not.toContain('concurrently');
+		expect(dependencyNames).not.toContain('axios');
+		expect(dependencyNames).not.toContain('node-forge');
 	});
 
 	it('indexes Watch.active for the hot active-watch scan', () => {
