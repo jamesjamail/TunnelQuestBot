@@ -14,8 +14,6 @@ export const client = new Client({
 import { SlashCommand } from './types';
 import { config } from 'dotenv';
 import { expand } from 'dotenv-expand';
-import { readdirSync } from 'fs';
-import { join } from 'path';
 import { gracefullyHandleError, normalizeError } from './lib/helpers/errors';
 //	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
 //	longer expands those references for us.
@@ -36,12 +34,11 @@ process.on('uncaughtException', (error) => {
 client.slashCommands = new Collection<string, SlashCommand>();
 client.cooldowns = new Collection<string, number>();
 
-const handlersDir = join(__dirname, './handlers');
-readdirSync(handlersDir).forEach((handler) => {
-	if (!handler.endsWith('.js')) return;
-
-	require(`${handlersDir}/${handler}`)(client);
-});
+// 	Listed explicitly rather than scanned from handlers/: the scan also invoked
+// 	the loader modules, which export named functions instead of a callable, and
+// 	the resulting throw skipped the login() call below.
+require('./handlers/Command')(client);
+require('./handlers/Event')(client);
 
 // 	Once logged in discord.js reconnects on its own, but a failure during the
 // 	initial login is fatal. On container start we frequently lose the race with

@@ -1,3 +1,10 @@
+import { vi } from 'vitest';
+//	Every command reaches src/index.ts through helpers/errors, so without these
+//	the suite boots the real Discord client and attempts a login.
+vi.mock('../../../index', () => import('../../../test/mocks/discordClient'));
+vi.mock('../../../prisma/init', () => import('../../../test/mocks/prisma'));
+vi.mock('../../../redis/init', () => import('../../../test/mocks/redis'));
+
 import { describe, it, expect } from 'vitest';
 
 import help from './help';
