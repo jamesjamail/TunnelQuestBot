@@ -9,7 +9,7 @@ import { gracefullyHandleError } from '../lib/helpers/errors';
 
 const mockConnect = vi.fn();
 
-vi.mock('@prisma/client', () => ({
+vi.mock('./client', () => ({
 	PrismaClient: vi.fn().mockImplementation(function PrismaClientMock() {
 		return { $connect: mockConnect };
 	}),

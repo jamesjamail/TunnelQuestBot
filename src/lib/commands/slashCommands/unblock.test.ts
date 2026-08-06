@@ -12,7 +12,7 @@ vi.mock('../../helpers/errors', () => ({
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { MessageFlags } from 'discord.js';
-import { Server } from '@prisma/client';
+import { Server } from '../../../prisma/client';
 import command from './unblock';
 import {
 	removePlayerBlockById,

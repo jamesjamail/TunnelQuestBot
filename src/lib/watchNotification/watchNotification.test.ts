@@ -18,7 +18,7 @@ vi.mock('../content/buttons/buttonRowBuilder', () => ({
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../prisma/client';
 import {
 	generateDebounceKey,
 	shouldUserBeNotified,

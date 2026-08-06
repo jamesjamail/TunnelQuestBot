@@ -1,4 +1,4 @@
-import { BlockedPlayer, Watch, WatchType } from '@prisma/client';
+import { BlockedPlayer, Watch, WatchType } from '../../prisma/client';
 import { watchNotificationBuilder } from '../content/messages/messageBuilder';
 import {
 	buttonRowBuilder,

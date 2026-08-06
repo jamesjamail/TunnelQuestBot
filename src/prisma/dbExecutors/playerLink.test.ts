@@ -6,8 +6,8 @@ vi.mock('../../lib/helpers/errors', () => ({
 }));
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Server } from '@prisma/client';
-import { Prisma } from '@prisma/client';
+import { Server } from '../client';
+import { Prisma } from '../client';
 import { add } from 'date-fns';
 import {
 	authPlayerLink,

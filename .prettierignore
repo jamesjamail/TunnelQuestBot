@@ -1,2 +1,5 @@
 # Ignore transpiled code:
 /build/
+
+# Ignore generated Prisma Client:
+/src/prisma/generated/

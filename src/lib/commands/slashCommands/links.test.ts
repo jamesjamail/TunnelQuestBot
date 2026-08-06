@@ -8,7 +8,7 @@ vi.mock('../../../prisma/dbExecutors/playerLink', () => ({
 
 import { describe, it, expect } from 'vitest';
 import { MessageFlags } from 'discord.js';
-import { Server } from '@prisma/client';
+import { Server } from '../../../prisma/client';
 import command from './links';
 import { getPlayerLinksForUser } from '../../../prisma/dbExecutors/playerLink';
 import { messageCopy } from '../../content/copy/messageCopy';

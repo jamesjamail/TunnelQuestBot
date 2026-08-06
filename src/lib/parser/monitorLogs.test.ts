@@ -14,7 +14,7 @@ vi.mock('../playerLink/playerLink', () => ({
 }));
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { handleLogLine, generateAuctionKey } from './monitorLogs';
 import { state } from './state';
 import { initializeGroupedWatches } from '../../prisma/dbExecutors/watch';

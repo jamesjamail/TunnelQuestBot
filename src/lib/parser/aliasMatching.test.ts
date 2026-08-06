@@ -11,7 +11,7 @@ vi.mock('../watchNotification/watchNotification', () => ({
 }));
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { resolveCanonicalItemName } from '../gameData/consolidatedItems';
 import { handleLogLine } from './monitorLogs';
 import { state } from './state';

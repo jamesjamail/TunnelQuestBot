@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { getServerColorFromString } from './colors';
 
 describe('getServerColorFromString', () => {

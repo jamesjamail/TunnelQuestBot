@@ -10,6 +10,7 @@ export default defineConfig({
 			reporter: ['text', 'lcov'],
 			include: ['src/**/*.ts'],
 			exclude: [
+				'src/prisma/generated/**',
 				'src/test/**',
 				'src/**/*.test.ts',
 				'src/**/*.itest.ts',

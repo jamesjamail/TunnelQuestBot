@@ -13,7 +13,7 @@ vi.mock('../../../../prisma/dbExecutors/watch', () => ({
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../../../prisma/client';
 import handleUnwatchActive from './unwatchActive';
 import { setWatchActiveByWatchId } from '../../../../prisma/dbExecutors/watch';
 import { makeButtonInteraction, makeWatch } from '../../../../test/factories';

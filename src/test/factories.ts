@@ -7,7 +7,7 @@ import {
 	User,
 	Watch,
 	WatchType,
-} from '@prisma/client';
+} from '../prisma/client';
 import {
 	AutocompleteInteraction,
 	ButtonInteraction,

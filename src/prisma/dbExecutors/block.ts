@@ -1,4 +1,4 @@
-import { Server } from '@prisma/client';
+import { Server } from '../client';
 import { Interaction } from 'discord.js';
 import { prisma } from '../init';
 

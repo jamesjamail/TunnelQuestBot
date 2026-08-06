@@ -1,4 +1,4 @@
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { redis } from '../../redis/init';
 import { AuctionData } from '../streams/streamAuction';
 import { HistoricalData } from '../content/messages/messageBuilder';

@@ -11,7 +11,7 @@ vi.mock('../../helpers/errors', () => ({
 
 import { describe, it, expect } from 'vitest';
 import { MessageFlags } from 'discord.js';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../../prisma/client';
 import command from './watch';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
 import { gracefullyHandleError } from '../../helpers/errors';

@@ -1,10 +1,11 @@
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import * as fs from 'fs';
 import { config } from 'dotenv';
+import { expand } from 'dotenv-expand';
 import path from 'path';
 import { consolidatedItems } from '../gameData/consolidatedItems';
 
-config();
+expand(config());
 
 const players = ['Adam', 'Bob', 'Carl'];
 const actions = ['WTB', 'WTS'];

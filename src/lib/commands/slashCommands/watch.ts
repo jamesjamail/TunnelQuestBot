@@ -1,6 +1,6 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../../prisma/client';
 import {
 	requiredsServerOptions,
 	watchTypeOptions,

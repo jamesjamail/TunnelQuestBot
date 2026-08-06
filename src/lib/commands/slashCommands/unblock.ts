@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { autoCompletePlayerNameOptions } from '../commandOptions';
-import { BlockedPlayer } from '@prisma/client';
+import { BlockedPlayer } from '../../../prisma/client';
 import {
 	buttonRowBuilder,
 	MessageTypes,

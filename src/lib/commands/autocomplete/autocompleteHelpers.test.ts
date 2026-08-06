@@ -9,7 +9,7 @@ import {
 	parseBlockedPlayersForAutocomplete,
 } from './autocompleteHelpers';
 import { DiscordAPIError, RESTJSONErrorCodes } from 'discord.js';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../../prisma/client';
 import {
 	makeWatch,
 	makeBlockedPlayer,

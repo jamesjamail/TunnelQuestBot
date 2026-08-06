@@ -6,7 +6,7 @@ import {
 import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/removeMessagesFromCommandSpace';
 import { monitorLogFile } from './monitorLogs';
 import { state } from './state';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { gracefullyHandleError } from '../helpers/errors';
 
 // 	setInterval ignores the promise an async callback returns, so a rejected

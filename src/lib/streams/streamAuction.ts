@@ -1,6 +1,6 @@
 import { TextChannel, ChannelType } from 'discord.js';
 import { client } from '../..';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { embeddedAuctionStreamMessageBuilder } from '../content/messages/messageBuilder';
 import { gracefullyHandleError } from '../helpers/errors';
 

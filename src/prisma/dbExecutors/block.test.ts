@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 vi.mock('../init', () => import('../../test/mocks/prisma'));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../client';
 import { addPlayerBlock, removePlayerBlockWithoutServer } from './block';
 import { prisma } from '../../test/mocks/prisma';
 import { makeBlockedPlayer, makeChatInteraction } from '../../test/factories';

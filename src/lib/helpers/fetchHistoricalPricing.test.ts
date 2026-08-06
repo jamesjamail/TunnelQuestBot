@@ -5,7 +5,7 @@ vi.mock('./errors', () => ({
 }));
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import {
 	fetchHistoricalPricingForItem,
 	fetchHistoricalPricingForItems,

@@ -1,4 +1,4 @@
-import { Watch, BlockedPlayer } from '@prisma/client';
+import { Watch, BlockedPlayer } from '../../../prisma/client';
 import {
 	ApplicationCommandOptionChoiceData,
 	AutocompleteInteraction,

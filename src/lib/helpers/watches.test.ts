@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import {
 	isSnoozed,
 	formatServerFromEnum,

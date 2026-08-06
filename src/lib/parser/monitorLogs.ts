@@ -1,4 +1,4 @@
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import { Tail } from 'tail';
 import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';

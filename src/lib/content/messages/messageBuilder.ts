@@ -5,7 +5,7 @@ import {
 	BlockedPlayer,
 	PlayerLink,
 	WatchType,
-} from '@prisma/client';
+} from '../../../prisma/client';
 import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,

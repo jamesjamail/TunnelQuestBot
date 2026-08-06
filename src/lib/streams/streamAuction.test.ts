@@ -11,7 +11,7 @@ vi.mock('../content/messages/messageBuilder', () => ({
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ChannelType } from 'discord.js';
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import {
 	streamAuctionToAllStreamChannels,
 	getEnvironmentVariable,

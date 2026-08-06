@@ -13,10 +13,13 @@ export const client = new Client({
 });
 import { SlashCommand } from './types';
 import { config } from 'dotenv';
+import { expand } from 'dotenv-expand';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 import { gracefullyHandleError, normalizeError } from './lib/helpers/errors';
-config();
+//	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
+//	longer expands those references for us.
+expand(config());
 
 // 	The bot talks to Discord, Postgres and Redis constantly, and any of them can
 // 	fail transiently. Without these handlers Node terminates the process on the

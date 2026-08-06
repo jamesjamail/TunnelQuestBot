@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 vi.mock('../../index', () => import('../../test/mocks/discordClient'));
 
 import { describe, it, expect } from 'vitest';
-import { Prisma, Server } from '@prisma/client';
+import { Prisma, Server } from '../client';
 
 async function getPrisma() {
 	const { prisma } = await import('../init');

@@ -4,7 +4,7 @@ import {
 	Watch,
 	BlockedPlayerByWatch,
 	User,
-} from '@prisma/client';
+} from '../client';
 import {
 	Interaction,
 	ChatInputCommandInteraction,

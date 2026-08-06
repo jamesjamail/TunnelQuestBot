@@ -1,7 +1,7 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForUnwatch } from '../commandOptions';
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../prisma/client';
 import {
 	buttonRowBuilder,
 	MessageTypes,

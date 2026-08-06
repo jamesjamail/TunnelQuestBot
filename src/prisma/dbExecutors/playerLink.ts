@@ -1,4 +1,4 @@
-import { PlayerLink, Server, Prisma } from '@prisma/client';
+import { PlayerLink, Server, Prisma } from '../client';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
 import { Interaction } from 'discord.js';

@@ -8,7 +8,7 @@ import {
 	listCommandResponseBuilder,
 	watchCommandResponseBuilder,
 } from '../../content/messages/messageBuilder';
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../prisma/client';
 import { messageCopy } from '../../content/copy/messageCopy';
 import {
 	MessageTypes,

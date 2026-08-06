@@ -1,4 +1,4 @@
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../../prisma/client';
 import { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { unwatch } from '../../../../prisma/dbExecutors/watch';

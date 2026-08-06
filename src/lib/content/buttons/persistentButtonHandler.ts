@@ -1,5 +1,5 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { PlayerLink, Server } from '@prisma/client';
+import { PlayerLink, Server } from '../../../prisma/client';
 import { parseCustomId, ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
 import {

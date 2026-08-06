@@ -1,0 +1,33 @@
+# Nothing here is referenced by a COPY in the Dockerfile, so BuildKit already
+# skips most of it. Listing it explicitly keeps that guarantee from depending on
+# the builder's optimizations — above all for .env, which holds the database
+# credentials and log paths and is only ever bind-mounted at run time.
+
+# Secrets and local configuration
+.env*
+
+# Reinstalled or regenerated inside the image
+node_modules
+build
+coverage
+src/prisma/generated
+
+# Version control and editor/CI tooling
+.git
+.gitignore
+.gitattributes
+.github
+.husky
+.idea
+.vscode
+.cursor
+
+# Tests never run in the image; tsconfig already excludes them from the build
+src/test
+**/*.test.ts
+**/*.itest.ts
+vitest.config.ts
+vitest.integration.config.ts
+
+# Docs
+*.md

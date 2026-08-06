@@ -15,7 +15,7 @@ vi.mock('../../helpers/errors', () => ({
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EmbedBuilder } from 'discord.js';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../../prisma/client';
 import {
 	blockCommandResponseBuilder,
 	embeddedAuctionStreamMessageBuilder,

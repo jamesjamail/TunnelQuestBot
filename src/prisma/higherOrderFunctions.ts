@@ -32,7 +32,23 @@ async function ensureUserExists(user: Interaction['user']): Promise<void> {
 	});
 }
 
+//  Prisma 7 reports the violated constraint through the driver adapter's error
+//  cause instead of the flat `meta.constraint`/`meta.field_name` of earlier
+//  versions. Postgres names the constraint (`Watch_discordUserId_fkey`), but
+//  other drivers report bare column names, so check both shapes.
+type ForeignKeyViolationMeta = {
+	driverAdapterError?: {
+		cause?: { constraint?: { index?: string; fields?: string[] } };
+	};
+};
+
 function isForeignKeyViolationError(error: any): boolean {
-	const field = error.meta?.constraint ?? error.meta?.field_name ?? '';
-	return error.code === 'P2003' && field.includes('discordUserId');
+	if (error?.code !== 'P2003') return false;
+
+	const constraint = (error.meta as ForeignKeyViolationMeta | undefined)
+		?.driverAdapterError?.cause?.constraint;
+
+	return [constraint?.index ?? '', ...(constraint?.fields ?? [])].some(
+		(name) => name.includes('discordUserId'),
+	);
 }

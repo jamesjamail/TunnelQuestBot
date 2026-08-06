@@ -1,6 +1,6 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
-import { PlayerLink, Server } from '@prisma/client';
+import { PlayerLink, Server } from '../../../prisma/client';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { removePlayerLink } from '../../../prisma/dbExecutors/playerLink';
 import { playerNameOptions, requiredsServerOptions } from '../commandOptions';
