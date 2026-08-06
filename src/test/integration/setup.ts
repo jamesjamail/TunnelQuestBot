@@ -36,6 +36,16 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+	// 	Close the clients first. ioredis reconnects on its own, so a container
+	// 	pulled out from under a live connection logs errors during teardown and
+	// 	makes a passing run look like a failing one.
+	const [{ redis }, { prisma }] = await Promise.all([
+		import('../../redis/init'),
+		import('../../prisma/init'),
+	]);
+	await redis.quit();
+	await prisma.$disconnect();
+
 	await postgres?.stop();
 	await redisContainer?.stop();
 });

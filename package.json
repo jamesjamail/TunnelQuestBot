@@ -6,8 +6,9 @@
   "scripts": {
     "build": "prisma generate && tsc",
     "generate": "prisma generate",
-    "start": "npx prisma migrate deploy && node ./build/index.js",
-    "debug": "npx prisma migrate deploy && node --inspect=0.0.0.0 ./build/index.js",
+    "migrate": "prisma migrate deploy",
+    "start": "node ./build/index.js",
+    "debug": "node --inspect=0.0.0.0 ./build/index.js",
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

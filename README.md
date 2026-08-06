@@ -7,16 +7,48 @@ docker containers with just one command!
 * Install Docker Desktop with WSL2 via this guide:
 https://docs.docker.com/desktop/wsl/
   * Or, install docker and docker-compose on your platform of choice.
-* Copy `.env.sample` to `.env` and configure your `TOKEN`/`CLIENT_ID` and log file paths.
+* Copy `.env.example` to `.env` and configure your `TOKEN`/`CLIENT_ID` and log file paths.
 * Run `docker-compose up --build`
   * Re-run this command any time you make code or config changes.
   * If you'd prefer not to run everquest clients for the log files, you can tell the app to fake them: `$env:FAKE_LOGS='true'; docker-compose up --build`. This runs `npm run dev` in the container, which runs logFaker.ts in paralell
 
 ## Running In Production
 
-TODO: update this to reflect upstream image workflow once merged and set up.
+### Updating to a new version
 
-Running `docker-compose up --build -d` defaults to production.
+Two commands, from the repo directory:
+
+```sh
+git pull
+docker compose up -d --build
+```
+
+That is the whole update. Database migrations are applied automatically when the
+bot container starts, so there is never a separate migration step to remember.
+Applying migrations twice is harmless, so re-running the command is always safe.
+
+Compose waits for Postgres and Redis to report healthy before it starts the bot,
+so a cold start on a brand new machine works the same way as a restart.
+
+### When something goes wrong
+
+Check the logs:
+
+```sh
+docker compose logs -f tunnelquestbot
+```
+
+Lines prefixed with `[entrypoint]` come from the startup sequence:
+
+* `database not reachable yet (attempt N/30)` — normal on a cold start; the
+  container waits for Postgres and continues on its own.
+* `database schema is up to date` — migrations finished and the bot is starting.
+* `ERROR: migrations could not be applied.` — the bot deliberately does **not**
+  start, because running against a schema that disagrees with the code would
+  corrupt data. This needs a developer; the Prisma output just above the error
+  explains what it found.
+
+To confirm the running version, use the bot's `/version` command.
 
 ## Discord Template
 
