@@ -1,6 +1,9 @@
 import { TextChannel } from 'discord.js';
 import { client } from '../..';
 
+//	the cutoff the bulk delete endpoint enforces
+const BULK_DELETE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+
 export async function removeNoncommandMessagesFromPublicCommandSpace() {
 	try {
 		// Get the channel by ID from environment variable
@@ -22,16 +25,25 @@ export async function removeNoncommandMessagesFromPublicCommandSpace() {
 		// Fetch messages
 		const messages = await textChannel.messages.fetch();
 
-		// Create an array of promises for deleting messages
-		const deletePromises = messages.map(async (message, key) => {
-			// Skip the first message (the command syntax instructions)
-			if (key === messages.lastKey()) return;
-			// delete all others
-			await message.delete();
-		});
+		// Skip the first message (the command syntax instructions)
+		const instructionsMessageId = messages.lastKey();
+		const [recent, stale] = messages
+			.filter((_, id) => id !== instructionsMessageId)
+			.partition(
+				(message) =>
+					Date.now() - message.createdTimestamp <
+					BULK_DELETE_MAX_AGE_MS,
+			);
 
-		// Wait for all delete operations to complete
-		await Promise.all(deletePromises);
+		// 	one request for up to 100 messages; deleting them individually cost a
+		// 	request each, which rate limits hard once a backlog builds up
+		await textChannel.bulkDelete(recent);
+
+		// 	the bulk endpoint rejects these outright, so they still cost a request
+		// 	each; awaited in turn so a backlog cannot recreate the fan-out above
+		for (const message of stale.values()) {
+			await message.delete();
+		}
 	} catch (error) {
 		// Log and handle any errors
 
