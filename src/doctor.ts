@@ -7,6 +7,11 @@ import {
 	parseConfig,
 	serverEnvKeys,
 } from './config';
+//	Imported for its side effect as much as its value: this pulls in the game
+//	data JSON and the generated Prisma client, both of which the Dockerfile
+//	copies into the runtime image through a hand-maintained list of paths. If
+//	that list falls behind, the image still builds and this is what notices.
+import { consolidatedItemsAndAliases } from './lib/gameData/consolidatedItems';
 import { Server } from './prisma/client';
 
 //	Validates configuration and exits. Deliberately does not connect to Discord,
@@ -79,6 +84,17 @@ function main(): number {
 		`  redis            ${parsed.REDIS_URL ?? `socket in ${parsed.REDIS_SOCKET_DIR ?? '/tmp'}`}`,
 	);
 	console.log(`  debug mode       ${parsed.DEBUG_MODE}`);
+
+	const itemCount = Object.keys(consolidatedItemsAndAliases).length;
+	console.log(`  game data        ${itemCount} items and aliases loaded`);
+
+	if (itemCount === 0) {
+		console.error(
+			'\nGame data is empty. In a container this means the JSON under',
+		);
+		console.error('src/lib/gameData was not copied into the image.');
+		return 1;
+	}
 
 	return 0;
 }

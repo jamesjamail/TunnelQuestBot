@@ -47,7 +47,11 @@ COPY --from=build_image /app/build /app/build
 COPY --from=build_image /app/prisma.config.ts /app/
 COPY --from=build_image /app/src/prisma/schema.prisma /app/src/prisma/
 COPY --from=build_image /app/src/prisma/migrations /app/src/prisma/migrations
-COPY --from=build_image /app/src/lib/gameData/*.json /app/src/lib/gameData/
+
+# src/lib/gameData/*.json is deliberately not copied. resolveJsonModule makes
+# tsc emit those files into build/lib/gameData/ alongside the code that imports
+# them, and the compiled `require("./items.json")` resolves there. Copying them
+# under /app/src as well duplicated 600KB that nothing reads.
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

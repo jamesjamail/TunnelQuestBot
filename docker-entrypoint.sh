@@ -63,6 +63,20 @@ apply_migrations() {
 
 apply_migrations
 
+#	Smoke mode: prove the image can actually start, then exit instead of
+#	connecting to Discord. Reaching this point already establishes that the
+#	entrypoint runs, that the database is reachable and migrations apply, and
+#	that every runtime file the Dockerfile copies is present - the Dockerfile
+#	maintains that list by hand, so a new runtime file otherwise builds cleanly
+#	and only fails when the container boots. CI runs this against the real
+#	compose stack; see .github/workflows/docker-build.yml.
+case "$SMOKE_TEST" in
+	[tT]*)
+		log 'smoke test: validating configuration and runtime assets'
+		exec node ./build/doctor.js
+		;;
+esac
+
 case "$FAKE_LOGS" in
 	[tT]*)
 		node ./build/lib/parser/logFaker.js &
