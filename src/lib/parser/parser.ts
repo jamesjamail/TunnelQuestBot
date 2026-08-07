@@ -6,8 +6,8 @@ import { ItemType } from '../streams/streamAuction';
 const AhoCorasick = require('ahocorasick');
 
 export enum AuctionTypes {
-	'WTS',
-	'WTB',
+	WTS,
+	WTB,
 }
 
 export type MatchRange = { start: number; end: number };

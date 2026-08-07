@@ -15,8 +15,9 @@ function makeInteraction(userId = '999', username = 'newbie') {
 
 describe('attemptAndCreateUserIfNeeded (integration)', () => {
 	it('creates the user and retries when a watch insert hits P2003', async () => {
-		const { attemptAndCreateUserIfNeeded } =
-			await import('./higherOrderFunctions');
+		const { attemptAndCreateUserIfNeeded } = await import(
+			'./higherOrderFunctions'
+		);
 		const { upsertWatch } = await import('./dbExecutors/watch');
 		const prisma = await getPrisma();
 
@@ -37,8 +38,9 @@ describe('attemptAndCreateUserIfNeeded (integration)', () => {
 	});
 
 	it('runs once without creating a duplicate user when the user already exists', async () => {
-		const { attemptAndCreateUserIfNeeded } =
-			await import('./higherOrderFunctions');
+		const { attemptAndCreateUserIfNeeded } = await import(
+			'./higherOrderFunctions'
+		);
 		const { upsertWatch } = await import('./dbExecutors/watch');
 		const prisma = await getPrisma();
 
@@ -61,8 +63,9 @@ describe('attemptAndCreateUserIfNeeded (integration)', () => {
 	});
 
 	it('rethrows P2002 unique violations without creating a user', async () => {
-		const { attemptAndCreateUserIfNeeded } =
-			await import('./higherOrderFunctions');
+		const { attemptAndCreateUserIfNeeded } = await import(
+			'./higherOrderFunctions'
+		);
 		const prisma = await getPrisma();
 
 		await prisma.user.create({
@@ -95,8 +98,9 @@ describe('attemptAndCreateUserIfNeeded (integration)', () => {
 	});
 
 	it('rethrows P2003 when the violated constraint is not discordUserId', async () => {
-		const { attemptAndCreateUserIfNeeded } =
-			await import('./higherOrderFunctions');
+		const { attemptAndCreateUserIfNeeded } = await import(
+			'./higherOrderFunctions'
+		);
 		const prisma = await getPrisma();
 
 		await prisma.user.create({
