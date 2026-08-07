@@ -1,6 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
-import { Server, WatchType } from '@prisma/client';
+import { Server, WatchType } from '../../../prisma/client';
 import {
 	requiredsServerOptions,
 	watchTypeOptions,
@@ -62,7 +62,7 @@ const command: SlashCommand = {
 			return await interaction.reply({
 				embeds,
 				components,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

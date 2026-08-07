@@ -1,7 +1,7 @@
 import { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../../prisma/client';
 import { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 import { snoozeWatch } from '../../../../prisma/dbExecutors/watch';

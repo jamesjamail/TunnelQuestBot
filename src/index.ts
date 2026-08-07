@@ -11,21 +11,81 @@ export const client = new Client({
 	],
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction], //	needed for handling interactions from DM's
 });
-import { Command, SlashCommand } from './types';
+import { SlashCommand } from './types';
 import { config } from 'dotenv';
-import { readdirSync } from 'fs';
-import { join } from 'path';
-config();
+import { expand } from 'dotenv-expand';
+import {
+	gracefullyHandleError,
+	handleFatalError,
+	normalizeError,
+} from './lib/helpers/errors';
+//	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
+//	longer expands those references for us.
+expand(config());
 
-client.slashCommands = new Collection<string, SlashCommand>();
-client.commands = new Collection<string, Command>();
-client.cooldowns = new Collection<string, number>();
-
-const handlersDir = join(__dirname, './handlers');
-readdirSync(handlersDir).forEach((handler) => {
-	if (!handler.endsWith('.js')) return;
-
-	require(`${handlersDir}/${handler}`)(client);
+// 	The bot talks to Discord, Postgres and Redis constantly, and any of them can
+// 	fail transiently. Without these handlers Node terminates the process on the
+// 	first stray rejection, which under `restart: always` turns a blip into a
+// 	restart loop that drops log monitoring for every server.
+process.on('unhandledRejection', (reason) => {
+	void gracefullyHandleError(reason);
 });
 
-client.login(process.env.TOKEN);
+let handlingFatalException = false;
+process.on('uncaughtException', (error) => {
+	if (handlingFatalException) return;
+	handlingFatalException = true;
+	void handleFatalError(error);
+});
+
+client.slashCommands = new Collection<string, SlashCommand>();
+client.cooldowns = new Collection<string, number>();
+
+// 	Listed explicitly rather than scanned from handlers/: the scan also invoked
+// 	the loader modules, which export named functions instead of a callable, and
+// 	the resulting throw skipped the login() call below.
+require('./handlers/Command')(client);
+require('./handlers/Event')(client);
+
+// 	Once logged in discord.js reconnects on its own, but a failure during the
+// 	initial login is fatal. On container start we frequently lose the race with
+// 	Docker's DNS, so retry rather than exiting into a restart loop.
+const MAX_LOGIN_ATTEMPTS = 10;
+const MAX_LOGIN_BACKOFF_MS = 30_000;
+
+// 	no amount of retrying fixes a bad token
+const UNRECOVERABLE_LOGIN_CODES = ['TokenInvalid', 'TokenMissing'];
+
+async function login() {
+	for (let attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
+		try {
+			await client.login(process.env.TOKEN);
+			return;
+		} catch (error) {
+			const { code } = error as { code?: string };
+			if (code && UNRECOVERABLE_LOGIN_CODES.includes(code)) {
+				throw error;
+			}
+
+			if (attempt === MAX_LOGIN_ATTEMPTS) {
+				throw error;
+			}
+
+			const backoff = Math.min(
+				MAX_LOGIN_BACKOFF_MS,
+				2 ** (attempt - 1) * 1000,
+			);
+			console.warn(
+				`Discord login attempt ${attempt}/${MAX_LOGIN_ATTEMPTS} failed (${
+					normalizeError(error).message
+				}). Retrying in ${backoff}ms.`,
+			);
+			await new Promise((resolve) => setTimeout(resolve, backoff));
+		}
+	}
+}
+
+login().catch((error) => {
+	console.error('Could not log in to Discord: ', normalizeError(error));
+	process.exit(1);
+});

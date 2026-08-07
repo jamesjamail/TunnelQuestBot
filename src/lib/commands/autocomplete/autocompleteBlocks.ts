@@ -1,6 +1,9 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
 import { getPlayerBlocks } from '../../../prisma/dbExecutors/block';
-import { parseBlockedPlayersForAutocomplete } from './autocompleteHelpers';
+import {
+	parseBlockedPlayersForAutocomplete,
+	respondToAutocomplete,
+} from './autocompleteHelpers';
 
 export async function autocompleteBlocks(
 	interaction: AutocompleteInteraction<CacheType>,
@@ -12,5 +15,5 @@ export async function autocompleteBlocks(
 		(choice, index) =>
 			choice.name.toUpperCase().startsWith(focusedValue) && index < 25,
 	);
-	await interaction.respond(filtered);
+	await respondToAutocomplete(interaction, filtered);
 }

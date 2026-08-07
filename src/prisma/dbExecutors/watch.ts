@@ -4,14 +4,18 @@ import {
 	Watch,
 	BlockedPlayerByWatch,
 	User,
-} from '@prisma/client';
+} from '../client';
 import {
 	Interaction,
 	ChatInputCommandInteraction,
 	User as DiscordUser,
 } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../../lib/helpers/datetime';
-import { isKnownItem } from '../../lib/helpers/watches';
+import {
+	isKnownItem,
+	normalizeStoredWatchItemName,
+} from '../../lib/helpers/watches';
+import { resolveCanonicalItemName } from '../../lib/gameData/consolidatedItems';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
 
@@ -27,7 +31,8 @@ export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	const { itemName, server, watchType, priceRequirement, notes } = watchData;
+	const { server, watchType, priceRequirement, notes } = watchData;
+	const itemName = normalizeStoredWatchItemName(watchData.itemName);
 
 	// allow users to erase previously set price requirements by inputting 0 or less
 	const updatedPriceRequirement =
@@ -39,13 +44,13 @@ export async function upsertWatch(
 		where: {
 			discordUserId_itemName_server_watchType: {
 				discordUserId,
-				itemName: itemName.toUpperCase(),
+				itemName,
 				server,
 				watchType,
 			},
 		},
 		update: {
-			itemName: watchData.itemName.toUpperCase(),
+			itemName,
 			server: watchData.server,
 			priceRequirement: updatedPriceRequirement,
 			active: true,
@@ -55,7 +60,7 @@ export async function upsertWatch(
 		},
 		create: {
 			discordUserId,
-			itemName: itemName.toUpperCase(),
+			itemName,
 			server,
 			watchType,
 			snoozedUntil: null,
@@ -98,12 +103,7 @@ export async function getWatchesByUser(discordUserId: string) {
 }
 
 export async function getWatchesByDiscordUser(user: DiscordUser) {
-	return prisma.watch.findMany({
-		where: {
-			discordUserId: user.id,
-			active: true,
-		},
-	});
+	return getWatchesByUser(user.id);
 }
 
 export async function getSnoozedWatchesByDiscordUser(user: DiscordUser) {
@@ -123,8 +123,9 @@ export async function getWatchByItemName(
 	itemName: string,
 ) {
 	const watches = await getWatchesByUser(discordUserId);
+	const normalizedItemName = normalizeStoredWatchItemName(itemName);
 	const filteredWatches = watches.filter((watch) => {
-		return watch.itemName === itemName.toUpperCase();
+		return watch.itemName === normalizedItemName;
 	});
 
 	// it's possible a user could have multiple watches for the same item
@@ -176,7 +177,7 @@ export async function unsnoozeWatchByItemName(
 ) {
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName,
+			itemName: normalizeStoredWatchItemName(watchName),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -212,7 +213,7 @@ export async function unwatchByWatchName(
 	// First, find the watch entry based on itemName and discordUserId
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName.toUpperCase(),
+			itemName: normalizeStoredWatchItemName(watchName),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -263,10 +264,10 @@ export async function extendAllWatchesAndReturnWatches(discordUserId: string) {
 	await prisma.watch.updateMany({
 		where: {
 			discordUserId: discordUserId,
+			active: true,
 		},
 		data: {
 			created: new Date(),
-			active: true,
 		},
 	});
 
@@ -344,7 +345,7 @@ export async function snoozeWatchByItemName(
 	// why not use updateMany? because the response is a mere record count.
 	const foundWatch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: itemName,
+			itemName: normalizeStoredWatchItemName(itemName),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -400,10 +401,12 @@ export async function getWatchesGroupedByServer() {
 		const itemName = watch.itemName;
 
 		if (isKnownItem(itemName)) {
-			if (!groupedWatches[server][watchType].knownItems[itemName]) {
-				groupedWatches[server][watchType].knownItems[itemName] = [];
+			const canonicalName = resolveCanonicalItemName(itemName);
+			if (!groupedWatches[server][watchType].knownItems[canonicalName]) {
+				groupedWatches[server][watchType].knownItems[canonicalName] =
+					[];
 			}
-			groupedWatches[server][watchType].knownItems[itemName].push(
+			groupedWatches[server][watchType].knownItems[canonicalName].push(
 				watch.id,
 			);
 		} else {
@@ -444,10 +447,13 @@ export type WatchWithUserAndBlockedWatches = Watch & {
 	blockedWatches: BlockedPlayerByWatch[];
 };
 
+// 	Returns null when the watch is gone. Watches expire and are deleted
+// 	continuously, so callers routinely hold an id that no longer resolves - that
+// 	is an expected outcome to handle, not an error to throw on.
 export async function getWatchByWatchIdForWatchNotification(
 	watchId: number,
-): Promise<WatchWithUserAndBlockedWatches> {
-	const data = await prisma.watch.findUnique({
+): Promise<WatchWithUserAndBlockedWatches | null> {
+	return prisma.watch.findUnique({
 		where: {
 			id: watchId,
 		},
@@ -456,12 +462,6 @@ export async function getWatchByWatchIdForWatchNotification(
 			blockedWatches: true, // Include related BlockedPlayerByWatch data
 		},
 	});
-
-	if (!data) {
-		throw new Error(`Error querying db for watch id ${watchId}`);
-	}
-
-	return data;
 }
 
 export async function deleteWatchesOlderThanWatchdurationDays() {

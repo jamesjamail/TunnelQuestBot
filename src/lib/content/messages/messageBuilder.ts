@@ -5,7 +5,7 @@ import {
 	BlockedPlayer,
 	PlayerLink,
 	WatchType,
-} from '@prisma/client';
+} from '../../../prisma/client';
 import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
@@ -32,6 +32,68 @@ import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { getCachedPlayerDiscordName } from '../../helpers/redis';
+
+const MAX_FIELD_VALUE = 1024;
+function truncateForField(text: string, reservedChars = 0): string {
+	const max = MAX_FIELD_VALUE - reservedChars;
+	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+const MAX_DESCRIPTION = 4096;
+function truncateForDescription(text: string, reservedChars = 0): string {
+	const max = MAX_DESCRIPTION - reservedChars;
+	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+const MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000;
+const MAX_EMBEDS_PER_MESSAGE = 10;
+
+export function getEmbedCharacterCount(embed: EmbedBuilder): number {
+	const data = embed.toJSON();
+	return (
+		(data.title?.length ?? 0) +
+		(data.description?.length ?? 0) +
+		(data.author?.name.length ?? 0) +
+		(data.footer?.text.length ?? 0) +
+		(data.fields ?? []).reduce(
+			(total, field) => total + field.name.length + field.value.length,
+			0,
+		)
+	);
+}
+
+export function packEmbedsForDiscord(embeds: EmbedBuilder[]): EmbedBuilder[][] {
+	const batches: EmbedBuilder[][] = [];
+	let batch: EmbedBuilder[] = [];
+	let batchCharacters = 0;
+
+	for (const embed of embeds) {
+		const embedCharacters = getEmbedCharacterCount(embed);
+		if (embedCharacters > MAX_EMBED_CHARACTERS_PER_MESSAGE) {
+			throw new RangeError(
+				`Embed contains ${embedCharacters} characters; Discord allows ${MAX_EMBED_CHARACTERS_PER_MESSAGE}.`,
+			);
+		}
+
+		if (
+			batch.length === MAX_EMBEDS_PER_MESSAGE ||
+			batchCharacters + embedCharacters > MAX_EMBED_CHARACTERS_PER_MESSAGE
+		) {
+			batches.push(batch);
+			batch = [];
+			batchCharacters = 0;
+		}
+
+		batch.push(embed);
+		batchCharacters += embedCharacters;
+	}
+
+	if (batch.length > 0) {
+		batches.push(batch);
+	}
+
+	return batches;
+}
 
 export function watchCommandResponseBuilder(watchData: Watch) {
 	// Helper function to generate the field value based on conditions
@@ -91,7 +153,7 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 	if (watchData.notes) {
 		fields.push({
 			name: `Notes:`,
-			value: watchData.notes,
+			value: truncateForField(watchData.notes),
 			inline: false,
 		});
 	}
@@ -118,12 +180,6 @@ export function watchCommandResponseBuilder(watchData: Watch) {
 		});
 }
 
-export function watchesCommandResponseBuilder(dataForWatches: Watch[]) {
-	return dataForWatches.map((watchData) => {
-		return watchCommandResponseBuilder(watchData);
-	});
-}
-
 export async function watchNotificationBuilder(
 	watchData: Watch,
 	player: string,
@@ -143,7 +199,7 @@ export async function watchNotificationBuilder(
 	if (watchData.notes) {
 		fields.push({
 			name: `Notes:`,
-			value: `\`\`${watchData.notes}\`\``,
+			value: `\`\`${truncateForField(watchData.notes, 4)}\`\``,
 			inline: false,
 		});
 	}
@@ -217,26 +273,28 @@ export async function watchNotificationBuilder(
 	const playerLink = await getPlayerLink(player, watchData.server);
 	let playerLinkString = '';
 	if (playerLink) {
-		playerLinkString = `/<@${playerLink.discordUserId}>`;
+		playerLinkString = ` (<@${playerLink.discordUserId}>)`;
 	}
+
+	const description = `\n\n\n**${player}**${playerLinkString} is currently ${
+		watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
+	} **${toTitleCase(watchData.itemName)}** ${
+		auctionedPrice
+			? 'for **' +
+				formatPriceNumberToReadableString(auctionedPrice) +
+				'**'
+			: ''
+	} on **Project 1999 ${formatserverEnumToReadableString(
+		watchData.server,
+	)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`;
+
+	const title = `Watch Notification: ${toTitleCase(watchData.itemName)}`;
 
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watchData.server))
 		.setAuthor(authorProperties)
-		.setTitle(`Watch Notification: ${toTitleCase(watchData.itemName)}`)
-		.setDescription(
-			`\n\n\n**${player}**${playerLinkString} is currently ${
-				watchData.watchType === WatchType.WTS ? 'selling' : 'buying'
-			} **${toTitleCase(watchData.itemName)}** ${
-				auctionedPrice
-					? 'for **' +
-						formatPriceNumberToReadableString(auctionedPrice) +
-						'**'
-					: ''
-			} on **Project 1999 ${formatserverEnumToReadableString(
-				watchData.server,
-			)} Server**\n\n\`\`${player} auctions, ${auctionMessage}\`\`\n\n\n\n`,
-		)
+		.setTitle(title.length > 256 ? title.slice(0, 256) : title)
+		.setDescription(truncateForDescription(description))
 		.addFields(fields)
 		.setFooter({
 			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions from this player for this watch, click 🔕\nTo extend this watch, click ♻️',
@@ -256,78 +314,87 @@ function formatCapitalCase(input: string): string {
 }
 
 export function formatserverEnumToReadableString(server: Server) {
-	return server[0] + server.slice(1).toLowerCase();
+	return formatCapitalCase(server);
 }
 
 export function listCommandResponseBuilder(
 	watches: Watch[],
 	user: User,
 ): EmbedBuilder[] {
-	const watchesByServer: { [key: string]: Watch[] } = {};
-	const globalSnooze = isSnoozed(user.snoozedUntil);
+	const FIELDS_PER_EMBED = 25;
 	const embeds: EmbedBuilder[] = [];
-	let totalFieldsCount = 0;
 
-	if (watches.length > 25) {
-		embeds.push(
-			createInfoEmbed(
-				'You have more watches than can be displayed in a single message. Some have been omitted.',
-			),
-		);
-		totalFieldsCount++; // Incremented here after pushing info embed
-	}
-
-	if (globalSnooze) {
+	if (isSnoozed(user.snoozedUntil)) {
 		embeds.push(
 			createSnoozeEmbed(
 				'Global snooze is active. None of your watches will trigger notifications while active.',
 			),
 		);
-		totalFieldsCount++; // Incremented here after pushing snooze embed
 	}
 
+	const watchesByServer: { [key: string]: Watch[] } = {};
 	watches.forEach((watch) => {
 		if (!watchesByServer[watch.server]) watchesByServer[watch.server] = [];
 		watchesByServer[watch.server].push(watch);
 	});
 
 	const serverEntries = Object.entries(watchesByServer);
-	serverEntries.forEach(([server, serverWatches], index) => {
-		let fields: EmbedField[] = [];
-
-		serverWatches.forEach((watch) => {
-			if (totalFieldsCount >= 25) return;
-
+	serverEntries.forEach(([server, serverWatches], serverIndex) => {
+		const fields: EmbedField[] = serverWatches.map((watch) => {
 			const price = watch.priceRequirement
 				? `${formatPriceNumberToReadableString(watch.priceRequirement)}`
 				: 'no price criteria';
-
 			const snoozeEmoji = isSnoozed(watch.snoozedUntil) ? '💤 ' : '';
-
-			const watchFields: EmbedField[] = [
-				{
-					name: `\`${snoozeEmoji}${toTitleCase(
-						watch.itemName,
-					)}\` | \`${price}\``,
-					value: `${formatWatchExpirationTimestamp(watch.created)}`,
-					inline: false,
-				},
-			];
-
-			if (fields.length + watchFields.length + totalFieldsCount > 25) {
-				embeds.push(createEmbed(server, fields, false));
-				fields = [];
-			}
-
-			fields.push(...watchFields);
-			totalFieldsCount++;
+			return {
+				name: `\`${snoozeEmoji}${toTitleCase(
+					watch.itemName,
+				)}\` | \`${price}\``,
+				value: `${formatWatchExpirationTimestamp(watch.created)}`,
+				inline: false,
+			};
 		});
 
-		const isLastEmbed = index === serverEntries.length - 1; // Check if it's the last server entry
-		embeds.push(createEmbed(server, fields, isLastEmbed));
+		const isLastServer = serverIndex === serverEntries.length - 1;
+		for (let i = 0; i < fields.length; i += FIELDS_PER_EMBED) {
+			const chunk = fields.slice(i, i + FIELDS_PER_EMBED);
+			const isLastChunk = i + FIELDS_PER_EMBED >= fields.length;
+			embeds.push(
+				createEmbed(server, chunk, isLastServer && isLastChunk),
+			);
+		}
 	});
 
-	return embeds;
+	const totalCharacters = embeds.reduce(
+		(total, embed) => total + getEmbedCharacterCount(embed),
+		0,
+	);
+	if (
+		embeds.length <= MAX_EMBEDS_PER_MESSAGE &&
+		totalCharacters <= MAX_EMBED_CHARACTERS_PER_MESSAGE
+	) {
+		return embeds;
+	}
+
+	const omissionNotice = createInfoEmbed(
+		'You have more watches than can be displayed in a single message. Some have been omitted.',
+	);
+	const noticeCharacters = getEmbedCharacterCount(omissionNotice);
+	const fittedEmbeds: EmbedBuilder[] = [];
+	let fittedCharacters = noticeCharacters;
+	for (const embed of embeds) {
+		const embedCharacters = getEmbedCharacterCount(embed);
+		if (
+			fittedEmbeds.length >= MAX_EMBEDS_PER_MESSAGE - 1 ||
+			fittedCharacters + embedCharacters >
+				MAX_EMBED_CHARACTERS_PER_MESSAGE
+		) {
+			break;
+		}
+		fittedEmbeds.push(embed);
+		fittedCharacters += embedCharacters;
+	}
+
+	return [...fittedEmbeds, omissionNotice];
 }
 
 function createInfoEmbed(content: string): EmbedBuilder {
@@ -364,20 +431,6 @@ function createSnoozeEmbed(content: string): EmbedBuilder {
 }
 
 export function blockCommandResponseBuilder(block: BlockedPlayer) {
-	// const fields = [
-	// 	{
-	// 		name: `${block.watchType}   |   ${price}`,
-	// 		// TODO: make this conditional based on watchType
-	// 		value: 'This watch will only trigger for WTS auctions',
-	// 		inline: false,
-	// 	},
-	// 	{
-	// 		name: `Project 1999 ${block.server} Server`,
-	// 		value: `${formattedExpirationTimestamp}`,
-	// 		inline: false,
-	// 	},
-	// ];
-
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(block.server))
 		.setAuthor({ name: 'Player Block' })
@@ -438,20 +491,16 @@ export async function embeddedAuctionStreamMessageBuilder(
 		type: 'buying' | 'selling', //	TODO: use watchType enum isntead of fragile string
 	) => {
 		const prefix = type === 'buying' ? 'WTB' : 'WTS';
-		const avg30 = historicalData[`total${prefix}Last30DaysAverage`] || '-';
-		const avg60 = historicalData[`total${prefix}Last60DaysAverage`] || '-';
-		const avg90 = historicalData[`total${prefix}Last90DaysAverage`] || '-';
-		const count30 = historicalData[`total${prefix}Last30DaysCount`] || '0';
-		const count60 = historicalData[`total${prefix}Last60DaysCount`] || '0';
-		const count90 = historicalData[`total${prefix}Last90DaysCount`] || '0';
+		const fmt = (n: number | undefined | null) =>
+			n == null ? '-' : formatPriceNumberToReadableString(n);
+		const avg30 = fmt(historicalData[`total${prefix}Last30DaysAverage`]);
+		const avg60 = fmt(historicalData[`total${prefix}Last60DaysAverage`]);
+		const avg90 = fmt(historicalData[`total${prefix}Last90DaysAverage`]);
+		const count30 = historicalData[`total${prefix}Last30DaysCount`] ?? 0;
+		const count60 = historicalData[`total${prefix}Last60DaysCount`] ?? 0;
+		const count90 = historicalData[`total${prefix}Last90DaysCount`] ?? 0;
 
-		return `30 Day Avg: ${formatPriceNumberToReadableString(
-			avg30,
-		)} (of ${count30})\n 60 Day Avg: ${formatPriceNumberToReadableString(
-			avg60,
-		)} (of ${count60})\n 90 Day Avg: ${formatPriceNumberToReadableString(
-			avg90,
-		)} (of ${count90})`;
+		return `30 Day Avg: ${avg30} (of ${count30})\n 60 Day Avg: ${avg60} (of ${count60})\n 90 Day Avg: ${avg90} (of ${count90})`;
 	};
 
 	const generateItemFields = (
@@ -546,15 +595,36 @@ export async function embeddedAuctionStreamMessageBuilder(
 
 	combinedFields.push(...sellingFields, ...buyingFields);
 
-	embeds.push(
-		new EmbedBuilder()
+	const FIELDS_PER_EMBED = 25;
+	const MAX_EMBEDS = 10;
+
+	const fieldChunks: APIEmbedField[][] = [];
+	for (let i = 0; i < combinedFields.length; i += FIELDS_PER_EMBED) {
+		fieldChunks.push(combinedFields.slice(i, i + FIELDS_PER_EMBED));
+	}
+	if (fieldChunks.length === 0) {
+		fieldChunks.push([]);
+	}
+
+	fieldChunks.slice(0, MAX_EMBEDS).forEach((chunk, index) => {
+		const embed = new EmbedBuilder()
 			.setColor(getServerColorFromString(server))
-			.setAuthor({ name: `[ ${title} ]   ${player}` })
-			.setDescription(`\`\`\`${auctionText}\`\`\``)
-			.addFields(combinedFields)
-			.setFooter({ text: `Project 1999 ${formatCapitalCase(server)}` })
-			.setTimestamp(timestamp),
-	);
+			.addFields(chunk)
+			.setTimestamp(timestamp);
+		if (index === 0) {
+			embed
+				.setAuthor({ name: `[ ${title} ]   ${player}` })
+				.setDescription(
+					`\`\`\`${truncateForDescription(auctionText, 6)}\`\`\``,
+				);
+		}
+		if (index === Math.min(fieldChunks.length, MAX_EMBEDS) - 1) {
+			embed.setFooter({
+				text: `Project 1999 ${formatCapitalCase(server)}`,
+			});
+		}
+		embeds.push(embed);
+	});
 
 	return embeds;
 }
@@ -565,5 +635,6 @@ export function formatHoverText(
 	hoverText: string = ' ',
 ): string {
 	const defaultWikiUrl = getEnvironmentVariable('WIKI_BASE_URL');
-	return `[${displayText}](${wikiUrl || defaultWikiUrl} "${hoverText}")`;
+	const safeHover = hoverText.replace(/"/g, "'");
+	return `[${displayText}](${wikiUrl || defaultWikiUrl} "${safeHover}")`;
 }

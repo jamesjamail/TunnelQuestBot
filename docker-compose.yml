@@ -1,5 +1,4 @@
-  version: "3.9"
-  services:
+services:
     postgres:
       image: postgres:18-alpine
       container_name: postgres
@@ -11,6 +10,14 @@
         - postgres18-data:/var/lib/postgresql
         - db-socket:/var/run/postgresql
       restart: unless-stopped
+      # The bot connects over the shared socket, which only appears once postgres
+      # is actually accepting connections. start_period covers first-run initdb.
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+        interval: 5s
+        timeout: 5s
+        retries: 12
+        start_period: 60s
 
     redis:
       image: redis:alpine
@@ -25,6 +32,13 @@
         - redis-data:/data
         - redis-socket:/var/run/redis
       restart: unless-stopped
+      # Probe the socket rather than the TCP port, since that is what the bot uses.
+      healthcheck:
+        test: ["CMD", "redis-cli", "-s", "/var/run/redis/redis.sock", "ping"]
+        interval: 5s
+        timeout: 5s
+        retries: 12
+        start_period: 20s
 
     tunnelquestbot:
       build:
@@ -32,8 +46,10 @@
         dockerfile: Dockerfile
       container_name: tunnelquestbot
       depends_on:
-        - postgres
-        - redis
+        postgres:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
       environment:
         SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${SERVERS_BLUE_LOG_FILE}"
         SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${SERVERS_GREEN_LOG_FILE}"
@@ -58,8 +74,8 @@
         # for our production server because ... it's a NUC in someone's basement.
         - "9229:9229"
 
-  volumes:
-    postgres18-data:
-    db-socket:
-    redis-socket:
-    redis-data:
+volumes:
+  postgres18-data:
+  db-socket:
+  redis-socket:
+  redis-data:

@@ -1,6 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
-import { PlayerLink, Server } from '@prisma/client';
+import { PlayerLink, Server } from '../../../prisma/client';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { removePlayerLink } from '../../../prisma/dbExecutors/playerLink';
 import { playerNameOptions, requiredsServerOptions } from '../commandOptions';
@@ -39,7 +39,7 @@ const command: SlashCommand = {
 			}
 			await interaction.reply({
 				content: user_message,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

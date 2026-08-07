@@ -1,10 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 export enum ButtonInteractionTypes {
-	ConfirmActionActive,
-	ConfirmActionInactive,
-	CancelActionActive,
-	CancelActionInactive,
 	WatchSnoozeActive,
 	WatchSnoozeInactive,
 	UserSnoozeActive,
@@ -19,8 +15,6 @@ export enum ButtonInteractionTypes {
 	GlobalUnblockInactive,
 	WatchBlockActive,
 	WatchBlockInactive,
-	WatchUnblockActive,
-	WatchUnblockInactive,
 	WatchNotificationSnoozeActive,
 	WatchNotificationSnoozeInactive,
 	WatchNotificationUnwatchActive,
@@ -80,22 +74,6 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			case typeName.startsWith('GlobalRefresh'):
 			case typeName.startsWith('WatchNotificationWatchRefresh'):
 				builder.setCustomId(customId).setLabel('♻️');
-				break;
-			case typeName.startsWith('ConfirmAction'):
-				builder
-					.setCustomId(customId)
-					.setLabel('Confirm')
-					.setStyle(
-						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
-					);
-				break;
-			case typeName.startsWith('CancelAction'):
-				builder
-					.setCustomId(customId)
-					.setLabel('Cancel')
-					.setStyle(
-						isActive ? ButtonStyle.Danger : ButtonStyle.Secondary,
-					);
 				break;
 			case typeName.startsWith('UnlinkCharacter'):
 				builder

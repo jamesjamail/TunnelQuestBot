@@ -1,7 +1,7 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForUnwatch } from '../commandOptions';
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../prisma/client';
 import {
 	buttonRowBuilder,
 	MessageTypes,
@@ -46,7 +46,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			} else {
 				const value = args?.watch?.value as string;
@@ -54,7 +54,7 @@ const command: SlashCommand = {
 					await unwatchAllWatches(interaction);
 					return await interaction.reply({
 						content: messageCopy.allYourWatchesHaveBeenUnwatched,
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				} else {
 					// make a good faith effort to unwatch based on raw string
@@ -77,7 +77,7 @@ const command: SlashCommand = {
 						),
 						embeds,
 						components,
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 			}

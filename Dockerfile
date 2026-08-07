@@ -16,13 +16,10 @@ COPY package*.json /app/
 RUN npm install
 
 # Copy over necessary source/configs
-COPY tsconfig.json /app/
+COPY tsconfig.json prisma.config.ts /app/
 COPY src/ /app/src/
 
-# Generate the prisma interface
-RUN npx prisma generate
-
-# Compile our code from TS to JS
+# Generate the prisma interface, then compile our code from TS to JS
 RUN npm run build
 
 # Remove development/buildtime modules
@@ -42,8 +39,14 @@ RUN apk add --no-cache openssl
 COPY --from=build_image /app/package*.json /app/
 COPY --from=build_image /app/node_modules /app/node_modules
 COPY --from=build_image /app/build /app/build
-COPY --from=build_image /app/src/prisma /app/src/prisma
+# `prisma migrate deploy` runs on every container start and reads exactly these
+# three paths. The rest of src/prisma is TypeScript that only matters at build
+# time; the container runs its compiled form from /app/build.
+COPY --from=build_image /app/prisma.config.ts /app/
+COPY --from=build_image /app/src/prisma/schema.prisma /app/src/prisma/
+COPY --from=build_image /app/src/prisma/migrations /app/src/prisma/migrations
 COPY --from=build_image /app/src/lib/gameData/*.json /app/src/lib/gameData/
 
-# Use the FAKE_LOGS to decide whether to start in dev mode or start mode
-CMD if [[ "$FAKE_LOGS" =~ ^[tT] ]]; then npm run dev; elif [[ "$DEBUG_MODE" =~ ^[tT] ]]; then npm run debug; else npm start; fi
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+CMD ["/app/docker-entrypoint.sh"]

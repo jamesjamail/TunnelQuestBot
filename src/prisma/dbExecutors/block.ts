@@ -1,4 +1,4 @@
-import { Server } from '@prisma/client';
+import { Server } from '../client';
 import { Interaction } from 'discord.js';
 import { prisma } from '../init';
 
@@ -39,6 +39,7 @@ export async function addPlayerBlock(
 			discordUserId,
 			player: player.toUpperCase(),
 			server,
+			active: true,
 		},
 		create: {
 			discordUserId,
@@ -61,32 +62,13 @@ export async function restorePlayerBlockById(id: number) {
 	});
 }
 
-export async function removePlayerBlock(
-	discordUserId: string,
-	player: string,
-	server: Server,
-) {
-	return prisma.blockedPlayer.update({
-		where: {
-			discordUserId_server_player: {
-				discordUserId,
-				player: player.toUpperCase(),
-				server,
-			},
-		},
-		data: {
-			active: false,
-		},
-	});
-}
-
 export async function removePlayerBlockWithoutServer(
 	interaction: Interaction,
 	playerName: string,
 ) {
 	const blockedPlayer = await prisma.blockedPlayer.findFirstOrThrow({
 		where: {
-			player: playerName,
+			player: playerName.toUpperCase(),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -130,14 +112,6 @@ export async function addPlayerBlockByWatch(
 			watchId: watchId,
 			player: player.toUpperCase(),
 			discordUserId,
-		},
-	});
-}
-
-export async function removeWatchBlockById(id: number) {
-	return prisma.blockedPlayerByWatch.delete({
-		where: {
-			id,
 		},
 	});
 }

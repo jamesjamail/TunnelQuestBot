@@ -10,12 +10,6 @@ export const watchTypeOptions = (option: SlashCommandStringOption) =>
 		)
 		.setRequired(true);
 
-export const itemNameOptions = (option: SlashCommandStringOption) =>
-	option
-		.setName('item')
-		.setDescription('the name of the item you want to watch')
-		.setRequired(true);
-
 export const autoCompleteItemNameOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('item')
@@ -86,16 +80,6 @@ export const autoCompletePlayerNameOptions = (
 		.setAutocomplete(true)
 		.setRequired(true);
 
-export const optionalServerOptions = (option: SlashCommandStringOption) =>
-	option
-		.setName('server')
-		.setDescription('select a server')
-		.addChoices(
-			{ name: 'blue server', value: 'BLUE' },
-			{ name: 'green server', value: 'GREEN' },
-			{ name: 'red server', value: 'RED' },
-		);
-
 export const watchFilterOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('filter')
@@ -104,7 +88,8 @@ export const watchFilterOptions = (option: SlashCommandStringOption) =>
 export const watchNotesOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('notes')
-		.setDescription('notes about this watch - only visible to you');
+		.setDescription('notes about this watch - only visible to you')
+		.setMaxLength(1000);
 
 export const blockFilterOptions = (option: SlashCommandStringOption) =>
 	option

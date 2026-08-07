@@ -1,4 +1,4 @@
-import { BlockedPlayer, Watch, WatchType } from '@prisma/client';
+import { BlockedPlayer, Watch, WatchType } from '../../prisma/client';
 import { watchNotificationBuilder } from '../content/messages/messageBuilder';
 import {
 	buttonRowBuilder,
@@ -45,18 +45,12 @@ export async function shouldUserBeNotified(
 		return false;
 	}
 
-	// Check if notification was already sent within the last 15 minutes
-	const debounceKey = generateDebounceKey(watch.id, player, price);
-	const alreadyNotified = await redis.exists(debounceKey);
-
-	if (alreadyNotified) {
-		return false;
-	}
-
 	// ensure seller is not globally blocked by user
 	if (
 		blockedPlayers.some(
-			(blockedPlayer) => blockedPlayer.player === player.toUpperCase(),
+			(blockedPlayer) =>
+				blockedPlayer.player === player.toUpperCase() &&
+				blockedPlayer.server === watch.server,
 		)
 	) {
 		return false;
@@ -77,12 +71,12 @@ export async function shouldUserBeNotified(
 		if (!price) {
 			return false;
 		}
-		// if watching for WTS, auctioned price must be lower than the price criteria
+		// if watching for WTS, auctioned price must be at or below the price criteria (a budget cap)
 		if (watch.watchType === WatchType.WTS) {
-			if (watch.priceRequirement > price) {
+			if (price > watch.priceRequirement) {
 				return false;
 			}
-			// if watching for WTB, auctioned price must be higher than the price criteria
+			// if watching for WTB, auctioned price must be at or above the price criteria (a minimum offer)
 		} else {
 			if (watch.priceRequirement > price) {
 				return false;
@@ -100,6 +94,26 @@ export type WatchNotificationMetadata = Watch & {
 	auctionMessage: string;
 };
 
+function isClosedDmError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: number }).code === 50007
+	);
+}
+
+async function releaseDebounceClaim(
+	debounceKey: string,
+	context: object,
+): Promise<void> {
+	try {
+		await redis.del(debounceKey);
+	} catch (error) {
+		await gracefullyHandleError(error, undefined, undefined, context);
+	}
+}
+
 export async function triggerFoundWatchedItem(
 	watchId: number,
 	player: string,
@@ -108,9 +122,32 @@ export async function triggerFoundWatchedItem(
 ) {
 	//  get the watch and user from the db, as well as blocks by user and watch
 	const data = await getWatchByWatchIdForWatchNotification(watchId);
+
+	// 	the in-memory watch index refreshes on an interval, so it can still name a
+	// 	watch that expired since the last refresh - nothing to notify about
+	if (!data) {
+		return;
+	}
+
 	const blocks = await getPlayerBlocks(data.user.discordUserId);
 
 	if (!(await shouldUserBeNotified(data, blocks, player, price))) {
+		return;
+	}
+
+	// Atomically claim the debounce key BEFORE doing any work. SET NX returns
+	// null when another concurrent trigger already claimed it. The key is
+	// claimed even if the send later fails, deliberately: a user with closed
+	// DMs must not produce an error for every matching auction line.
+	const debounceKey = generateDebounceKey(watchId, player, price);
+	const claimed = await redis.set(
+		debounceKey,
+		'notified',
+		'EX',
+		15 * 60,
+		'NX',
+	);
+	if (!claimed) {
 		return;
 	}
 
@@ -120,6 +157,7 @@ export async function triggerFoundWatchedItem(
 			await watchNotificationBuilder(data, player, price, auctionMessage),
 		);
 	} catch (error) {
+		await releaseDebounceClaim(debounceKey, data);
 		await gracefullyHandleError(error, undefined, undefined, data);
 		return;
 	}
@@ -129,14 +167,17 @@ export async function triggerFoundWatchedItem(
 		`${data.id}:${player}`,
 	);
 
-	await client.users.send(data.discordUserId, {
-		embeds,
-		components,
-	});
-
-	// Set the debounce key in Redis with a 15-minute expiration
-	const debounceKey = generateDebounceKey(watchId, player, price);
-	await redis.set(debounceKey, 'notified', 'EX', 15 * 60);
+	try {
+		await client.users.send(data.discordUserId, {
+			embeds,
+			components,
+		});
+	} catch (error) {
+		if (!isClosedDmError(error)) {
+			await releaseDebounceClaim(debounceKey, data);
+		}
+		await gracefullyHandleError(error, undefined, undefined, data);
+	}
 }
 
 export async function triggerFoundWatchedItems(
@@ -145,8 +186,21 @@ export async function triggerFoundWatchedItems(
 	price: number | undefined,
 	auctionMessage: string,
 ) {
-	const promises = watchIds.map(async (watchId) => {
-		await triggerFoundWatchedItem(watchId, player, price, auctionMessage);
-	});
-	await Promise.all(promises);
+	// 	each watch belongs to a different user, so one failure must not stop the
+	// 	rest from being notified or bubble up and kill the log parser
+	const results = await Promise.allSettled(
+		watchIds.map((watchId) =>
+			triggerFoundWatchedItem(watchId, player, price, auctionMessage),
+		),
+	);
+
+	for (const result of results) {
+		if (result.status === 'rejected') {
+			await gracefullyHandleError(result.reason, undefined, undefined, {
+				player,
+				price,
+				auctionMessage,
+			});
+		}
+	}
 }

@@ -1,6 +1,6 @@
 import { User as DiscordUser } from 'discord.js';
 import { prisma } from '../init';
-import { User } from '@prisma/client';
+import { User } from '../client';
 
 export async function findOrCreateUser(
 	discordUser: DiscordUser,

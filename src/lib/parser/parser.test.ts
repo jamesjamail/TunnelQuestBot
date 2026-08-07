@@ -204,3 +204,78 @@ describe('real-world auction examples', () => {
 		expect(result.selling[0].item).toBe('SHORT SWORD OF THE YKESHA');
 	});
 });
+
+describe('extended keyword recognition', () => {
+	it('recognizes SELLING as a selling keyword', () => {
+		const result = parse('SELLING Cloak of Flames 50k');
+		expect(result.selling).toHaveLength(1);
+		expect(result.selling[0].item).toBe('CLOAK OF FLAMES');
+		expect(result.selling[0].price).toBe(50000);
+		expect(result.buying).toHaveLength(0);
+	});
+
+	it('recognizes BUYING as a buying keyword', () => {
+		const result = parse('BUYING Flawless Diamond');
+		expect(result.buying).toHaveLength(1);
+		expect(result.buying[0].item).toBe('FLAWLESS DIAMOND');
+		expect(result.selling).toHaveLength(0);
+	});
+
+	it('recognizes WTSELL as selling', () => {
+		const result = parse('WTSELL Rubicite Breastplate 10k');
+		expect(result.selling).toHaveLength(1);
+		expect(result.selling[0].item).toBe('RUBICITE BREASTPLATE');
+		expect(result.selling[0].price).toBe(10000);
+	});
+
+	it('recognizes WTBUY as buying', () => {
+		const result = parse('WTBUY Golden Earring');
+		expect(result.buying).toHaveLength(1);
+		expect(result.buying[0].item).toBe('GOLDEN EARRING');
+	});
+
+	it('splits across mixed keyword styles', () => {
+		const result = parse('WTS Cloak of Flames 50k BUYING Golden Earring');
+		expect(result.selling).toHaveLength(1);
+		expect(result.selling[0].item).toBe('CLOAK OF FLAMES');
+		expect(result.buying).toHaveLength(1);
+		expect(result.buying[0].item).toBe('GOLDEN EARRING');
+	});
+});
+
+describe('edge cases', () => {
+	it('returns empty arrays for empty string', () => {
+		expect(parse('')).toEqual({ buying: [], selling: [] });
+	});
+
+	it('returns empty arrays when no dictionary match', () => {
+		expect(parse('WTS SOMETHING NOBODY HAS')).toEqual({
+			buying: [],
+			selling: [],
+		});
+	});
+
+	it('returns empty arrays when message is only a keyword', () => {
+		expect(parse('WTS')).toEqual({ buying: [], selling: [] });
+	});
+
+	it('produces two entries when the same item appears twice in one section', () => {
+		const result = parse(
+			'WTS Sickly Glowing Orb 500pp Sickly Glowing Orb 3.5k',
+		);
+		expect(result.selling).toHaveLength(2);
+		expect(result.selling[0].item).toBe('SICKLY GLOWING ORB');
+		expect(result.selling[0].price).toBe(500);
+		expect(result.selling[1].item).toBe('SICKLY GLOWING ORB');
+		expect(result.selling[1].price).toBe(3500);
+	});
+
+	it('respects a restricted dictionary in the constructor', () => {
+		const restrictedParser = new AuctionParser(['CLOAK OF FLAMES']);
+		const result = restrictedParser.parseAuctionMessage(
+			'WTS CLOAK OF FLAMES 50K SICKLY GLOWING ORB 500PP',
+		);
+		expect(result.selling).toHaveLength(1);
+		expect(result.selling[0].item).toBe('CLOAK OF FLAMES');
+	});
+});

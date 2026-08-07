@@ -1,4 +1,4 @@
-import { Interaction } from 'discord.js';
+import { Interaction, MessageFlags } from 'discord.js';
 import { BotEvent } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 import { handleButtonInteraction } from '../lib/content/buttons/persistentButtonHandler';
@@ -10,38 +10,34 @@ const event: BotEvent = {
 			const command = interaction.client.slashCommands.get(
 				interaction.commandName,
 			);
-			const cooldown = interaction.client.cooldowns.get(
-				`${interaction.commandName}-${interaction.user.username}`,
-			);
+			const cooldownKey = `${interaction.commandName}-${interaction.user.id}`;
+			const cooldown = interaction.client.cooldowns.get(cooldownKey);
 			if (!command) return;
-			if (command.cooldown && cooldown) {
-				if (Date.now() < cooldown) {
-					interaction.reply({
-						content: `You have to wait ${Math.floor(
-							Math.abs(Date.now() - cooldown) / 1000,
-						)} second(s) to use this command again.`,
-						ephemeral: true,
-					});
-					setTimeout(() => interaction.deleteReply(), 5000);
-					return;
-				}
+			if (command.cooldown && cooldown && Date.now() < cooldown) {
+				const secondsLeft = Math.max(
+					1,
+					Math.ceil((cooldown - Date.now()) / 1000),
+				);
+				await interaction.reply({
+					content: `You have to wait ${secondsLeft} second(s) to use this command again.`,
+					flags: MessageFlags.Ephemeral,
+				});
+				setTimeout(() => {
+					void interaction.deleteReply().catch(() => null);
+				}, 5000);
+				return;
+			}
+			if (command.cooldown) {
 				interaction.client.cooldowns.set(
-					`${interaction.commandName}-${interaction.user.username}`,
+					cooldownKey,
 					Date.now() + command.cooldown * 1000,
 				);
 				setTimeout(() => {
-					interaction.client.cooldowns.delete(
-						`${interaction.commandName}-${interaction.user.username}`,
-					);
+					interaction.client.cooldowns.delete(cooldownKey);
 				}, command.cooldown * 1000);
-			} else if (command.cooldown && !cooldown) {
-				interaction.client.cooldowns.set(
-					`${interaction.commandName}-${interaction.user.username}`,
-					Date.now() + command.cooldown * 1000,
-				);
 			}
 			try {
-				command.execute(interaction);
+				await command.execute(interaction);
 			} catch (e) {
 				await gracefullyHandleError(e, interaction, command);
 			}
@@ -63,7 +59,7 @@ const event: BotEvent = {
 			}
 			try {
 				if (!command.autocomplete) return;
-				command.autocomplete(interaction);
+				await command.autocomplete(interaction);
 			} catch (error) {
 				await gracefullyHandleError(error, interaction, command);
 			}

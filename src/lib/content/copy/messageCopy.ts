@@ -3,7 +3,7 @@ import {
 	BlockedPlayerByWatch,
 	PlayerLink,
 	Server,
-} from '@prisma/client';
+} from '../../../prisma/client';
 import { formatServerFromEnum } from '../../helpers/watches';
 import { toTitleCase } from '../../helpers/titleCase';
 

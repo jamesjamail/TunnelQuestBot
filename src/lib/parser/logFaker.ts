@@ -1,10 +1,11 @@
-import { Server } from '@prisma/client';
+import { Server } from '../../prisma/client';
 import * as fs from 'fs';
 import { config } from 'dotenv';
+import { expand } from 'dotenv-expand';
 import path from 'path';
 import { consolidatedItems } from '../gameData/consolidatedItems';
 
-config();
+expand(config());
 
 const players = ['Adam', 'Bob', 'Carl'];
 const actions = ['WTB', 'WTS'];
@@ -24,7 +25,7 @@ function generatePrice(): string {
 	return ' ' + amount + currency;
 }
 
-function generateLogLine() {
+export function generateLogLine() {
 	const playerName = getRandomElement(players);
 	const action = getRandomElement(actions);
 	const itemCount = Math.floor(Math.random() * 5) + 1;
@@ -89,5 +90,8 @@ function appendFakeLogs() {
 	});
 }
 
-appendFakeLogs();
-setInterval(appendFakeLogs, 1000);
+// 	Only self-start when run directly, so tests can import the helpers.
+if (require.main === module) {
+	appendFakeLogs();
+	setInterval(appendFakeLogs, 1000);
+}

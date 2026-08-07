@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { listCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
@@ -23,7 +23,7 @@ const command: SlashCommand = {
 			if (watches.length === 0) {
 				return await interaction.reply({
 					content: messageCopy.youDontHaveAnyWatches,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -39,7 +39,7 @@ const command: SlashCommand = {
 				content: messageCopy.heresAListOfYourWatches,
 				embeds,
 				components,
-				ephemeral: true,
+				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);

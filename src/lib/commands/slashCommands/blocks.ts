@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import {
 	buttonRowBuilder,
@@ -19,7 +19,7 @@ const command: SlashCommand = {
 	execute: async (interaction) => {
 		try {
 			// defer reply immediately as it may take a while to send blocks
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 			const args = getInteractionArgs(interaction, [], ['filter']);
 			const data = await getPlayerBlocks(
 				interaction.user.id,

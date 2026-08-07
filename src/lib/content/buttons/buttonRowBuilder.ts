@@ -7,15 +7,9 @@ import { ButtonInteractionTypes, buttonBuilder } from './buttonBuilder';
 // separate ones based on the actual command or message function
 export enum MessageTypes {
 	block,
-	blocks,
-	help,
 	list,
-	snooze,
 	unblock,
-	unsnooze,
-	unwatch,
 	watch,
-	watches,
 	link,
 	unlink,
 	watchNotification,
@@ -57,18 +51,12 @@ const commandTypeButtonMappings: {
 			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
 		},
 	],
-	[MessageTypes.blocks]: [],
-	[MessageTypes.help]: [],
-	[MessageTypes.snooze]: [],
 	[MessageTypes.unblock]: [
 		{
 			active: ButtonInteractionTypes.GlobalUnblockActive,
 			inactive: ButtonInteractionTypes.GlobalUnblockInactive,
 		},
 	],
-	[MessageTypes.unsnooze]: [],
-	[MessageTypes.unwatch]: [],
-	[MessageTypes.watches]: [],
 	[MessageTypes.link]: [
 		{
 			active: ButtonInteractionTypes.UnlinkCharacterActive,

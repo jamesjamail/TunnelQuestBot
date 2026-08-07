@@ -1,7 +1,10 @@
 import { TextChannel, ChannelType } from 'discord.js';
 import { client } from '../..';
-import { Server } from '@prisma/client';
-import { embeddedAuctionStreamMessageBuilder } from '../content/messages/messageBuilder';
+import { Server } from '../../prisma/client';
+import {
+	embeddedAuctionStreamMessageBuilder,
+	packEmbedsForDiscord,
+} from '../content/messages/messageBuilder';
 import { gracefullyHandleError } from '../helpers/errors';
 
 export function getEnvironmentVariable(name: string): string {
@@ -44,7 +47,7 @@ export async function streamAuctionToAllStreamChannels(
 			embeddedChannel.type !== ChannelType.GuildText
 		) {
 			throw Error(
-				`could not fetch classic stream channel ${classicChannelId}`,
+				`could not fetch embedded stream channel ${embeddedChannelId}`,
 			);
 		}
 
@@ -55,10 +58,12 @@ export async function streamAuctionToAllStreamChannels(
 			auctionData,
 		);
 
-		await (embeddedChannel as TextChannel).send({
-			embeds: embeds,
-			allowedMentions: { users: [] },
-		});
+		for (const batch of packEmbedsForDiscord(embeds)) {
+			await (embeddedChannel as TextChannel).send({
+				embeds: batch,
+				allowedMentions: { users: [] },
+			});
+		}
 	} catch (err) {
 		await gracefullyHandleError(err);
 	}

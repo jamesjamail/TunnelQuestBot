@@ -6,7 +6,20 @@ const path = require('path');
 
 module.exports = [
   {
-    ignores: ['build/**', 'node_modules/**', 'dist/**', '**/*.js'],
+    ignores: [
+      'build/**',
+      'node_modules/**',
+      'dist/**',
+      '**/*.js',
+      '**/*.test.ts',
+      '**/*.itest.ts',
+      'src/prisma/generated/**',
+      'src/test/**',
+      'test/**',
+      'prisma.config.ts',
+      'vitest.config.ts',
+      'vitest.integration.config.ts',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForInfoCommand } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
@@ -13,7 +13,7 @@ import {
 	getWatchByItemName,
 	getWatchByWatchId,
 } from '../../../prisma/dbExecutors/watch';
-import { Watch } from '@prisma/client';
+import { Watch } from '../../../prisma/client';
 import { isSnoozed } from '../../helpers/watches';
 import { gracefullyHandleError } from '../../helpers/errors';
 
@@ -57,7 +57,7 @@ const command: SlashCommand = {
 					),
 					embeds,
 					components,
-					ephemeral: true,
+					flags: MessageFlags.Ephemeral,
 				});
 			}
 
@@ -82,17 +82,22 @@ const command: SlashCommand = {
 						),
 						embeds,
 						components,
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				} catch {
 					return await interaction.reply({
 						content: messageCopy.iCouldntFindAnyWatchesForItemName(
 							itemName as string,
 						),
-						ephemeral: true,
+						flags: MessageFlags.Ephemeral,
 					});
 				}
 			}
+
+			return await interaction.reply({
+				content: `You didn't enter an item name. Instead of selecting the option \`start typing an item name for suggestions\`, either select a suggested option or enter your own.`,
+				flags: MessageFlags.Ephemeral,
+			});
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}
