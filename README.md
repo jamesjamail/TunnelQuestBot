@@ -24,8 +24,26 @@ You need your own bot application — never develop against the production token
 1. Create an app at https://discord.com/developers/applications, add a bot, and
    copy the token into `TOKEN` and the Application ID into `CLIENT_ID`.
 2. Invite it to a server you control, with the **Manage Channels** permission.
-3. Run `npm run setup`, which creates the channels the bot needs and writes
-   their ids into `.env`.
+3. Run `npm run setup -- <guild-id>`.
+
+`setup` creates the nine channels the bot needs and writes their ids into
+`.env`. To get the guild id, enable Developer Mode (Settings → Advanced), then
+right-click the **server** — not a channel — and pick "Copy Server ID".
+
+```sh
+npm run setup -- 123456789012345678 --dry-run   # show the plan, change nothing
+npm run setup -- 123456789012345678             # create, after confirming
+npm run setup -- 123456789012345678 --force     # re-resolve ids already in .env
+```
+
+It shows what it will create and asks before touching your server, adopts
+channels that already exist by name rather than duplicating them, and leaves
+ids already present in `.env` alone. Re-running after a partial failure is
+safe. It uses the REST API only — no gateway connection, no slash-command
+registration — so it cannot disturb a bot that is already live.
+
+The list of servers comes from the `Server` enum in `schema.prisma`, so adding
+one there is all that is needed for `setup` to provision its channels.
 
 If anything is missing or malformed, `npm run doctor` reports every problem at
 once and tells you what it expected. The bot performs the same check at startup

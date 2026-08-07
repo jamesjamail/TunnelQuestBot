@@ -24,7 +24,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:all": "vitest run && vitest run --config vitest.integration.config.ts",
     "dev:deps": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis",
-    "dev:deps:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
+    "dev:deps:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down",
+    "setup": "node ./scripts/setup.mjs"
   },
   "lint-staged": {
     "*.{ts,js,json}": [
