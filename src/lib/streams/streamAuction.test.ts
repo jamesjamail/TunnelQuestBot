@@ -12,6 +12,7 @@ vi.mock('../content/messages/messageBuilder', () => ({
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ChannelType } from 'discord.js';
+import { resetConfigCache } from '../../config';
 import { Server } from '../../prisma/client';
 import { streamAuctionToAllStreamChannels } from './streamAuction';
 import { gracefullyHandleError } from '../helpers/errors';
@@ -211,19 +212,23 @@ describe('streamAuctionToAllStreamChannels', () => {
 	it('throws from getEnvironmentVariable when server stream env is missing', async () => {
 		const original = process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
 		delete process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+		resetConfigCache();
 
-		await expect(
-			streamAuctionToAllStreamChannels(
-				'Soandso',
-				Server.RED,
-				'WTS FBSS',
-				{ buying: [], selling: [] },
-			),
-		).rejects.toThrow(
-			'Environment variable SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID is not defined.',
-		);
-
-		process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID = original;
+		try {
+			await expect(
+				streamAuctionToAllStreamChannels(
+					'Soandso',
+					Server.RED,
+					'WTS FBSS',
+					{ buying: [], selling: [] },
+				),
+			).rejects.toThrow(
+				/SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID is not set/,
+			);
+		} finally {
+			process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID = original;
+			resetConfigCache();
+		}
 	});
 
 	it('reports non-text cached channels as fetch failures without throwing', async () => {

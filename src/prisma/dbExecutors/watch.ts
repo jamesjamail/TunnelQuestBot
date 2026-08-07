@@ -10,6 +10,7 @@ import type {
 	ChatInputCommandInteraction,
 	User as DiscordUser,
 } from 'discord.js';
+import { config } from '../../config';
 import { getExpirationTimestampForSnooze } from '../../lib/helpers/datetime';
 import {
 	isKnownItem,
@@ -465,7 +466,7 @@ export async function getWatchByWatchIdForWatchNotification(
 }
 
 export async function deleteWatchesOlderThanWatchdurationDays() {
-	const watchDuration = +(process.env.WATCH_DURATION_IN_DAYS || 7);
+	const watchDuration = config().WATCH_DURATION_IN_DAYS;
 	const watchDurationDaysAgo = new Date();
 	watchDurationDaysAgo.setDate(
 		watchDurationDaysAgo.getDate() - watchDuration,

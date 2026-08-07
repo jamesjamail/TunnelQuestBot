@@ -1,14 +1,15 @@
 import type { Server } from '../../prisma/client';
+import { config, serverEnvKeys } from '../../config';
 import { Tail } from 'tail';
 import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
 import { triggerFoundWatchedItems } from '../watchNotification/watchNotification';
 import {
-	type AuctionData,
 	AuctionParser,
 	AuctionTypes,
 	auctionIncludesUnknownItem,
 } from './parser';
+import type { AuctionData } from '../streams/streamAuction';
 import { state } from './state';
 import path from 'path';
 import { handleLinkMatch } from '../playerLink/playerLink';
@@ -18,11 +19,12 @@ import { resolveCanonicalItemName } from '../gameData/consolidatedItems';
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
-	if ((process.env.FAKE_LOGS || 'false').match(/^[tT]/)) {
+	if (config().FAKE_LOGS) {
 		logFilePath = path.join(__dirname, '..', 'fakeLogs', `${server}.log`);
 	} else {
-		const envVarName = `SERVERS_${server}_LOG_FILE_PATH`;
-		logFilePath = process.env[envVarName] as string;
+		logFilePath = config()[serverEnvKeys(server).logFile] as
+			| string
+			| undefined;
 	}
 
 	if (!logFilePath) {

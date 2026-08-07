@@ -3,6 +3,7 @@ import {
 	differenceInHours,
 	differenceInMinutes,
 } from 'date-fns';
+import { config } from '../../config';
 
 function getHumanReadableTimeFromNow(endDate: Date): string {
 	const totalDays = differenceInDays(endDate, new Date());
@@ -19,7 +20,7 @@ function getHumanReadableTimeUntil(endDate: Date): string {
 
 export function formatWatchExpirationTimestamp(createdTimestamp: Date) {
 	// watch duration can be configured optionally in envs, but defaulted to 7 days
-	const watchDuration = Number(process.env.WATCH_DURATION_IN_DAYS) || 7;
+	const watchDuration = config().WATCH_DURATION_IN_DAYS;
 	const expirationTimestamp = new Date(
 		createdTimestamp.getTime() + watchDuration * 24 * 60 * 60 * 1000,
 	); // 1 week

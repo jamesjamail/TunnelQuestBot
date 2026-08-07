@@ -7,6 +7,7 @@ import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/remov
 import { monitorLogFile } from './monitorLogs';
 import { state } from './state';
 import { Server } from '../../prisma/client';
+import { config } from '../../config';
 import { gracefullyHandleError } from '../helpers/errors';
 
 // 	setInterval ignores the promise an async callback returns, so a rejected
@@ -19,9 +20,7 @@ function safeInterval(task: () => Promise<void>, intervalMs: number) {
 
 export async function startLoggingAllServers() {
 	// Set DEBUG_MODE variable for use elsewhere
-	globalThis.DEBUG_MODE = !!(process.env.DEBUG_MODE || 'false').match(
-		/^[tT]/,
-	);
+	globalThis.DEBUG_MODE = config().DEBUG_MODE;
 	globalThis.debug_console = (message) => {
 		if (globalThis.DEBUG_MODE) {
 			console.log(message);
