@@ -5,6 +5,7 @@ import {
 	formatServerFromEnum,
 	formatPriceNumberToReadableString,
 	isKnownItem,
+	normalizeStoredWatchItemName,
 } from './watches';
 
 describe('isSnoozed', () => {
@@ -98,5 +99,25 @@ describe('isKnownItem', () => {
 
 	it('returns false for unknown items', () => {
 		expect(isKnownItem('SOME MADE UP THING')).toBe(false);
+	});
+});
+
+describe('normalizeStoredWatchItemName', () => {
+	it('stores aliases under their canonical item name', () => {
+		expect(normalizeStoredWatchItemName('fbss')).toBe(
+			'FLOWING BLACK SILK SASH',
+		);
+	});
+
+	it('leaves canonical names unchanged', () => {
+		expect(normalizeStoredWatchItemName('FLOWING BLACK SILK SASH')).toBe(
+			'FLOWING BLACK SILK SASH',
+		);
+	});
+
+	it('uppercases unknown custom items', () => {
+		expect(normalizeStoredWatchItemName('my custom watch')).toBe(
+			'MY CUSTOM WATCH',
+		);
 	});
 });

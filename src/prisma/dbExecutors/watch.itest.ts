@@ -73,6 +73,42 @@ describe('watch dbExecutor (integration)', () => {
 			expect(await prisma.watch.count()).toBe(2);
 		});
 
+		it('stores known aliases under their canonical item name', async () => {
+			const { upsertWatch } = await import('./watch');
+			const prisma = await getPrisma();
+			await seedUser();
+
+			const watch = await upsertWatch('100', {
+				...defaultWatchData,
+				itemName: 'FBSS',
+			});
+
+			expect(watch.itemName).toBe('FLOWING BLACK SILK SASH');
+			expect(await prisma.watch.count()).toBe(1);
+		});
+
+		it('treats alias and canonical names as the same watch key', async () => {
+			const { upsertWatch } = await import('./watch');
+			const prisma = await getPrisma();
+			await seedUser();
+
+			await upsertWatch('100', {
+				...defaultWatchData,
+				itemName: 'FBSS',
+				priceRequirement: 600,
+			});
+			await upsertWatch('100', {
+				...defaultWatchData,
+				itemName: 'FLOWING BLACK SILK SASH',
+				priceRequirement: 500,
+			});
+
+			expect(await prisma.watch.count()).toBe(1);
+			const row = await prisma.watch.findFirst();
+			expect(row?.itemName).toBe('FLOWING BLACK SILK SASH');
+			expect(row?.priceRequirement).toBe(500);
+		});
+
 		it('changing server yields a second row', async () => {
 			const { upsertWatch } = await import('./watch');
 			const prisma = await getPrisma();

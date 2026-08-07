@@ -37,6 +37,8 @@ const pricingPayload = {
 	totalWTBLast90DaysAverage: 0,
 };
 
+const CANONICAL_FBSS = 'FLOWING BLACK SILK SASH';
+
 describe('fetchHistoricalPricingForItem', () => {
 	beforeEach(() => {
 		vi.stubGlobal(
@@ -85,7 +87,9 @@ describe('fetchHistoricalPricingForItem', () => {
 
 		expect(consoleError).toHaveBeenCalledWith(
 			500,
-			expect.stringContaining('/api/item/get/BLUE/FBSS'),
+			expect.stringContaining(
+				`/api/item/get/BLUE/${encodeURIComponent(CANONICAL_FBSS)}`,
+			),
 		);
 		expect(gracefullyHandleError).not.toHaveBeenCalled();
 		consoleError.mockRestore();
@@ -115,7 +119,7 @@ describe('fetchHistoricalPricingForItem', () => {
 
 	it('skips fetch on a cache hit', async () => {
 		await redis.set(
-			'historical:BLUE:FBSS',
+			`historical:BLUE:${CANONICAL_FBSS}`,
 			JSON.stringify(pricingPayload),
 			'EX',
 			60 * 60 * 6,
@@ -132,18 +136,28 @@ describe('fetchHistoricalPricingForItem', () => {
 
 		const cacheSetCall = vi
 			.mocked(redis.set)
-			.mock.calls.find(([key]) => key === 'historical:BLUE:FBSS');
+			.mock.calls.find(
+				([key]) => key === `historical:BLUE:${CANONICAL_FBSS}`,
+			);
 
 		expect(cacheSetCall).toBeDefined();
 		expect(cacheSetCall?.[2]).toBe('EX');
 		expect(cacheSetCall?.[3]).toBe(60 * 60 * 6);
 	});
 
-	it('uses the Prisma Server enum value in the pricing API URL', async () => {
+	it('uses the canonical item name in the pricing API URL', async () => {
 		await fetchHistoricalPricingForItem('FBSS', Server.GREEN);
 
 		expect(fetch).toHaveBeenCalledWith(
-			'https://pricing.example.com/api/item/get/GREEN/FBSS',
+			`https://pricing.example.com/api/item/get/GREEN/${encodeURIComponent(CANONICAL_FBSS)}`,
+		);
+	});
+
+	it('resolves aliases before fetching pricing data', async () => {
+		await fetchHistoricalPricingForItem('fbss', Server.BLUE);
+
+		expect(fetch).toHaveBeenCalledWith(
+			`https://pricing.example.com/api/item/get/BLUE/${encodeURIComponent(CANONICAL_FBSS)}`,
 		);
 	});
 });
@@ -187,5 +201,19 @@ describe('fetchHistoricalPricingForItems', () => {
 			expect.objectContaining({ itemName: 'GAMMA' }),
 		);
 		expect(fetch).toHaveBeenCalledTimes(3);
+	});
+
+	it('resolves aliases when fetching pricing for parsed auction items', async () => {
+		await fetchHistoricalPricingForItems(
+			{
+				buying: [],
+				selling: [{ item: 'FBSS' }],
+			},
+			Server.BLUE,
+		);
+
+		expect(fetch).toHaveBeenCalledWith(
+			`https://pricing.example.com/api/item/get/BLUE/${encodeURIComponent(CANONICAL_FBSS)}`,
+		);
 	});
 });

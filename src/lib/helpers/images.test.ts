@@ -25,4 +25,10 @@ describe('getImageUrlForItem', () => {
 	it('returns null for undefined input', () => {
 		expect(getImageUrlForItem(undefined as unknown as string)).toBeNull();
 	});
+
+	it('resolves alias item names such as FBSS', () => {
+		expect(getImageUrlForItem('FBSS')).toBe(
+			`https://img.example.com/${KNOWN_SLUG}.png`,
+		);
+	});
 });

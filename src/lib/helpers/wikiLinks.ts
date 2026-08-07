@@ -1,7 +1,7 @@
-import { consolidatedItems } from '../gameData/consolidatedItems';
+import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
 
 export function getWikiUrlFromItem(item: string) {
-	const slug = consolidatedItems[item?.toUpperCase()];
+	const slug = consolidatedItemsAndAliases[item?.toUpperCase()];
 
 	if (!slug) {
 		return null;

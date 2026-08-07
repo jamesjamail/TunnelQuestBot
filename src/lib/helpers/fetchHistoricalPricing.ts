@@ -2,6 +2,7 @@ import { Server } from '../../prisma/client';
 import { redis } from '../../redis/init';
 import { AuctionData } from '../streams/streamAuction';
 import { HistoricalData } from '../content/messages/messageBuilder';
+import { normalizeStoredWatchItemName } from './watches';
 
 // Helper function to generate a Redis key based on item name and server
 function generateRedisKey(itemName: string, server: Server) {
@@ -17,7 +18,8 @@ export async function fetchHistoricalPricingForItem(
 	itemName: string,
 	server: Server,
 ) {
-	const key = generateRedisKey(itemName, server);
+	const pricingItemName = normalizeStoredWatchItemName(itemName);
+	const key = generateRedisKey(pricingItemName, server);
 	let historicalPrice = await redis.get(key);
 
 	if (!historicalPrice) {
@@ -25,7 +27,7 @@ export async function fetchHistoricalPricingForItem(
 			process.env.HISTORICAL_AUCTION_DATA_API
 		}/api/item/get/${getServerIntForExternalApi(
 			server,
-		)}/${encodeURIComponent(itemName)}`;
+		)}/${encodeURIComponent(pricingItemName)}`;
 		const res = await fetch(endpoint);
 
 		if (res.status === 204) {

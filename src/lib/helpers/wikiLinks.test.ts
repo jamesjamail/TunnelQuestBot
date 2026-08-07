@@ -25,4 +25,10 @@ describe('getWikiUrlFromItem', () => {
 	it('returns null for undefined input', () => {
 		expect(getWikiUrlFromItem(undefined as unknown as string)).toBeNull();
 	});
+
+	it('resolves alias item names such as FBSS', () => {
+		expect(getWikiUrlFromItem('FBSS')).toBe(
+			`https://wiki.example.com${KNOWN_SLUG}`,
+		);
+	});
 });

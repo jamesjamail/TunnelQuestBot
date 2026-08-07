@@ -11,7 +11,10 @@ import {
 	User as DiscordUser,
 } from 'discord.js';
 import { getExpirationTimestampForSnooze } from '../../lib/helpers/datetime';
-import { isKnownItem } from '../../lib/helpers/watches';
+import {
+	isKnownItem,
+	normalizeStoredWatchItemName,
+} from '../../lib/helpers/watches';
 import { resolveCanonicalItemName } from '../../lib/gameData/consolidatedItems';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
@@ -28,7 +31,8 @@ export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	const { itemName, server, watchType, priceRequirement, notes } = watchData;
+	const { server, watchType, priceRequirement, notes } = watchData;
+	const itemName = normalizeStoredWatchItemName(watchData.itemName);
 
 	// allow users to erase previously set price requirements by inputting 0 or less
 	const updatedPriceRequirement =
@@ -40,13 +44,13 @@ export async function upsertWatch(
 		where: {
 			discordUserId_itemName_server_watchType: {
 				discordUserId,
-				itemName: itemName.toUpperCase(),
+				itemName,
 				server,
 				watchType,
 			},
 		},
 		update: {
-			itemName: watchData.itemName.toUpperCase(),
+			itemName,
 			server: watchData.server,
 			priceRequirement: updatedPriceRequirement,
 			active: true,
@@ -56,7 +60,7 @@ export async function upsertWatch(
 		},
 		create: {
 			discordUserId,
-			itemName: itemName.toUpperCase(),
+			itemName,
 			server,
 			watchType,
 			snoozedUntil: null,
@@ -119,8 +123,9 @@ export async function getWatchByItemName(
 	itemName: string,
 ) {
 	const watches = await getWatchesByUser(discordUserId);
+	const normalizedItemName = normalizeStoredWatchItemName(itemName);
 	const filteredWatches = watches.filter((watch) => {
-		return watch.itemName === itemName.toUpperCase();
+		return watch.itemName === normalizedItemName;
 	});
 
 	// it's possible a user could have multiple watches for the same item
@@ -172,7 +177,7 @@ export async function unsnoozeWatchByItemName(
 ) {
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName.toUpperCase(),
+			itemName: normalizeStoredWatchItemName(watchName),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -208,7 +213,7 @@ export async function unwatchByWatchName(
 	// First, find the watch entry based on itemName and discordUserId
 	const watch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: watchName.toUpperCase(),
+			itemName: normalizeStoredWatchItemName(watchName),
 			discordUserId: interaction.user.id,
 		},
 	});
@@ -340,7 +345,7 @@ export async function snoozeWatchByItemName(
 	// why not use updateMany? because the response is a mere record count.
 	const foundWatch = await prisma.watch.findFirstOrThrow({
 		where: {
-			itemName: itemName.toUpperCase(),
+			itemName: normalizeStoredWatchItemName(itemName),
 			discordUserId: interaction.user.id,
 		},
 	});

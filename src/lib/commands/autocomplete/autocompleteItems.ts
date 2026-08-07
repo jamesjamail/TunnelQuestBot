@@ -1,24 +1,49 @@
 import { AutocompleteInteraction, CacheType } from 'discord.js';
 import Fuse from 'fuse.js';
 import { toTitleCase } from '../../helpers/titleCase';
-import { consolidatedItems } from '../../gameData/consolidatedItems';
+import {
+	consolidatedItems,
+	resolveCanonicalItemName,
+} from '../../gameData/consolidatedItems';
+import inGameAliasesRaw from '../../gameData/aliases.json';
 import { respondToAutocomplete } from './autocompleteHelpers';
 
-// Convert the JSON object keys to an array of item names
-const itemNames = Object.keys(consolidatedItems).map((key) => {
-	return { name: key };
-});
+type AutocompleteEntry = {
+	value: string;
+	displayName?: string;
+	searchText: string;
+};
+
+function buildAutocompleteIndex(): AutocompleteEntry[] {
+	const canonicalEntries = Object.keys(consolidatedItems).map((key) => ({
+		value: key,
+		searchText: key,
+	}));
+
+	const aliasEntries = Object.keys(inGameAliasesRaw)
+		.filter((alias) => !consolidatedItems[alias])
+		.map((alias) => {
+			const canonicalName = resolveCanonicalItemName(alias);
+			return {
+				value: alias,
+				displayName: `${alias} (${toTitleCase(canonicalName)})`,
+				searchText: `${alias} ${canonicalName}`,
+			};
+		});
+
+	return [...canonicalEntries, ...aliasEntries];
+}
 
 // Configure Fuse.js options
 const options = {
-	keys: ['name'],
+	keys: ['searchText'],
 	includeScore: true,
 	threshold: 0.3, // Adjust as needed. Lower values make the search stricter.
 };
 
 // 	the item list is static, so the index is built once at startup rather than on
 // 	every keystroke - rebuilding it per request risks blowing Discord's 3s budget
-const fuse = new Fuse(itemNames, options);
+const fuse = new Fuse(buildAutocompleteIndex(), options);
 
 export async function autocompleteItems(
 	interaction: AutocompleteInteraction<CacheType>,
@@ -40,8 +65,8 @@ export async function autocompleteItems(
 	// Extract the top 25 results and map them to the desired format
 	const topResults = results.slice(0, 25).map((result) => {
 		return {
-			name: toTitleCase(result.item.name),
-			value: result.item.name,
+			name: result.item.displayName ?? toTitleCase(result.item.value),
+			value: result.item.value,
 		};
 	});
 

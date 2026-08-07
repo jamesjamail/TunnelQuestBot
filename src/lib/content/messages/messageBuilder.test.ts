@@ -161,6 +161,22 @@ describe('watchCommandResponseBuilder', () => {
 		).toBeTruthy();
 	});
 
+	it('uses known-item price copy when the watch item is an alias', () => {
+		const embed = watchCommandResponseBuilder(
+			makeWatch({
+				watchType: WatchType.WTS,
+				itemName: 'FBSS',
+				priceRequirement: 500,
+			}),
+		);
+		expect(fieldValueContaining(embed, 'less than or equal to')).toContain(
+			'500pp',
+		);
+		expect(fieldValueContaining(embed, 'unreliable price parsing')).toBe(
+			'',
+		);
+	});
+
 	it('omits price-specific copy when there is no price requirement', () => {
 		const embed = watchCommandResponseBuilder(
 			makeWatch({ itemName: KNOWN_ITEM, priceRequirement: null }),

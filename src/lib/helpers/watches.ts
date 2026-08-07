@@ -1,6 +1,9 @@
 import { Server } from '../../prisma/client';
 import { isPast } from 'date-fns';
-import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
+import {
+	consolidatedItemsAndAliases,
+	resolveCanonicalItemName,
+} from '../gameData/consolidatedItems';
 
 export function isSnoozed(timestamp: Date | null) {
 	// null value indicates no snooze
@@ -40,4 +43,14 @@ export function formatPriceNumberToReadableString(price: number | '-'): string {
 
 export function isKnownItem(item: string) {
 	return !!consolidatedItemsAndAliases[item.toUpperCase()];
+}
+
+// 	Known aliases such as FBSS are stored under their canonical item name so
+// 	pricing APIs, thumbnails, and duplicate watches all behave consistently.
+export function normalizeStoredWatchItemName(itemName: string): string {
+	const upper = itemName.toUpperCase();
+	if (isKnownItem(upper)) {
+		return resolveCanonicalItemName(upper);
+	}
+	return upper;
 }

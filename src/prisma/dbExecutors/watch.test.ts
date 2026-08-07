@@ -14,24 +14,28 @@ describe('watch item name lookups', () => {
 		vi.mocked(prisma.watch.update).mockResolvedValue(makeWatch({ id: 7 }));
 	});
 
-	it('snoozeWatchByItemName uppercases the item name in the query', async () => {
+	it('snoozeWatchByItemName resolves aliases to canonical item names', async () => {
 		const interaction = makeChatInteraction();
 		await snoozeWatchByItemName(interaction, 'fbss');
 
 		expect(prisma.watch.findFirstOrThrow).toHaveBeenCalledWith(
 			expect.objectContaining({
-				where: expect.objectContaining({ itemName: 'FBSS' }),
+				where: expect.objectContaining({
+					itemName: 'FLOWING BLACK SILK SASH',
+				}),
 			}),
 		);
 	});
 
-	it('unsnoozeWatchByItemName uppercases the item name in the query', async () => {
+	it('unsnoozeWatchByItemName resolves aliases to canonical item names', async () => {
 		const interaction = makeChatInteraction();
 		await unsnoozeWatchByItemName(interaction, 'fbss');
 
 		expect(prisma.watch.findFirstOrThrow).toHaveBeenCalledWith(
 			expect.objectContaining({
-				where: expect.objectContaining({ itemName: 'FBSS' }),
+				where: expect.objectContaining({
+					itemName: 'FLOWING BLACK SILK SASH',
+				}),
 			}),
 		);
 	});

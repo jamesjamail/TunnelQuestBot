@@ -40,4 +40,52 @@ describe('autocompleteItems', () => {
 
 		expect(interaction.respond).toHaveBeenCalledWith([]);
 	});
+
+	it('suggests aliases such as FBSS with the canonical name in the label', async () => {
+		const interaction = makeAutocompleteInteraction({
+			options: { getFocused: () => 'fbss' },
+		});
+
+		await autocompleteItems(interaction);
+
+		const choices = vi.mocked(interaction.respond).mock.calls[0][0];
+		expect(choices).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					value: 'FBSS',
+					name: expect.stringContaining('Flowing Black Silk Sash'),
+				}),
+			]),
+		);
+	});
+
+	it('still suggests canonical item names for partial matches', async () => {
+		const interaction = makeAutocompleteInteraction({
+			options: { getFocused: () => 'flowing black silk' },
+		});
+
+		await autocompleteItems(interaction);
+
+		const choices = vi.mocked(interaction.respond).mock.calls[0][0];
+		expect(choices).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					value: 'FLOWING BLACK SILK SASH',
+				}),
+			]),
+		);
+	});
+
+	it('skips alias entries when the alias is already a canonical item name', async () => {
+		const interaction = makeAutocompleteInteraction({
+			options: { getFocused: () => "executioner's axe" },
+		});
+
+		await autocompleteItems(interaction);
+
+		const choices = vi.mocked(interaction.respond).mock.calls[0][0];
+		const values = choices.map((choice) => choice.value);
+		expect(new Set(values).size).toBe(values.length);
+		expect(values).toEqual(expect.arrayContaining(["EXECUTIONER'S AXE"]));
+	});
 });
