@@ -15,14 +15,15 @@
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
     "format": "biome format --write",
-    "dev": "concurrently \"npm run fakeLogs\" \"npm run debug\"",
-    "fakeLogs": "node ./build/lib/parser/logFaker.js",
+    "dev": "node ./scripts/dev.mjs",
     "clean": "node -e \"fs.rmSync('build', { recursive: true, force: true })\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:all": "vitest run && vitest run --config vitest.integration.config.ts"
+    "test:all": "vitest run && vitest run --config vitest.integration.config.ts",
+    "dev:deps": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis",
+    "dev:deps:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
   },
   "lint-staged": {
     "*.{ts,js,json}": [

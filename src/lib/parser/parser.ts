@@ -5,10 +5,16 @@ import type { AuctionData, ItemType } from '../streams/streamAuction';
 
 const AhoCorasick = require('ahocorasick');
 
-export enum AuctionTypes {
-	WTS,
-	WTB,
-}
+//	A const object rather than a TS `enum`: `enum` is one of the few TypeScript
+//	constructs that emits runtime code, so it cannot be type-stripped. Keeping
+//	the syntax erasable is what lets `node --watch src/index.ts` run the sources
+//	directly with no build step. `erasableSyntaxOnly` in tsconfig enforces it.
+export const AuctionTypes = {
+	WTS: 'WTS',
+	WTB: 'WTB',
+} as const;
+
+export type AuctionTypes = (typeof AuctionTypes)[keyof typeof AuctionTypes];
 
 export type MatchRange = { start: number; end: number };
 
@@ -142,7 +148,9 @@ export class AuctionParser {
 		const composedRanges = composeRanges(matchRanges);
 
 		// Default to WTS if no auction type keyword appears before the first item
-		let currentAuctionType = AuctionTypes.WTS;
+		//	annotated because a const object infers the literal type, where the
+		//	old numeric enum widened to the enum type on its own
+		let currentAuctionType: AuctionTypes = AuctionTypes.WTS;
 
 		// For each matched item, examine two text regions:
 		//   "prefix gap" = text BEFORE the item (between prev item's end and this item's start)

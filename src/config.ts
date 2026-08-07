@@ -114,7 +114,11 @@ export type Config = {
 } & Record<string, unknown>;
 
 export class ConfigError extends Error {
-	constructor(public readonly problems: string[]) {
+	//	assigned in the body rather than as a parameter property: parameter
+	//	properties emit runtime code and so are barred by erasableSyntaxOnly
+	readonly problems: string[];
+
+	constructor(problems: string[]) {
 		super(
 			[
 				`Configuration is invalid (${problems.length} problem${
@@ -128,6 +132,7 @@ export class ConfigError extends Error {
 				'their ids for you.',
 			].join('\n'),
 		);
+		this.problems = problems;
 		this.name = 'ConfigError';
 	}
 }

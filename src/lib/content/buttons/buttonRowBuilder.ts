@@ -5,15 +5,19 @@ import { ButtonInteractionTypes, buttonBuilder } from './buttonBuilder';
 // secondly, we need an enum to refer all the various types of messages.
 // It is currently messy because many commands like snooze and unsnooze use MessageTypes.watch and not
 // separate ones based on the actual command or message function
-export enum MessageTypes {
-	block,
-	list,
-	unblock,
-	watch,
-	link,
-	unlink,
-	watchNotification,
-}
+//	const object rather than `enum` so the syntax stays erasable - see the note
+//	on AuctionTypes in lib/parser/parser.ts
+export const MessageTypes = {
+	block: 'block',
+	list: 'list',
+	unblock: 'unblock',
+	watch: 'watch',
+	link: 'link',
+	unlink: 'unlink',
+	watchNotification: 'watchNotification',
+} as const;
+
+export type MessageTypes = (typeof MessageTypes)[keyof typeof MessageTypes];
 
 const commandTypeButtonMappings: {
 	[key in MessageTypes]: {
