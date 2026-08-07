@@ -58,11 +58,33 @@ https://github.com/MericcaN41/discordjs-v14-template-ts
 
 This was done with that hope that any breaking changes from discordjs can be cross referenced and implemented.
 
-## Linter Config  & TypeScript Config
+## Linting, Formatting & TypeScript
 
-This project enforces eslint rules in a pre-commit hook.  This can be overridden with the --no-verify flag, but should be avoided.  Rather, if you have a good reason for disabling any of the eslint rules, feel free to do so.
+[Biome](https://biomejs.dev) handles both linting and formatting, configured in
+`biome.json`. Install the Biome editor extension and you get format-on-save
+matching CI; VS Code will offer it automatically via `.vscode/extensions.json`.
 
-Similarily, if there are any TypeScript config you feel should be changed, please do so.  The goal of TypeScript is to aid development by enforcing type safety.  If you are confident in your approach and TypeScript is being difficult, it is preferrable to cast the type with `as [TYPE]` rather than make your code hard to read.
+```sh
+npm run lint       # check (fails on warnings)
+npm run lint:fix   # check and apply fixes
+npm run typecheck  # tsc --noEmit
+```
+
+A pre-commit hook formats and lints staged files. It can be skipped with
+`--no-verify`, but CI runs the same checks, so that only defers the failure.
+
+If a rule is wrong for a specific line, suppress it with a
+`// biome-ignore lint/<group>/<rule>: <reason>` comment (single line — a wrapped
+comment silently stops working) rather than turning it off repo-wide. If a rule
+is wrong everywhere, change `biome.json`.
+
+Note that a malformed `biome.json` does **not** fail the run: Biome falls back to
+its defaults and reports success. `test/config.test.ts` guards against this.
+
+For TypeScript config, change it if you have reason to. The goal is to aid
+development by enforcing type safety — if you are confident in your approach and
+TypeScript is being difficult, `as [TYPE]` is preferable to code that is hard to
+read.
 
 ## Extensibility
 
