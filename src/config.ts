@@ -118,7 +118,7 @@ export class ConfigError extends Error {
 	//	properties emit runtime code and so are barred by erasableSyntaxOnly
 	readonly problems: string[];
 
-	constructor(problems: string[]) {
+	constructor(problems: string[], hint?: string) {
 		super(
 			[
 				`Configuration is invalid (${problems.length} problem${
@@ -127,9 +127,14 @@ export class ConfigError extends Error {
 				'',
 				...problems.map((problem) => `  - ${problem}`),
 				'',
-				'Copy .env.example to .env and fill in the missing values.',
-				'`npm run setup` can create the Discord channels and fill in',
-				'their ids for you.',
+				//	a hint explains why a problem may not be a problem; the generic
+				//	advice below is not useful when one applies
+				hint ??
+					[
+						'Copy .env.example to .env and fill in the missing values.',
+						'`npm run setup` can create the Discord channels and fill in',
+						'their ids for you.',
+					].join('\n'),
 			].join('\n'),
 		);
 		this.problems = problems;
@@ -170,6 +175,11 @@ export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
 					(server) =>
 						`${serverEnvKeys(server).logFile} is not set (required unless FAKE_LOGS=true)`,
 				),
+				//	These are normally absent from .env on purpose: compose derives
+				//	them from LOG_SOURCE_PATH and injects them into the container.
+				//	Seeing them on the host usually means doctor was run against a
+				//	container-shaped .env, not that anything is broken.
+				'docker-compose sets these from LOG_SOURCE_PATH, so they are absent\nfrom .env by design. For development on your host use FAKE_LOGS=true,\nwhich `npm run dev` does for you.',
 			);
 		}
 	}
