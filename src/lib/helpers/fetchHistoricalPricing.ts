@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import { Server } from '../../prisma/client';
 import { redis } from '../../redis/init';
 import type { AuctionData } from '../streams/streamAuction';
@@ -24,7 +25,7 @@ export async function fetchHistoricalPricingForItem(
 
 	if (!historicalPrice) {
 		const endpoint = `${
-			process.env.HISTORICAL_AUCTION_DATA_API
+			config().HISTORICAL_AUCTION_DATA_API
 		}/api/item/get/${getServerIntForExternalApi(
 			server,
 		)}/${encodeURIComponent(pricingItemName)}`;

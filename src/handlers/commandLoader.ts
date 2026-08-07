@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { readdirSync } from 'fs';
+import { config } from '../config';
 import { color } from '../functions';
 import type { SlashCommand } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
@@ -29,10 +30,10 @@ export function loadSlashCommands(
 export async function registerSlashCommands(
 	slashCommands: SlashCommandOptionsOnlyBuilder[],
 ): Promise<void> {
-	const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+	const rest = new REST({ version: '10' }).setToken(config().TOKEN);
 
 	await rest
-		.put(Routes.applicationCommands(process.env.CLIENT_ID), {
+		.put(Routes.applicationCommands(config().CLIENT_ID), {
 			body: slashCommands.map((command) => command.toJSON()),
 		})
 		.then((data) => {

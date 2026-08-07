@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
 
 export function getWikiUrlFromItem(item: string) {
@@ -7,5 +8,5 @@ export function getWikiUrlFromItem(item: string) {
 		return null;
 	}
 
-	return process.env.WIKI_BASE_URL + slug;
+	return config().WIKI_BASE_URL + slug;
 }

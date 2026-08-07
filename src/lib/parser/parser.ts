@@ -1,5 +1,5 @@
 import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
-import type { ItemType } from '../streams/streamAuction';
+import type { AuctionData, ItemType } from '../streams/streamAuction';
 
 // Oldschool JS lib works the best of all the options :(
 
@@ -11,13 +11,6 @@ export enum AuctionTypes {
 }
 
 export type MatchRange = { start: number; end: number };
-
-//	Named so the Redis cache round-trip has something to assert against; a bare
-//	`JSON.parse` of a cached auction is otherwise `any` all the way downstream.
-export type AuctionData = {
-	buying: ItemType[];
-	selling: ItemType[];
-};
 
 // Both parser entry points must agree on what declares a section, otherwise a
 // known-item watch and an unknown-item watch classify the same line differently.

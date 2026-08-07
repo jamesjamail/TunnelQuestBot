@@ -14,8 +14,9 @@ export const client = new Client({
 import type { SlashCommand } from './types';
 import { registerCommandHandlers } from './handlers/Command';
 import { registerEventHandlers } from './handlers/Event';
-import { config } from 'dotenv';
+import { config as loadDotenv } from 'dotenv';
 import { expand } from 'dotenv-expand';
+import { ConfigError, config as appConfig } from './config';
 import {
 	gracefullyHandleError,
 	handleFatalError,
@@ -23,7 +24,21 @@ import {
 } from './lib/helpers/errors';
 //	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
 //	longer expands those references for us.
-expand(config());
+expand(loadDotenv());
+
+// 	Validate the whole environment before doing anything else. Every consumer
+// 	reads through config(), which memoises this first call, so a bad .env fails
+// 	here with the full list of problems rather than surfacing later as an
+// 	`undefined` interpolated into a URL or a channel id.
+try {
+	appConfig();
+} catch (error) {
+	if (error instanceof ConfigError) {
+		console.error(error.message);
+		process.exit(1);
+	}
+	throw error;
+}
 
 // 	The bot talks to Discord, Postgres and Redis constantly, and any of them can
 // 	fail transiently. Without these handlers Node terminates the process on the
@@ -62,7 +77,7 @@ const UNRECOVERABLE_LOGIN_CODES = ['TokenInvalid', 'TokenMissing'];
 async function login() {
 	for (let attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
 		try {
-			await client.login(process.env.TOKEN);
+			await client.login(appConfig().TOKEN);
 			return;
 		} catch (error) {
 			const { code } = error as { code?: string };

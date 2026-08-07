@@ -1,17 +1,16 @@
 import { TextChannel } from 'discord.js';
 import { client } from '../..';
+import { config } from '../../config';
 
 //	the cutoff the bulk delete endpoint enforces
 const BULK_DELETE_MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 export async function removeNoncommandMessagesFromPublicCommandSpace() {
 	try {
-		// Get the channel by ID from environment variable
-		const commandChannelId = process.env.COMMAND_CHANNEL;
-		if (!commandChannelId) {
-			throw new Error('Missing COMMAND_CHANNEL env.');
-		}
-		const commandChannel = await client.channels.fetch(commandChannelId);
+		//	validated at startup, so no presence check is needed here
+		const commandChannel = await client.channels.fetch(
+			config().COMMAND_CHANNEL,
+		);
 
 		// Check if the channel exists and is a text channel
 		if (!commandChannel || !(commandChannel instanceof TextChannel)) {

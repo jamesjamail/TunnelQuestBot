@@ -1,3 +1,4 @@
+import { config } from '../../config';
 import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
 
 export function getImageUrlForItem(item: string) {
@@ -7,5 +8,5 @@ export function getImageUrlForItem(item: string) {
 		return null;
 	}
 
-	return `${process.env.IMAGE_BUCKET_URL + slug}.png`;
+	return `${config().IMAGE_BUCKET_URL + slug}.png`;
 }
