@@ -12,6 +12,13 @@ export enum AuctionTypes {
 
 export type MatchRange = { start: number; end: number };
 
+//	Named so the Redis cache round-trip has something to assert against; a bare
+//	`JSON.parse` of a cached auction is otherwise `any` all the way downstream.
+export type AuctionData = {
+	buying: ItemType[];
+	selling: ItemType[];
+};
+
 // Both parser entry points must agree on what declares a section, otherwise a
 // known-item watch and an unknown-item watch classify the same line differently.
 const SELLING_KEYWORDS = /\b(WTS|SELLING|WTSELL)\b/gi;
@@ -36,12 +43,8 @@ export function preprocessMessage(msg: string): string {
 // Thanks rici from StackOverflow for saving me time!
 // Based on https://stackoverflow.com/a/30472781
 export function composeRanges(ranges: MatchRange[]) {
-	const starts = ranges
-		.map((r) => r.start)
-		.sort((a, b) => a - b);
-	const ends = ranges
-		.map((r) => r.end)
-		.sort((a, b) => a - b);
+	const starts = ranges.map((r) => r.start).sort((a, b) => a - b);
+	const ends = ranges.map((r) => r.end).sort((a, b) => a - b);
 	let i = 0,
 		j = 0,
 		active = 0;
@@ -124,10 +127,7 @@ export class AuctionParser {
 		);
 	}
 
-	public parseAuctionMessage(message: string): {
-		buying: ItemType[];
-		selling: ItemType[];
-	} {
+	public parseAuctionMessage(message: string): AuctionData {
 		const buying: ItemType[] = [];
 		const selling: ItemType[] = [];
 

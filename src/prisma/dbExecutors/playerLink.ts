@@ -107,13 +107,13 @@ export async function authPlayerLink(
 		});
 	} catch (e) {
 		if (e instanceof Prisma.PrismaClientKnownRequestError) {
-			if (e.code == 'P2002') {
+			if (e.code === 'P2002') {
 				// Unique Constraint Violation
 
 				console.log(
 					`Player \`${server}.${player}\` tried to use a new linkCode, but is already linked.`,
 				);
-			} else if (e.code == 'P2025') {
+			} else if (e.code === 'P2025') {
 				// Record Not Found
 
 				console.log(

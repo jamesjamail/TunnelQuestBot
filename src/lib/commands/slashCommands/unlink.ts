@@ -25,7 +25,7 @@ const command: SlashCommand = {
 				player_name,
 				server,
 			);
-			let user_message;
+			let user_message: string;
 			if (success) {
 				user_message = messageCopy.soAndSoHasBeenUnlinked({
 					server: server,

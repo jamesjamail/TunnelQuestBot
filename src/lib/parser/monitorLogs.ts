@@ -4,6 +4,7 @@ import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
 import { triggerFoundWatchedItems } from '../watchNotification/watchNotification';
 import {
+	type AuctionData,
 	AuctionParser,
 	AuctionTypes,
 	auctionIncludesUnknownItem,
@@ -57,7 +58,7 @@ export async function handleLogLine(server: Server, data: string) {
 		const [, playerName, auctionText] = auctionMatch;
 		const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
 		const cachedAuctionData = await redis.get(auctionLogKey);
-		let auctionData;
+		let auctionData: AuctionData;
 
 		if (!cachedAuctionData) {
 			// Parse the auction message if not in cache
@@ -71,7 +72,7 @@ export async function handleLogLine(server: Server, data: string) {
 			);
 		} else {
 			// Use the cached data
-			auctionData = JSON.parse(cachedAuctionData);
+			auctionData = JSON.parse(cachedAuctionData) as AuctionData;
 		}
 
 		if (!auctionData) {
@@ -164,9 +165,7 @@ export async function handleLogLine(server: Server, data: string) {
 export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
 
-	console.log(
-		'Starting log monitoring for server ' + server + ': ' + logFilePath,
-	);
+	console.log(`Starting log monitoring for server ${server}: ${logFilePath}`);
 	const tail = new Tail(logFilePath, {
 		follow: true,
 		flushAtEOF: true,

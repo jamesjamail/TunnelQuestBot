@@ -22,7 +22,7 @@ function generatePrice(): string {
 		? parseFloat((Math.random() * 10).toFixed(1)) // for k up to 10k with 1 decimal
 		: Math.floor(Math.random() * 1000); // for pp
 	const currency = isK ? 'k' : 'pp';
-	return ' ' + amount + currency;
+	return ` ${amount}${currency}`;
 }
 
 export function generateLogLine() {
@@ -32,7 +32,7 @@ export function generateLogLine() {
 	const selectedItems: string[] = [];
 
 	for (let i = 0; i < itemCount; i++) {
-		let randomItem;
+		let randomItem: string;
 		do {
 			randomItem = getRandomElement(items);
 		} while (selectedItems.includes(randomItem));
@@ -45,7 +45,7 @@ export function generateLogLine() {
 		selectedItems.push(randomItem);
 	}
 	const delimiter = getRandomElement(delimiters);
-	const itemText = selectedItems.join(' ' + delimiter + delimiter + ' ');
+	const itemText = selectedItems.join(` ${delimiter}${delimiter} `);
 	const rawTimestamp = new Date();
 	const options: Intl.DateTimeFormatOptions = {
 		weekday: 'short',

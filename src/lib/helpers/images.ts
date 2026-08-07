@@ -7,5 +7,5 @@ export function getImageUrlForItem(item: string) {
 		return null;
 	}
 
-	return process.env.IMAGE_BUCKET_URL + slug + '.png';
+	return `${process.env.IMAGE_BUCKET_URL + slug}.png`;
 }

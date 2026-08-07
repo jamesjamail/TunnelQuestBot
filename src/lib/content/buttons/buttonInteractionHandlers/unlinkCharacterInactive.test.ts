@@ -12,7 +12,7 @@ vi.mock('../../../../prisma/dbExecutors/playerLink', () => ({
 	removePlayerLinkById: vi.fn(),
 }));
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Server } from '../../../../prisma/client';
 import handleUnlinkCharacterInactive from './unlinkCharacterInactive';
 import { removePlayerLinkById } from '../../../../prisma/dbExecutors/playerLink';

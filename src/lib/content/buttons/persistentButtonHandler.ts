@@ -130,7 +130,7 @@ async function fetchMetadata(
 	entityId?: string,
 	extra?: string,
 ): Promise<unknown> {
-	const id = entityId ? parseInt(entityId) : undefined;
+	const id = entityId ? parseInt(entityId, 10) : undefined;
 
 	if (
 		actionType.startsWith('WatchSnooze') ||
