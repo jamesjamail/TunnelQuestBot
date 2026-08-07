@@ -12,6 +12,8 @@ export const client = new Client({
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction], //	needed for handling interactions from DM's
 });
 import { SlashCommand } from './types';
+import { registerCommandHandlers } from './handlers/Command';
+import { registerEventHandlers } from './handlers/Event';
 import { config } from 'dotenv';
 import { expand } from 'dotenv-expand';
 import {
@@ -41,11 +43,12 @@ process.on('uncaughtException', (error) => {
 client.slashCommands = new Collection<string, SlashCommand>();
 client.cooldowns = new Collection<string, number>();
 
-// 	Listed explicitly rather than scanned from handlers/: the scan also invoked
+// 	Called explicitly rather than scanned from handlers/: the scan also invoked
 // 	the loader modules, which export named functions instead of a callable, and
-// 	the resulting throw skipped the login() call below.
-require('./handlers/Command')(client);
-require('./handlers/Event')(client);
+// 	the resulting throw skipped the login() call below. Imported rather than
+// 	require()d so a rename of either handler fails the build instead of at boot.
+registerCommandHandlers(client);
+registerEventHandlers(client);
 
 // 	Once logged in discord.js reconnects on its own, but a failure during the
 // 	initial login is fatal. On container start we frequently lose the race with

@@ -13,10 +13,8 @@ vi.mock('../content/messages/messageBuilder', () => ({
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ChannelType } from 'discord.js';
 import { Server } from '../../prisma/client';
-import {
-	streamAuctionToAllStreamChannels,
-	getEnvironmentVariable,
-} from './streamAuction';
+import { streamAuctionToAllStreamChannels } from './streamAuction';
+import { getEnvironmentVariable } from '../helpers/env';
 import { gracefullyHandleError } from '../helpers/errors';
 import {
 	embeddedAuctionStreamMessageBuilder,
