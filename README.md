@@ -1,16 +1,47 @@
-## Containerized Local Development
+## Local Development
 
-Set up and run everything (database and app) nicely isolated in local
-docker containers with just one command!
+You need Docker and Node 24 (`.nvmrc` pins it). You do **not** need EverQuest —
+the dev loop generates fake auction lines.
 
-### How?
-* Install Docker Desktop with WSL2 via this guide:
-https://docs.docker.com/desktop/wsl/
-  * Or, install docker and docker-compose on your platform of choice.
-* Copy `.env.example` to `.env` and configure your `TOKEN`/`CLIENT_ID` and log file paths.
-* Run `docker-compose up --build`
-  * Re-run this command any time you make code or config changes.
-  * If you'd prefer not to run everquest clients for the log files, you can tell the app to fake them: `$env:FAKE_LOGS='true'; docker-compose up --build`. This runs `npm run dev` in the container, which runs logFaker.ts in paralell
+```sh
+npm install
+cp .env.example .env      # then fill in the Discord section
+npm run dev:deps          # postgres + redis in docker
+npm run dev               # the bot, on your host, reloading on save
+```
+
+`npm run dev` runs the bot on your machine while its dependencies stay in
+containers. A save recompiles and restarts in about a second, rather than
+rebuilding an image. It sets `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS` for
+you, so the only thing `.env` needs is your Discord configuration.
+
+Stop the dependencies with `npm run dev:deps:down`.
+
+### Getting the Discord configuration
+
+You need your own bot application — never develop against the production token.
+
+1. Create an app at https://discord.com/developers/applications, add a bot, and
+   copy the token into `TOKEN` and the Application ID into `CLIENT_ID`.
+2. Invite it to a server you control, with the **Manage Channels** permission.
+3. Run `npm run setup`, which creates the channels the bot needs and writes
+   their ids into `.env`.
+
+If anything is missing or malformed, `npm run doctor` reports every problem at
+once and tells you what it expected. The bot performs the same check at startup
+and refuses to boot on a bad `.env`.
+
+### Running the whole stack in containers
+
+Closer to production, and the way to run against real EverQuest logs. Slower to
+iterate on, because every change needs a rebuild.
+
+```sh
+docker compose up --build
+```
+
+Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
+`FAKE_LOGS=true` to run the container stack without a game client.
 
 ## Running In Production
 

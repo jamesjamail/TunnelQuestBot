@@ -49,6 +49,28 @@ describe('deployment and config invariants', () => {
 	});
 });
 
+describe('development environment', () => {
+	it('keeps TypeScript syntax erasable', () => {
+		//	`enum`, `namespace` and parameter properties emit runtime code, which
+		//	blocks node from type-stripping the sources. Keeping this on is what
+		//	preserves the option of dropping the build step from the dev loop.
+		const tsconfig = readRepoFile('tsconfig.json');
+		expect(tsconfig).toMatch(/"erasableSyntaxOnly":\s*true/);
+	});
+
+	it('runs dependencies over published TCP ports for host development', () => {
+		//	the production stack talks over unix sockets, which the host cannot
+		//	reach; the dev override publishes ports so `npm run dev` can connect
+		const override = readRepoFile('docker-compose.dev.yml');
+		expect(override).toMatch(/127\.0\.0\.1:5432:5432/);
+		expect(override).toMatch(/127\.0\.0\.1:6379:6379/);
+	});
+
+	it('does not require an EverQuest client to develop', () => {
+		expect(readRepoFile('scripts/dev.mjs')).toMatch(/FAKE_LOGS: 'true'/);
+	});
+});
+
 describe('lint and format config', () => {
 	//	A biome.json that fails to parse does not fail the run - Biome falls back
 	//	to its built-in defaults and reports success, so `npm run lint` goes green

@@ -1,29 +1,37 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-export enum ButtonInteractionTypes {
-	WatchSnoozeActive,
-	WatchSnoozeInactive,
-	UserSnoozeActive,
-	UserSnoozeInactive,
-	UnwatchActive,
-	UnwatchInactive,
-	WatchRefreshActive,
-	WatchRefreshInactive,
-	GlobalRefreshActive,
-	GlobalRefreshInactive,
-	GlobalUnblockActive,
-	GlobalUnblockInactive,
-	WatchBlockActive,
-	WatchBlockInactive,
-	WatchNotificationSnoozeActive,
-	WatchNotificationSnoozeInactive,
-	WatchNotificationUnwatchActive,
-	WatchNotificationUnwatchInactive,
-	WatchNotificationWatchRefreshActive,
-	WatchNotificationWatchRefreshInactive,
-	UnlinkCharacterActive,
-	UnlinkCharacterInactive,
-}
+//	const object rather than `enum` so the syntax stays erasable - see the note
+//	on AuctionTypes in lib/parser/parser.ts. Values are the member names because
+//	they are written into button customIds and parsed back out of them; the old
+//	numeric enum produced the same strings via reverse mapping.
+export const ButtonInteractionTypes = {
+	WatchSnoozeActive: 'WatchSnoozeActive',
+	WatchSnoozeInactive: 'WatchSnoozeInactive',
+	UserSnoozeActive: 'UserSnoozeActive',
+	UserSnoozeInactive: 'UserSnoozeInactive',
+	UnwatchActive: 'UnwatchActive',
+	UnwatchInactive: 'UnwatchInactive',
+	WatchRefreshActive: 'WatchRefreshActive',
+	WatchRefreshInactive: 'WatchRefreshInactive',
+	GlobalRefreshActive: 'GlobalRefreshActive',
+	GlobalRefreshInactive: 'GlobalRefreshInactive',
+	GlobalUnblockActive: 'GlobalUnblockActive',
+	GlobalUnblockInactive: 'GlobalUnblockInactive',
+	WatchBlockActive: 'WatchBlockActive',
+	WatchBlockInactive: 'WatchBlockInactive',
+	WatchNotificationSnoozeActive: 'WatchNotificationSnoozeActive',
+	WatchNotificationSnoozeInactive: 'WatchNotificationSnoozeInactive',
+	WatchNotificationUnwatchActive: 'WatchNotificationUnwatchActive',
+	WatchNotificationUnwatchInactive: 'WatchNotificationUnwatchInactive',
+	WatchNotificationWatchRefreshActive: 'WatchNotificationWatchRefreshActive',
+	WatchNotificationWatchRefreshInactive:
+		'WatchNotificationWatchRefreshInactive',
+	UnlinkCharacterActive: 'UnlinkCharacterActive',
+	UnlinkCharacterInactive: 'UnlinkCharacterInactive',
+} as const;
+
+export type ButtonInteractionTypes =
+	(typeof ButtonInteractionTypes)[keyof typeof ButtonInteractionTypes];
 
 type ButtonConfig = {
 	type: ButtonInteractionTypes;
@@ -47,7 +55,8 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 	const row = new ActionRowBuilder<ButtonBuilder>();
 
 	const buttons = buttonsToBuild.map((buttonConfig) => {
-		const typeName = ButtonInteractionTypes[buttonConfig.type];
+		//	the member value is the name, so no reverse lookup is needed
+		const typeName = buttonConfig.type;
 		const isActive = typeName.endsWith('Active');
 		const customId = buttonConfig.entityId
 			? `${typeName}:${buttonConfig.entityId}`
