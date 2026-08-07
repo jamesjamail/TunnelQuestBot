@@ -154,6 +154,36 @@ describe('startup migration invariants', () => {
 		expect(source).toMatch(/return 1/);
 	});
 
+	it('exits after the smoke check instead of starting the bot', () => {
+		//	CI runs the real image against the real compose stack in this mode.
+		//	It has to come after migrations (so it proves they applied) and
+		//	before every branch that starts the bot.
+		const source = entrypoint();
+		const smokeIndex = source.indexOf('$SMOKE_TEST');
+
+		expect(smokeIndex).toBeGreaterThan(
+			source.indexOf('apply_migrations\n'),
+		);
+		expect(smokeIndex).toBeLessThan(source.indexOf('$FAKE_LOGS'));
+		expect(source).toMatch(/exec node \.\/build\/doctor\.js/);
+	});
+
+	it('runs the smoke check in CI against the compose stack', () => {
+		//	building the image proves it compiles, not that it can start
+		const workflow = readRepoFile('.github/workflows/docker-build.yml');
+		expect(workflow).toMatch(/SMOKE_TEST=true/);
+		expect(workflow).toMatch(/docker compose run --rm/);
+		expect(workflow).toMatch(/needs: \[test, integration, smoke\]/);
+	});
+
+	it('does not duplicate game data that tsc already emits into build/', () => {
+		//	resolveJsonModule makes tsc copy the JSON next to the code that
+		//	imports it, so the compiled require("./items.json") resolves inside
+		//	build/. Copying it under /app/src as well was 600KB nothing reads.
+		const dockerfile = readRepoFile('Dockerfile');
+		expect(dockerfile).not.toMatch(/^COPY .*gameData.*\.json/m);
+	});
+
 	it('resolves the prisma binary locally rather than through npx', () => {
 		expect(entrypoint()).toMatch(
 			/\.\/node_modules\/\.bin\/prisma migrate deploy/,
