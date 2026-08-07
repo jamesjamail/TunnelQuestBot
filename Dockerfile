@@ -12,8 +12,10 @@ RUN apk add --no-cache openssl
 # Copy only the package.json files to utilize layer cache
 COPY package*.json /app/
 
-# Install node dependencies
-RUN npm install
+# Install node dependencies. `npm ci` rather than `npm install` so the image is
+# built from the same dependency tree CI tested against; `npm install` is free to
+# resolve differently, which would let a green CI ship an image nobody has run.
+RUN npm ci
 
 # Copy over necessary source/configs
 COPY tsconfig.json prisma.config.ts /app/
