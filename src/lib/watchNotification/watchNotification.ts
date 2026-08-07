@@ -1,4 +1,4 @@
-import { BlockedPlayer, Watch, WatchType } from '../../prisma/client';
+import { type BlockedPlayer, type Watch, WatchType } from '../../prisma/client';
 import { watchNotificationBuilder } from '../content/messages/messageBuilder';
 import {
 	buttonRowBuilder,
@@ -7,7 +7,7 @@ import {
 import { client } from '../..';
 import { getPlayerBlocks } from '../../prisma/dbExecutors/block';
 import {
-	WatchWithUserAndBlockedWatches,
+	type WatchWithUserAndBlockedWatches,
 	getWatchByWatchIdForWatchNotification,
 } from '../../prisma/dbExecutors/watch';
 import { isSnoozed } from '../helpers/watches';

@@ -22,7 +22,7 @@ export async function startLoggingAllServers() {
 	globalThis.DEBUG_MODE = !!(process.env.DEBUG_MODE || 'false').match(
 		/^[tT]/,
 	);
-	globalThis.debug_console = function (message) {
+	globalThis.debug_console = (message) => {
 		if (globalThis.DEBUG_MODE) {
 			console.log(message);
 		}

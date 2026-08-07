@@ -1,4 +1,4 @@
-import { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';

@@ -1,5 +1,5 @@
-import { ButtonInteraction, EmbedBuilder } from 'discord.js';
-import { PlayerLink } from '../../../../prisma/client';
+import type { ButtonInteraction, EmbedBuilder } from 'discord.js';
+import type { PlayerLink } from '../../../../prisma/client';
 import { messageCopy } from '../../copy/messageCopy';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';

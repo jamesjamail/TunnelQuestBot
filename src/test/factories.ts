@@ -1,14 +1,14 @@
 import { vi } from 'vitest';
 import {
-	BlockedPlayer,
-	BlockedPlayerByWatch,
-	PlayerLink,
+	type BlockedPlayer,
+	type BlockedPlayerByWatch,
+	type PlayerLink,
 	Server,
-	User,
-	Watch,
+	type User,
+	type Watch,
 	WatchType,
 } from '../prisma/client';
-import {
+import type {
 	AutocompleteInteraction,
 	ButtonInteraction,
 	ChatInputCommandInteraction,

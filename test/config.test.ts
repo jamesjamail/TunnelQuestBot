@@ -65,12 +65,20 @@ describe('lint and format config', () => {
 		};
 		const includes = config.files?.includes ?? [];
 
+		//	Biome normalises `!build/**` to `!build`, so match the directory
+		//	prefix rather than an exact glob spelling.
 		for (const excluded of [
-			'!build/**',
-			'!src/prisma/generated/**',
-			'!src/lib/gameData/*.json',
+			'build',
+			'src/prisma/generated',
+			'src/lib/gameData',
 		]) {
-			expect(includes).toContain(excluded);
+			expect(
+				includes.some(
+					(pattern) =>
+						pattern.startsWith('!') &&
+						pattern.slice(1).startsWith(excluded),
+				),
+			).toBe(true);
 		}
 	});
 

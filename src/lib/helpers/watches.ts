@@ -1,4 +1,4 @@
-import { Server } from '../../prisma/client';
+import type { Server } from '../../prisma/client';
 import { isPast } from 'date-fns';
 import {
 	consolidatedItemsAndAliases,

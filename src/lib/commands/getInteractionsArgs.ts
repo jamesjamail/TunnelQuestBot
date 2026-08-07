@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction } from 'discord.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
 import { parseInput } from './autocomplete/autocompleteHelpers';
 
 type AllowedOptionValues = string | number | boolean;

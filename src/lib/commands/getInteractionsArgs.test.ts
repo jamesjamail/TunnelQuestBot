@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getInteractionArgs } from './getInteractionsArgs';
 import { prefixJSON } from './autocomplete/autocompleteHelpers';
-import { ChatInputCommandInteraction } from 'discord.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
 
 function makeInteraction(
 	getImpl: (name: string) => { value: unknown } | null,

@@ -1,9 +1,9 @@
-import { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { setWatchActiveByWatchId } from '../../../../prisma/dbExecutors/watch';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/watches';
-import { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
+import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 
 export default async function handleWatchNotificationUnwatchActive<T>(

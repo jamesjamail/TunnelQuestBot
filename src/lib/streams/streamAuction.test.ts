@@ -21,7 +21,7 @@ import {
 } from '../content/messages/messageBuilder';
 import {
 	client,
-	makeTextChannelStub,
+	type makeTextChannelStub,
 	resetChannelCache,
 } from '../../test/mocks/discordClient';
 
