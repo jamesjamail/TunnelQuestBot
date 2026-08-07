@@ -30,6 +30,9 @@
   "keywords": [],
   "author": "jamesjamail",
   "license": "ISC",
+  "engines": {
+    "node": ">=24"
+  },
   "dependencies": {
     "@discordjs/rest": "^2.0.1",
     "@prisma/adapter-pg": "^7.9.1",
