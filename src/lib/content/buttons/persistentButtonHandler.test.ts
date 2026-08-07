@@ -159,7 +159,9 @@ describe('extractNotificationContext', () => {
 
 describe('handleButtonInteraction', () => {
 	beforeEach(() => {
-		Object.values(mockHandlers).forEach((fn) => fn.mockClear());
+		Object.values(mockHandlers).forEach((fn) => {
+			fn.mockClear();
+		});
 	});
 
 	it('routes WatchSnoozeInactive to handleWatchSnoozeInactive with fetched watch', async () => {
@@ -187,9 +189,9 @@ describe('handleButtonInteraction', () => {
 
 		await handleButtonInteraction(interaction);
 
-		Object.values(mockHandlers).forEach((fn) =>
-			expect(fn).not.toHaveBeenCalled(),
-		);
+		Object.values(mockHandlers).forEach((fn) => {
+			expect(fn).not.toHaveBeenCalled();
+		});
 		expect(interaction.reply).not.toHaveBeenCalled();
 		expect(interaction.update).not.toHaveBeenCalled();
 	});

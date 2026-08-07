@@ -12,7 +12,7 @@ vi.mock('../../../../prisma/dbExecutors/watch', () => ({
 	unwatch: vi.fn(),
 }));
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import handleUnwatchInactive from './unwatchInactive';
 import { unwatch } from '../../../../prisma/dbExecutors/watch';
 import { makeButtonInteraction, makeWatch } from '../../../../test/factories';

@@ -35,14 +35,16 @@ export async function registerSlashCommands(
 		.put(Routes.applicationCommands(process.env.CLIENT_ID), {
 			body: slashCommands.map((command) => command.toJSON()),
 		})
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		.then((data: any) => {
+		.then((data) => {
+			//	the REST client types this as `unknown`; the route returns the
+			//	array of registered commands
+			const registered = Array.isArray(data) ? data.length : 0;
 			console.log(
 				color(
 					'text',
 					`🔥 Successfully loaded ${color(
 						'variable',
-						data.length,
+						String(registered),
 					)} slash command(s)`,
 				),
 			);
