@@ -4,4 +4,8 @@ coverage
 src/prisma/generated
 .env
 .vscode
+#	the one exception: recommending the Biome extension is how a contributor
+#	gets format-on-save matching CI without being told to configure anything
+!.vscode/extensions.json
 .idea
+.claude
