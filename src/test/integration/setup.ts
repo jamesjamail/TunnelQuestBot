@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { resetConfigCache } from '../../config';
 import {
 	PostgreSqlContainer,
 	type StartedPostgreSqlContainer,
@@ -8,16 +9,15 @@ import {
 	RedisContainer,
 	type StartedRedisContainer,
 } from '@testcontainers/redis';
+import { applyTestEnvironment } from '../env';
 
 let postgres: StartedPostgreSqlContainer;
 let redisContainer: StartedRedisContainer;
 
 // 	Env vars the app reads at import time. Set before any src/ module loads.
-process.env.WIKI_BASE_URL = 'https://wiki.example.com';
-process.env.IMAGE_BUCKET_URL = 'https://img.example.com/';
-process.env.WATCH_DURATION_IN_DAYS = '7';
-(globalThis as Record<string, unknown>).DEBUG_MODE = false;
-(globalThis as Record<string, unknown>).debug_console = () => {};
+// 	Shared with the unit setup so config()'s required set can only be satisfied
+// 	in one place - these two drifted apart once already.
+applyTestEnvironment();
 
 beforeAll(async () => {
 	postgres = await new PostgreSqlContainer('postgres:18-alpine')
@@ -30,6 +30,9 @@ beforeAll(async () => {
 	process.env.DATABASE_URL = postgres.getConnectionUri();
 	process.env.REDIS_URL = redisContainer.getConnectionUrl();
 
+	// 	config() memoised the placeholder DATABASE_URL if anything read it
+	// 	before the container was up
+	resetConfigCache();
 	vi.resetModules();
 
 	execSync('npx prisma migrate deploy', {
