@@ -8,3 +8,6 @@
 
 #	style: apply biome formatting
 196e4b79d67b9cbcf6265d8ea6539e28d4c0f97b
+
+#	style: normalise game data to LF
+0f0c786b188a910c094681de0698351fb122714e
