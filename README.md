@@ -99,6 +99,38 @@ Lines prefixed with `[entrypoint]` come from the startup sequence:
 
 To confirm the running version, use the bot's `/version` command.
 
+## Testing
+
+```sh
+npm test              # unit tests
+npm run test:watch    # unit tests, watching
+npm run test:coverage # unit tests + coverage thresholds (what CI runs)
+npm run test:integration   # needs Docker running
+npm run test:all      # both suites
+npm run check         # lint + typecheck + unit tests, i.e. everything CI gates on
+```
+
+**`test:integration` requires Docker.** It starts real Postgres and Redis via
+testcontainers, applies migrations, and truncates between tests. Without Docker
+running it fails on a container-start timeout rather than anything informative,
+so start Docker first. The unit suite has no such requirement.
+
+Most tests are unit tests over logic pulled out of the Discord handlers.
+`src/test/mocks/` holds the discord.js, Prisma and Redis fakes, `src/test/env.ts`
+the environment both suites share, and `src/test/factories.ts` the object
+builders.
+
+## Editor setup
+
+VS Code will offer the Biome extension via `.vscode/extensions.json`, and
+`.vscode/settings.json` turns on format-on-save with it. `.editorconfig` covers
+editors that read it. Nothing here is required — CI checks the same rules.
+
+`.debug/` holds shared JetBrains run configurations for the containerised
+workflow: **Run App** brings up `docker-compose.yml --build`, and **Remote Node
+Debug** attaches to the inspector on port 9229. They live outside the gitignored
+`.idea/` on purpose so they can be checked in.
+
 ## Discord Template
 
 This repo is based on the following template for discordjs:

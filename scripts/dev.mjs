@@ -14,7 +14,7 @@
 //	Written as a script rather than an inline npm command so the environment
 //	defaults below work the same in PowerShell as in a POSIX shell.
 
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import process from 'node:process';
 
 //	Only fill in what the developer has not already set. dotenv does not override
@@ -68,6 +68,23 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 	process.on(signal, () => {
 		shutdown(0);
 	});
+}
+
+//	src/prisma/generated is gitignored, so without this a checkout that has not
+//	been built yields ~70 "no exported member" errors the moment tsc starts.
+//	postinstall normally covers it; this makes the loop self-sufficient for the
+//	cases it does not (--ignore-scripts, a schema change since last install).
+console.log('[dev] generating prisma client');
+try {
+	execFileSync('npx', ['prisma', 'generate'], {
+		stdio: 'ignore',
+		shell: process.platform === 'win32',
+	});
+} catch {
+	console.error(
+		'[dev] prisma generate failed — run `npm run generate` to see why',
+	);
+	process.exit(1);
 }
 
 console.log('[dev] watching src/ -> build/, restarting on change');
