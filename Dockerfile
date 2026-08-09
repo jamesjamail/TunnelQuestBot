@@ -15,7 +15,12 @@ COPY package*.json /app/
 # Install node dependencies. `npm ci` rather than `npm install` so the image is
 # built from the same dependency tree CI tested against; `npm install` is free to
 # resolve differently, which would let a green CI ship an image nobody has run.
-RUN npm ci
+#
+# --ignore-scripts because only package*.json exists at this layer: the postinstall
+# and prepare scripts live in scripts/ and .husky/, which are copied later (or, for
+# .husky, not at all). Neither is wanted here anyway — `npm run build` below runs
+# `prisma generate` explicitly, and git hooks are meaningless in an image.
+RUN npm ci --ignore-scripts
 
 # Copy over necessary source/configs
 COPY tsconfig.json prisma.config.ts /app/

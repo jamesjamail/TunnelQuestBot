@@ -3,9 +3,14 @@ build
 coverage
 src/prisma/generated
 .env
-.vscode
-#	the one exception: recommending the Biome extension is how a contributor
-#	gets format-on-save matching CI without being told to configure anything
+#	`.vscode/*` rather than `.vscode`: excluding the directory itself stops git
+#	descending into it, and the negations below are then silently ignored.
+.vscode/*
+#	Two exceptions, shared on purpose: extensions.json recommends the Biome
+#	extension, settings.json points the editor at it and turns on format-on-save.
+#	Together they mean a contributor matches CI without configuring anything.
+#	Everything else under .vscode/ stays personal.
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .claude

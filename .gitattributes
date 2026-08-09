@@ -1,1 +1,21 @@
-docker-entrypoint.sh text eol=lf
+#	Normalise text to LF in the repository and the working tree.
+#
+#	Biome enforces `lineEnding: "lf"`, and this project's contributors run
+#	EverQuest, which means Windows. Without this, a checkout with the default
+#	`core.autocrlf=true` gets CRLF everywhere and `npm run lint` reports every
+#	file as malformed before the contributor has changed anything. It has already
+#	happened once: a test file arrived with 131 CRLF line endings and failed the
+#	format check on contact.
+* text=auto eol=lf
+
+#	Captured EverQuest logs, left exactly as the game wrote them. EverQuest logs
+#	CRLF on Windows, which is what the parser tails in production, so normalising
+#	these would make the sample less faithful than the real input. Nothing reads
+#	them at test time; they are reference data.
+#	(For the record, `tail` splits on /[\r]{0,1}\n/, so CRLF input parses fine.)
+src/exampleLogs/** -text
+
+#	Binary, so git never tries to normalise them
+*.png binary
+*.jpg binary
+*.ico binary
