@@ -1,0 +1,33 @@
+name: Bug report
+description: Something the bot does wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: input
+    id: auction-line
+    attributes:
+      label: Auction line (parser issues only)
+      description: >
+        The exact line as it appeared in game, copied verbatim. This is usually
+        enough on its own to write a failing test from — spacing and punctuation
+        both matter, so please don't clean it up.
+      placeholder: Soandso auctions, 'WTS Black Sapphire Necklace 500pp'
+
+  - type: input
+    id: server
+    attributes:
+      label: Server
+      placeholder: Blue / Green / Red
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Which command you ran, with which arguments.

@@ -49,6 +49,31 @@ describe('deployment and config invariants', () => {
 	});
 });
 
+describe('open-source scaffolding', () => {
+	it('ships the license it claims', () => {
+		//	package.json declared ISC for years with no LICENSE file, which makes
+		//	the claim unenforceable and blocks some downstream users outright
+		const pkg = JSON.parse(readRepoFile('package.json')) as {
+			license?: string;
+		};
+		expect(pkg.license).toBe('ISC');
+		expect(readRepoFile('LICENSE')).toMatch(/ISC License/);
+	});
+
+	it('tells contributors how to add a command and what to run first', () => {
+		const contributing = readRepoFile('CONTRIBUTING.md');
+		expect(contributing).toMatch(/npm run check/);
+		expect(contributing).toMatch(/Adding a slash command/);
+	});
+
+	it('schedules dependency updates, not just security ones', () => {
+		//	security updates arrive without a config file; version bumps do not
+		const dependabot = readRepoFile('.github/dependabot.yml');
+		expect(dependabot).toMatch(/package-ecosystem:\s*npm/);
+		expect(dependabot).toMatch(/package-ecosystem:\s*github-actions/);
+	});
+});
+
 describe('development environment', () => {
 	it('keeps TypeScript syntax erasable', () => {
 		//	`enum`, `namespace` and parameter properties emit runtime code, which

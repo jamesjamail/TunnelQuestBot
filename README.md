@@ -1,3 +1,12 @@
+# TunnelQuestBot
+
+A Discord bot that watches Project 1999 auction channels and notifies you when
+items you care about are being sold.
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, how to
+add a command, and what to run before opening a PR. Licensed
+[ISC](LICENSE).
+
 ## Local Development
 
 You need Docker and Node 24 (`.nvmrc` pins it). You do **not** need EverQuest —
