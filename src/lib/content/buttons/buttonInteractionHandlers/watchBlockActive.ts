@@ -7,6 +7,7 @@ import {
 } from '../../../../prisma/dbExecutors/watch';
 import { isSnoozed } from '../../../helpers/watches';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
+import { debug } from '../../../helpers/logger';
 
 type WatchBlockInactiveMetadata = WatchWithUserAndBlockedWatches & {
 	player: string;
@@ -28,5 +29,5 @@ export default async function handleWatchBlockActive<T>(
 		content: messageCopy.soAndSoHasBeenUnblockedForThisWatch(data),
 		components,
 	});
-	debug_console(messageCopy.soAndSoHasBeenUnblockedForThisWatch(data));
+	debug(messageCopy.soAndSoHasBeenUnblockedForThisWatch(data));
 }

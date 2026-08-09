@@ -4,6 +4,7 @@ import { messageCopy } from '../../copy/messageCopy';
 import { removePlayerBlockById } from '../../../../prisma/dbExecutors/block';
 import { blockCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleGlobalUnblockInactive<T>(
 	interaction: ButtonInteraction,
@@ -18,5 +19,5 @@ export default async function handleGlobalUnblockInactive<T>(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.soAndSoHasBeenUnblocked(data));
+	debug(messageCopy.soAndSoHasBeenUnblocked(data));
 }

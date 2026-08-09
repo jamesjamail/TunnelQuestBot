@@ -3,6 +3,7 @@ import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { extendAllWatchesAndReturnUserAndWatches } from '../../../../prisma/dbExecutors/watch';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleGlobalRefreshInactive(
 	interaction: ButtonInteraction,
@@ -17,5 +18,5 @@ export default async function handleGlobalRefreshInactive(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.globalSnoozeHasBeenRemoved);
+	debug(messageCopy.globalSnoozeHasBeenRemoved);
 }

@@ -16,6 +16,7 @@ import { handleLinkMatch } from '../playerLink/playerLink';
 import crypto from 'crypto';
 import { gracefullyHandleError } from '../helpers/errors';
 import { resolveCanonicalItemName } from '../gameData/consolidatedItems';
+import { debug } from '../helpers/logger';
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
@@ -55,7 +56,7 @@ export async function handleLogLine(server: Server, data: string) {
 	);
 
 	if (auctionMatch) {
-		debug_console(`Auction Match: ${auctionMatch}`);
+		debug(`Auction Match: ${auctionMatch}`);
 		// extract the timestamp, player, and auction message from the log line
 		const [, playerName, auctionText] = auctionMatch;
 		const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
@@ -156,7 +157,7 @@ export async function handleLogLine(server: Server, data: string) {
 			}
 		}
 	} else if (linkMatch) {
-		debug_console(`Link Match: ${linkMatch}`);
+		debug(`Link Match: ${linkMatch}`);
 		const [, playerName, linkCode] = linkMatch;
 		// console.log(playerName, linkMatch);
 

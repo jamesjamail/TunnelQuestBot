@@ -5,6 +5,7 @@ import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/watches';
 import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleWatchNotificationUnwatchActive<T>(
 	interaction: ButtonInteraction,
@@ -31,7 +32,7 @@ export default async function handleWatchNotificationUnwatchActive<T>(
 		components,
 		embeds,
 	});
-	debug_console(
+	debug(
 		messageCopy.yourWatchHasBeenRestored(
 			typedWatch.itemName,
 			typedWatch.server,

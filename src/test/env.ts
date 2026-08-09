@@ -30,8 +30,4 @@ export function applyTestEnvironment(): void {
 		process.env[`SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID`] =
 			`${server}-embedded`;
 	}
-
-	//	assigned in startLoggingAllServers, which tests never call
-	(globalThis as Record<string, unknown>).DEBUG_MODE = false;
-	(globalThis as Record<string, unknown>).debug_console = () => {};
 }

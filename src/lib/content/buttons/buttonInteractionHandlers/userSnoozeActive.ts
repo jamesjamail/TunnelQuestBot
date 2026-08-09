@@ -4,6 +4,7 @@ import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { findOrCreateUser } from '../../../../prisma/dbExecutors/user';
 import { extendAllWatchesAndReturnWatches } from '../../../../prisma/dbExecutors/watch';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleUserSnoozeActive(
 	interaction: ButtonInteraction,
@@ -17,5 +18,5 @@ export default async function handleUserSnoozeActive(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.globalSnoozeHasBeenRemoved);
+	debug(messageCopy.globalSnoozeHasBeenRemoved);
 }
