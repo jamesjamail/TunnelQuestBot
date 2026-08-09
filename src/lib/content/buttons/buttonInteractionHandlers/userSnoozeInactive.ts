@@ -3,6 +3,7 @@ import { messageCopy } from '../../copy/messageCopy';
 import { listCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { snoozeAllWatchesAndReturnWatchesAndUser } from '../../../../prisma/dbExecutors/watch';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleUserSnoozeInactive(
 	interaction: ButtonInteraction,
@@ -17,5 +18,5 @@ export default async function handleUserSnoozeInactive(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.allYourWatchesHaveBeenSnoozed());
+	debug(messageCopy.allYourWatchesHaveBeenSnoozed());
 }

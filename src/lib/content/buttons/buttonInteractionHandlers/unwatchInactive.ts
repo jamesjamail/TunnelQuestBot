@@ -5,6 +5,7 @@ import { unwatch } from '../../../../prisma/dbExecutors/watch';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/watches';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleUnwatchInactive<T>(
 	interaction: ButtonInteraction,
@@ -26,7 +27,7 @@ export default async function handleUnwatchInactive<T>(
 		embeds,
 		components,
 	});
-	debug_console(
+	debug(
 		messageCopy.yourWatchHasBeenUnwatched(
 			typedWatch.itemName,
 			typedWatch.server,

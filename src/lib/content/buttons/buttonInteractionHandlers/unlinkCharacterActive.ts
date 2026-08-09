@@ -4,6 +4,7 @@ import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
 import { messageCopy } from '../../copy/messageCopy';
 import { insertPlayerLinkFull } from '../../../../prisma/dbExecutors/playerLink';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleUnlinkCharacterActive<T>(
 	interaction: ButtonInteraction,
@@ -23,5 +24,5 @@ export default async function handleUnlinkCharacterActive<T>(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.soAndSoHasBeenLinked(data));
+	debug(messageCopy.soAndSoHasBeenLinked(data));
 }

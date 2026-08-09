@@ -4,6 +4,7 @@ import { unwatch } from '../../../../prisma/dbExecutors/watch';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleWatchNotificationUnwatchInactive<T>(
 	interaction: ButtonInteraction,
@@ -31,7 +32,7 @@ export default async function handleWatchNotificationUnwatchInactive<T>(
 		components,
 		embeds,
 	});
-	debug_console(
+	debug(
 		messageCopy.yourWatchHasBeenUnwatched(
 			typedWatch.itemName,
 			typedWatch.server,
