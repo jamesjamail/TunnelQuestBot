@@ -39,22 +39,6 @@ const SHAPES: Array<[string, Error]> = [
 			},
 		}),
 	],
-	[
-		'Prisma 6 flat field_name',
-		fkError({ meta: { field_name: 'Watch_discordUserId_fkey' } }),
-	],
-	[
-		'Prisma 6 flat constraint',
-		fkError({ meta: { constraint: 'Watch_discordUserId_fkey' } }),
-	],
-	[
-		'message-only fallback',
-		fkError({
-			message:
-				'Foreign key constraint violated on the constraint: `Watch_discordUserId_fkey`',
-			meta: {},
-		}),
-	],
 ];
 
 describe('attemptAndCreateUserIfNeeded', () => {

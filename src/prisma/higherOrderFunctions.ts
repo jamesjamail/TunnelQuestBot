@@ -33,20 +33,25 @@ async function ensureUserExists(user: Interaction['user']): Promise<void> {
 
 const USER_FK_COLUMN = 'discordUserId';
 
-//  Prisma has moved this detail twice now: `meta.field_name` in v5/v6, and in
-//  v7 the driver adapter's error cause. Each move silently broke lazy user
-//  creation, because a missed FK violation just rethrows and the user's first
-//  command fails. All three shapes are checked so the next move degrades into
-//  redundancy rather than an outage.
+//  Prisma 7 + @prisma/adapter-pg reports the violated constraint through the
+//  driver adapter's error cause. Postgres names the constraint
+//  (`Watch_discordUserId_fkey`); other drivers report bare column names, so both
+//  shapes are checked.
+//
+//  Deliberately no fallbacks for the flat `meta.field_name`/`meta.constraint` of
+//  v5/v6, or for the rendered message. prisma, @prisma/client and
+//  @prisma/adapter-pg are pinned together at ^7.9.1, so those shapes cannot
+//  occur without a deliberate downgrade — and if Prisma relocates this again,
+//  higherOrderFunctions.itest.ts is what catches it: it drives a real P2003
+//  against real Postgres through the same adapter production uses, so the build
+//  goes red before anything ships. Fallbacks would only soften a failure that
+//  had already got past a red build, and matching the message would mean
+//  trusting Prisma's prose to stay put — a weaker assumption than the one about
+//  structured fields this comment declines to make.
 type ForeignKeyViolationMeta = {
-	//  Prisma 7 + @prisma/adapter-pg. Postgres names the constraint
-	//  (`Watch_discordUserId_fkey`); other drivers report bare column names.
 	driverAdapterError?: {
 		cause?: { constraint?: { index?: string; fields?: string[] } };
 	};
-	//  Prisma 6 and earlier
-	field_name?: string;
-	constraint?: string | string[];
 };
 
 function isForeignKeyViolationError(error: unknown): boolean {
@@ -57,19 +62,7 @@ function isForeignKeyViolationError(error: unknown): boolean {
 		: undefined;
 	const constraint = meta?.driverAdapterError?.cause?.constraint;
 
-	const candidates = [
-		constraint?.index,
-		...(constraint?.fields ?? []),
-		meta?.field_name,
-		...(Array.isArray(meta?.constraint)
-			? meta.constraint
-			: [meta?.constraint]),
-		//  last resort: the rendered message still names the constraint when
-		//  the structured fields have moved again
-		typeof error.message === 'string' ? error.message : undefined,
-	];
-
-	return candidates.some(
+	return [constraint?.index, ...(constraint?.fields ?? [])].some(
 		(name) => typeof name === 'string' && name.includes(USER_FK_COLUMN),
 	);
 }
