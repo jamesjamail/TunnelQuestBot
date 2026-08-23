@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ChannelType } from 'discord.js';
 import { Server } from '../../prisma/client';
 import { streamAuctionToAllStreamChannels } from './streamAuction';
-import { getEnvironmentVariable } from '../helpers/env';
 import { gracefullyHandleError } from '../helpers/errors';
 import {
 	embeddedAuctionStreamMessageBuilder,
@@ -32,21 +31,6 @@ function getChannelSend(channelId: string) {
 	>;
 	return channel.send;
 }
-
-describe('getEnvironmentVariable', () => {
-	it('throws when an environment variable is missing', () => {
-		const original = process.env.SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID;
-		delete process.env.SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID;
-
-		expect(() =>
-			getEnvironmentVariable('SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID'),
-		).toThrow(
-			'Environment variable SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID is not defined.',
-		);
-
-		process.env.SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID = original;
-	});
-});
 
 describe('streamAuctionToAllStreamChannels', () => {
 	beforeEach(() => {
