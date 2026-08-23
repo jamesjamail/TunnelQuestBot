@@ -5,9 +5,13 @@
 #	  git config blame.ignoreRevsFile .git-blame-ignore-revs
 #
 #	GitHub honours this file automatically.
+#
+#	Rebasing this branch rewrites these hashes. test/config.test.ts checks they
+#	are still reachable, because a stale entry fails silently — blame just stops
+#	skipping the commit and nobody notices.
 
 #	style: apply biome formatting
-196e4b79d67b9cbcf6265d8ea6539e28d4c0f97b
+74ca28b9944e6529ed078b807fdb55de78e1f563
 
 #	style: normalise game data to LF
-0f0c786b188a910c094681de0698351fb122714e
+c8714806e7b0aaa07ff8d0f3221274c2e392f301
