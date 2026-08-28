@@ -4,6 +4,8 @@ vi.mock('../../prisma/init', () => import('../../test/mocks/prisma'));
 vi.mock('../../redis/init', () => import('../../test/mocks/redis'));
 vi.mock('../streams/streamAuction', () => ({
 	streamAuctionToAllStreamChannels: vi.fn(async () => undefined),
+}));
+vi.mock('../helpers/env', () => ({
 	getEnvironmentVariable: (n: string) => process.env[n] ?? '',
 }));
 vi.mock('../watchNotification/watchNotification', () => ({

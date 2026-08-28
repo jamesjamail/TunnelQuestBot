@@ -17,11 +17,8 @@ import {
 	formatPriceNumberToReadableString,
 	isSnoozed,
 } from '../../helpers/watches';
-import {
-	AuctionData,
-	ItemType,
-	getEnvironmentVariable,
-} from '../../streams/streamAuction';
+import { AuctionData, ItemType } from '../../streams/streamAuction';
+import { getEnvironmentVariable } from '../../helpers/env';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
 import {

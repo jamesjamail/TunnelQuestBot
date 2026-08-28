@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Interaction } from 'discord.js';
 import { prisma } from './init';
 
@@ -6,10 +5,10 @@ import { prisma } from './init';
 //  when they only need to be created once.  let's assume they exist and catch the
 //  the error if it fails.  If it's the specific FK violation error, then create the
 //  user and try again.
-export async function attemptAndCreateUserIfNeeded(
+export async function attemptAndCreateUserIfNeeded<T>(
 	interaction: Interaction,
-	action: () => Promise<any>,
-): Promise<any> {
+	action: () => Promise<T>,
+): Promise<T> {
 	try {
 		return await action();
 	} catch (error) {
@@ -32,23 +31,42 @@ async function ensureUserExists(user: Interaction['user']): Promise<void> {
 	});
 }
 
-//  Prisma 7 reports the violated constraint through the driver adapter's error
-//  cause instead of the flat `meta.constraint`/`meta.field_name` of earlier
-//  versions. Postgres names the constraint (`Watch_discordUserId_fkey`), but
-//  other drivers report bare column names, so check both shapes.
+const USER_FK_COLUMN = 'discordUserId';
+
+//  Prisma 7 + @prisma/adapter-pg reports the violated constraint through the
+//  driver adapter's error cause. Postgres names the constraint
+//  (`Watch_discordUserId_fkey`); other drivers report bare column names, so both
+//  shapes are checked.
+//
+//  Deliberately no fallbacks for the flat `meta.field_name`/`meta.constraint` of
+//  v5/v6, or for the rendered message. prisma, @prisma/client and
+//  @prisma/adapter-pg are pinned together at ^7.9.1, so those shapes cannot
+//  occur without a deliberate downgrade — and if Prisma relocates this again,
+//  higherOrderFunctions.itest.ts is what catches it: it drives a real P2003
+//  against real Postgres through the same adapter production uses, so the build
+//  goes red before anything ships. Fallbacks would only soften a failure that
+//  had already got past a red build, and matching the message would mean
+//  trusting Prisma's prose to stay put — a weaker assumption than the one about
+//  structured fields this comment declines to make.
 type ForeignKeyViolationMeta = {
 	driverAdapterError?: {
 		cause?: { constraint?: { index?: string; fields?: string[] } };
 	};
 };
 
-function isForeignKeyViolationError(error: any): boolean {
-	if (error?.code !== 'P2003') return false;
+function isForeignKeyViolationError(error: unknown): boolean {
+	if (!isRecord(error) || error.code !== 'P2003') return false;
 
-	const constraint = (error.meta as ForeignKeyViolationMeta | undefined)
-		?.driverAdapterError?.cause?.constraint;
+	const meta = isRecord(error.meta)
+		? (error.meta as ForeignKeyViolationMeta)
+		: undefined;
+	const constraint = meta?.driverAdapterError?.cause?.constraint;
 
-	return [constraint?.index ?? '', ...(constraint?.fields ?? [])].some(
-		(name) => name.includes('discordUserId'),
+	return [constraint?.index, ...(constraint?.fields ?? [])].some(
+		(name) => typeof name === 'string' && name.includes(USER_FK_COLUMN),
 	);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null;
 }

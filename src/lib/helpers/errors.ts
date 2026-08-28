@@ -35,8 +35,10 @@ function pruneReportHistory(now: number) {
 }
 
 // 	backstop for floods that dedupe cannot catch, such as errors whose message
-// 	embeds a unique interaction id
-function hasExceededReportRate(now: number) {
+// 	embeds a unique interaction id. Consumes one unit of the per-minute budget
+// 	and reports whether the caller may proceed - it mutates, so it is not a
+// 	predicate and must be called exactly once per report attempt.
+function consumeReportBudget(now: number) {
 	if (now - rateWindowStartedAt >= 60 * 1000) {
 		rateWindowStartedAt = now;
 		reportsInRateWindow = 0;
@@ -50,7 +52,7 @@ function hasExceededReportRate(now: number) {
 		);
 	}
 
-	return reportsInRateWindow > MAX_REPORTS_PER_MINUTE;
+	return reportsInRateWindow <= MAX_REPORTS_PER_MINUTE;
 }
 
 function beginDiscordReport(error: Error, now: number): string | undefined {
@@ -71,7 +73,7 @@ function beginDiscordReport(error: Error, now: number): string | undefined {
 		return undefined;
 	}
 
-	if (hasExceededReportRate(now)) {
+	if (!consumeReportBudget(now)) {
 		return undefined;
 	}
 
@@ -186,6 +188,9 @@ export async function gracefullyHandleError(
 	// 	a throw here would replace a handled error with an unhandled one
 	try {
 		await reportErrorToDiscord(errorMessage, normalizedError, extraData);
+		// 	deliberately not recorded when the send fails: a transient Discord
+		// 	blip should not suppress this error for the whole dedupe window. A
+		// 	sustained outage is bounded by the per-minute budget instead.
 		lastReportedAt.set(reportKey, Date.now());
 	} catch (loggingError) {
 		console.error('ERROR LOGGING ERROR TO DISCORD: ', loggingError);

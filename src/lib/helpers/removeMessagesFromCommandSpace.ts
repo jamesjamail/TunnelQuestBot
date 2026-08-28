@@ -35,8 +35,9 @@ export async function removeNoncommandMessagesFromPublicCommandSpace() {
 					BULK_DELETE_MAX_AGE_MS,
 			);
 
-		// 	one request for up to 100 messages; deleting them individually cost a
-		// 	request each, which rate limits hard once a backlog builds up
+		// 	one request instead of one per message, which rate limits hard once a
+		// 	backlog builds up. messages.fetch() returns 50 by default and the
+		// 	endpoint accepts 100, so this always fits in a single call.
 		await textChannel.bulkDelete(recent);
 
 		// 	the bulk endpoint rejects these outright, so they still cost a request
