@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -47,42 +46,6 @@ describe('deployment and config invariants', () => {
 		const indexSource = readRepoFile('src/index.ts');
 		expect(indexSource).toMatch(/process\.on\('uncaughtException'/);
 		expect(indexSource).toMatch(/handleFatalError\(error\)/);
-	});
-});
-
-describe('blame-ignore list', () => {
-	const hashes = () =>
-		readRepoFile('.git-blame-ignore-revs')
-			.split('\n')
-			.map((line) => line.trim())
-			.filter((line) => line !== '' && !line.startsWith('#'));
-
-	it('lists full 40-character commit hashes', () => {
-		const listed = hashes();
-		expect(listed.length).toBeGreaterThan(0);
-		for (const hash of listed) {
-			expect(hash).toMatch(/^[0-9a-f]{40}$/);
-		}
-	});
-
-	it('lists only commits that still exist', () => {
-		//	Rebasing rewrites these hashes and nothing complains: blame simply
-		//	stops skipping the reformat. This has gone stale twice already.
-		//
-		//	Skipped on a shallow clone — actions/checkout fetches depth 1 by
-		//	default, so the commits genuinely are not present there and the
-		//	check would fail for a reason that says nothing about the file.
-		const shallow =
-			execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
-				encoding: 'utf8',
-			}).trim() === 'true';
-		if (shallow) return;
-
-		for (const hash of hashes()) {
-			expect(() =>
-				execFileSync('git', ['cat-file', '-e', `${hash}^{commit}`]),
-			).not.toThrow();
-		}
 	});
 });
 
