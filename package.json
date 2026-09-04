@@ -8,7 +8,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate deploy",
     "start": "node ./build/index.js",
-    "doctor": "node ./build/doctor.js",
+    "doctor": "npm run build && node ./build/doctor.js",
     "debug": "node --inspect=0.0.0.0 ./build/index.js",
     "prepare": "husky",
     "postinstall": "node ./scripts/postinstall.mjs",
