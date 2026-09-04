@@ -39,16 +39,36 @@ describe('deployment and config invariants', () => {
 		expect(schema).toMatch(/model Watch[\s\S]*@@index\(\[active\]\)/);
 	});
 
-	it('handles Discord login rejections', () => {
+	//	These match the handler bodies rather than the whole file. The earlier
+	//	spelling asserted `process.exit(1)` appeared somewhere in index.ts, which
+	//	four unrelated call sites also satisfy - so it passed whether or not the
+	//	login rejection was the thing being handled.
+	it('exits rather than idling when the login finally fails', () => {
 		const indexSource = readRepoFile('src/index.ts');
-		expect(indexSource).toMatch(/client\.login/);
-		expect(indexSource).toMatch(/process\.exit\(1\)/);
+
+		expect(indexSource).toMatch(
+			/login\(\)\.catch\(\(error\) => \{[\s\S]*?process\.exit\(1\);[\s\S]*?\}\)/,
+		);
 	});
 
 	it('routes uncaught exceptions through fatal shutdown', () => {
 		const indexSource = readRepoFile('src/index.ts');
-		expect(indexSource).toMatch(/process\.on\('uncaughtException'/);
-		expect(indexSource).toMatch(/handleFatalError\(error\)/);
+
+		expect(indexSource).toMatch(
+			/process\.on\('uncaughtException',[\s\S]*?handleFatalError\(error\)/,
+		);
+	});
+
+	it('does not start the bot merely because a module imported it', () => {
+		//	Six modules import `client` from index.ts, errors.ts among them. While
+		//	startup ran at module scope, importing any of them opened a gateway
+		//	connection and re-registered slash commands against the live app.
+		const indexSource = readRepoFile('src/index.ts');
+
+		expect(indexSource).toMatch(
+			/if \(require\.main === module\) \{\s*boot\(\);\s*\}/,
+		);
+		expect(indexSource).toMatch(/function boot\(\)[\s\S]*?login\(\)/);
 	});
 });
 
