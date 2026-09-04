@@ -166,8 +166,9 @@ describe('watch dbExecutor (integration)', () => {
 
 	describe('queries', () => {
 		it('getWatchesByUser returns only that user active watches', async () => {
-			const { upsertWatch, getWatchesByUser, unwatch } =
-				await import('./watch');
+			const { upsertWatch, getWatchesByUser, unwatch } = await import(
+				'./watch'
+			);
 			await seedUser('100');
 			await seedUser('200');
 
@@ -185,8 +186,9 @@ describe('watch dbExecutor (integration)', () => {
 		});
 
 		it('getWatchesByItemName filters by substring on stored uppercase names', async () => {
-			const { upsertWatch, getWatchesByItemName } =
-				await import('./watch');
+			const { upsertWatch, getWatchesByItemName } = await import(
+				'./watch'
+			);
 			await seedUser();
 
 			await upsertWatch('100', {
@@ -228,8 +230,9 @@ describe('watch dbExecutor (integration)', () => {
 		});
 
 		it('getWatchByWatchIdForWatchNotification returns null for a missing id', async () => {
-			const { getWatchByWatchIdForWatchNotification } =
-				await import('./watch');
+			const { getWatchByWatchIdForWatchNotification } = await import(
+				'./watch'
+			);
 
 			expect(
 				await getWatchByWatchIdForWatchNotification(99999),
@@ -290,8 +293,9 @@ describe('watch dbExecutor (integration)', () => {
 		});
 
 		it('snoozeWatch and unsnoozeWatch set and clear snoozedUntil', async () => {
-			const { upsertWatch, snoozeWatch, unsnoozeWatch } =
-				await import('./watch');
+			const { upsertWatch, snoozeWatch, unsnoozeWatch } = await import(
+				'./watch'
+			);
 			await seedUser();
 
 			const watch = await upsertWatch('100', defaultWatchData);
@@ -319,8 +323,9 @@ describe('watch dbExecutor (integration)', () => {
 		});
 
 		it('extendWatch moves created forward and reactivates', async () => {
-			const { upsertWatch, unwatch, extendWatch } =
-				await import('./watch');
+			const { upsertWatch, unwatch, extendWatch } = await import(
+				'./watch'
+			);
 			await seedUser();
 
 			const watch = await upsertWatch('100', defaultWatchData);
