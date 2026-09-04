@@ -49,6 +49,46 @@ describe('deployment and config invariants', () => {
 	});
 });
 
+describe('lint and format config', () => {
+	//	A biome.json that fails to parse does not fail the run - Biome falls back
+	//	to its built-in defaults and reports success, so `npm run lint` goes green
+	//	while silently linting build/ and skipping none of the excludes. Comments
+	//	are the easy way to trip this, since biome.json is strict JSON.
+	it('parses as strict JSON', () => {
+		const raw = readRepoFile('biome.json');
+		expect(() => JSON.parse(raw) as unknown).not.toThrow();
+	});
+
+	it('excludes generated and vendored trees from formatting', () => {
+		const config = JSON.parse(readRepoFile('biome.json')) as {
+			files?: { includes?: string[] };
+		};
+		const includes = config.files?.includes ?? [];
+
+		for (const excluded of [
+			'!build/**',
+			'!src/prisma/generated/**',
+			'!src/lib/gameData/*.json',
+		]) {
+			expect(includes).toContain(excluded);
+		}
+	});
+
+	it('has no eslint or prettier packages left to drift out of sync', () => {
+		const pkg = JSON.parse(readRepoFile('package.json')) as {
+			devDependencies?: Record<string, string>;
+		};
+		const devDependencies = Object.keys(pkg.devDependencies ?? {});
+
+		expect(
+			devDependencies.filter(
+				(name) => name.includes('eslint') || name.includes('prettier'),
+			),
+		).toEqual([]);
+		expect(devDependencies).toContain('@biomejs/biome');
+	});
+});
+
 describe('startup migration invariants', () => {
 	const entrypoint = () => readRepoFile('docker-entrypoint.sh');
 
