@@ -1,66 +1,66 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
-		"includes": [
-			"**",
-			"!build/**",
-			"!coverage/**",
-			"!package-lock.json",
-			"!.claude/**",
-			"!src/prisma/generated/**",
-			"!src/prisma/migrations/**",
-			"!src/lib/gameData/*.json",
-			"!tsconfig.json"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"indentWidth": 4,
-		"lineWidth": 80,
-		"lineEnding": "lf"
-	},
-	"javascript": {
-		"formatter": {
-			"semicolons": "always",
-			"quoteStyle": "single",
-			"jsxQuoteStyle": "double",
-			"trailingCommas": "all",
-			"bracketSpacing": true,
-			"arrowParentheses": "always",
-			"quoteProperties": "asNeeded"
-		}
-	},
-	"json": {
-		"formatter": {
-			"indentStyle": "space",
-			"indentWidth": 2
-		}
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"style": {
-				"noNonNullAssertion": "off",
-				"useNodejsImportProtocol": "off"
-			},
-			"suspicious": {
-				"noConsole": "off",
-				"noExplicitAny": "warn"
-			}
-		}
-	},
-	"assist": {
-		"actions": {
-			"source": {
-				"organizeImports": "off"
-			}
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!build/**",
+      "!coverage/**",
+      "!package-lock.json",
+      "!.claude/**",
+      "!src/prisma/generated/**",
+      "!src/prisma/migrations/**",
+      "!src/lib/gameData/*.json",
+      "!tsconfig.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "tab",
+    "indentWidth": 4,
+    "lineWidth": 80,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "semicolons": "always",
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "trailingCommas": "all",
+      "bracketSpacing": true,
+      "arrowParentheses": "always",
+      "quoteProperties": "asNeeded"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off",
+        "useNodejsImportProtocol": "off"
+      },
+      "suspicious": {
+        "noConsole": "off",
+        "noExplicitAny": "warn"
+      }
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "off"
+      }
+    }
+  }
 }

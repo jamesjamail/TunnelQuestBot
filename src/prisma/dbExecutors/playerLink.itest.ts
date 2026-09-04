@@ -55,8 +55,9 @@ describe('playerLink dbExecutor (integration)', () => {
 
 	describe('authPlayerLink', () => {
 		it('links a valid code by setting server/player and clearing code fields', async () => {
-			const { insertPlayerLink, authPlayerLink } =
-				await import('./playerLink');
+			const { insertPlayerLink, authPlayerLink } = await import(
+				'./playerLink'
+			);
 			await seedUser();
 
 			const linkCode = await insertPlayerLink('100');
@@ -72,8 +73,9 @@ describe('playerLink dbExecutor (integration)', () => {
 		});
 
 		it('rejects a second user linking the same server/player with P2002', async () => {
-			const { insertPlayerLink, authPlayerLink } =
-				await import('./playerLink');
+			const { insertPlayerLink, authPlayerLink } = await import(
+				'./playerLink'
+			);
 			const prisma = await getPrisma();
 			await seedUser('100');
 			await seedUser('200');
@@ -121,8 +123,9 @@ describe('playerLink dbExecutor (integration)', () => {
 		});
 
 		it('does not link when linkCodeExpiry is in the past', async () => {
-			const { insertPlayerLink, authPlayerLink } =
-				await import('./playerLink');
+			const { insertPlayerLink, authPlayerLink } = await import(
+				'./playerLink'
+			);
 			const prisma = await getPrisma();
 			await seedUser();
 
@@ -140,8 +143,9 @@ describe('playerLink dbExecutor (integration)', () => {
 
 	describe('queries and removal', () => {
 		it('getPlayerLinksForUser returns only that user links', async () => {
-			const { insertPlayerLink, getPlayerLinksForUser } =
-				await import('./playerLink');
+			const { insertPlayerLink, getPlayerLinksForUser } = await import(
+				'./playerLink'
+			);
 			await seedUser('100');
 			await seedUser('200');
 
