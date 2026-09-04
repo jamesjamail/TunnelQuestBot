@@ -180,7 +180,12 @@ export function applyEnvUpdates(source, updates) {
 	return `${rewritten.join('\n').replace(/\n+$/, '')}\n`;
 }
 
+/**
+ * @param {string} source
+ * @returns {Record<string, string>}
+ */
 export function parseEnvFile(source) {
+	/** @type {Record<string, string>} */
 	const env = {};
 	for (const line of source.split('\n')) {
 		const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);

@@ -58,12 +58,26 @@ process.on('uncaughtException', (error) => {
 client.slashCommands = new Collection<string, SlashCommand>();
 client.cooldowns = new Collection<string, number>();
 
-// 	Called explicitly rather than scanned from handlers/: the scan also invoked
-// 	the loader modules, which export named functions instead of a callable, and
-// 	the resulting throw skipped the login() call below. Imported rather than
-// 	require()d so a rename of either handler fails the build instead of at boot.
-registerCommandHandlers(client);
-registerEventHandlers(client);
+// 	Everything below is startup, and runs only when this module is the process
+// 	entrypoint. Six modules import `client` from here - errors.ts among them, so
+// 	the reach is effectively the whole codebase - and importing any of them used
+// 	to register slash commands against the live application and open a gateway
+// 	connection as a side effect. That made the bot impossible to load from a
+// 	script, and `doctor` in particular could not touch the handler directories
+// 	without logging in with the production token.
+function boot(): void {
+	// 	Called explicitly rather than scanned from handlers/: the scan also invoked
+	// 	the loader modules, which export named functions instead of a callable, and
+	// 	the resulting throw skipped the login() call below. Imported rather than
+	// 	require()d so a rename of either handler fails the build instead of at boot.
+	registerCommandHandlers(client);
+	registerEventHandlers(client);
+
+	login().catch((error) => {
+		console.error('Could not log in to Discord: ', normalizeError(error));
+		process.exit(1);
+	});
+}
 
 // 	Once logged in discord.js reconnects on its own, but a failure during the
 // 	initial login is fatal. On container start we frequently lose the race with
@@ -103,7 +117,6 @@ async function login() {
 	}
 }
 
-login().catch((error) => {
-	console.error('Could not log in to Discord: ', normalizeError(error));
-	process.exit(1);
-});
+if (require.main === module) {
+	boot();
+}

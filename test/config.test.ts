@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { parse } from 'dotenv';
 import { parseConfig } from '../src/config';
@@ -164,11 +165,43 @@ describe('startup migration invariants', () => {
 		);
 	});
 
-	it('retries only failures caused by an unreachable database', () => {
-		const source = entrypoint();
-		expect(source).toMatch(/P1001/);
-		expect(source).toMatch(/MIGRATE_MAX_ATTEMPTS/);
-		expect(source).toMatch(/is_retryable_failure/);
+	//	Runs the real shell function rather than asserting on its text, so the
+	//	classification is checked rather than the spelling of the case arms.
+	function isRetryable(message: string): boolean {
+		const fn = entrypoint().match(
+			/^is_retryable_failure\(\) \{[\s\S]*?^\}/m,
+		)?.[0];
+		if (!fn)
+			throw new Error('is_retryable_failure not found in entrypoint');
+
+		const script = `${fn}\nif is_retryable_failure "$1"; then echo yes; else echo no; fi`;
+		return (
+			execFileSync('sh', ['-c', script, 'sh', message], {
+				encoding: 'utf8',
+			}).trim() === 'yes'
+		);
+	}
+
+	it('waits for a database that is not up yet', () => {
+		expect(isRetryable("P1001 Can't reach database server")).toBe(true);
+		expect(isRetryable('connect ECONNREFUSED 127.0.0.1:5432')).toBe(true);
+	});
+
+	it('fails fast on a missing file rather than retrying it', () => {
+		//	ENOENT means schema.prisma or migrations/ is absent from the image,
+		//	which is exactly what the smoke job exists to catch. It used to retry
+		//	thirty times at 2s before failing, burying the reason.
+		expect(isRetryable('ENOENT: no such file or directory')).toBe(false);
+	});
+
+	it('fails fast on a migration that needs a person', () => {
+		expect(isRetryable('P3009 migrate found failed migrations')).toBe(
+			false,
+		);
+	});
+
+	it('bounds the retrying', () => {
+		expect(entrypoint()).toMatch(/MIGRATE_MAX_ATTEMPTS/);
 	});
 
 	it('refuses to start the app when migrations cannot be applied', () => {
@@ -257,7 +290,7 @@ describe('first-run path', () => {
 				key === 'TOKEN' ? 'placeholder.token' : '1'.repeat(18);
 		}
 
-		expect(() => parseConfig(example)).not.toThrow();
+		expect(() => parseConfig(example as NodeJS.ProcessEnv)).not.toThrow();
 	});
 
 	it('builds before running doctor, which reads from build/', () => {

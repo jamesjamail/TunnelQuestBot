@@ -13,6 +13,16 @@ import {
 //	that list falls behind, the image still builds and this is what notices.
 import { consolidatedItemsAndAliases } from './lib/gameData/consolidatedItems';
 import { Server } from './prisma/client';
+//	Imported for the same reason as the game data: the runtime image copies a
+//	hand-maintained list of paths, and this is the module that notices when the
+//	list falls behind. Importing it does not open a connection - ioredis connects
+//	lazily - so this stays a configuration check.
+import './redis/init';
+import { Client, Collection } from 'discord.js';
+import { join } from 'path';
+import { loadEvents } from './handlers/eventLoader';
+import { loadSlashCommands } from './handlers/commandLoader';
+import type { SlashCommand } from './types';
 
 //	Validates configuration and exits. Deliberately does not connect to Discord,
 //	Postgres or Redis, so it answers "is this environment set up correctly?"
@@ -93,6 +103,38 @@ function main(): number {
 			'\nGame data is empty. In a container this means the JSON under',
 		);
 		console.error('src/lib/gameData was not copied into the image.');
+		return 1;
+	}
+
+	//	The largest "builds clean, dies at boot" surface in the repo: both loaders
+	//	readdirSync a directory in the build tree and require() every file in it,
+	//	so a module missing from the image, or one that throws at import, fails
+	//	here and nowhere earlier. Neither loader touches the network - only
+	//	registerSlashCommands does, and it is deliberately not called.
+	try {
+		const client = new Client({ intents: [] });
+		client.slashCommands = new Collection<string, SlashCommand>();
+		client.cooldowns = new Collection<string, number>();
+
+		const commands = loadSlashCommands(
+			join(__dirname, 'lib/commands/slashCommands'),
+			client,
+		);
+		const events = loadEvents(join(__dirname, 'events'), client);
+
+		console.log(`  commands         ${commands.length} loaded`);
+		console.log(`  events           ${events.length} loaded`);
+
+		if (commands.length === 0 || events.length === 0) {
+			console.error(
+				'\nA handler directory is empty. In a container this means the',
+			);
+			console.error('build output was not copied into the image.');
+			return 1;
+		}
+	} catch (error) {
+		console.error('\nA handler module failed to load:\n');
+		console.error(error);
 		return 1;
 	}
 

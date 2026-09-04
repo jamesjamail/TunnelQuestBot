@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-// @ts-expect-error - plain .mjs so it runs before any build step
 import {
 	applyEnvUpdates,
 	parseEnvFile,
@@ -204,7 +203,8 @@ describe('applyEnvUpdates with duplicate keys', () => {
 			COMMAND_CHANNEL: '999999999999999999',
 		});
 
-		expect(parseEnvFile(result).COMMAND_CHANNEL).toBe('999999999999999999');
+		const parsed = parseEnvFile(result);
+		expect(parsed.COMMAND_CHANNEL).toBe('999999999999999999');
 	});
 
 	it('changes exactly one line', () => {

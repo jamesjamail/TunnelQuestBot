@@ -15,9 +15,14 @@ log() {
 #	A database that is not up yet is worth waiting for. Anything else - schema
 #	drift, a migration that failed halfway - needs a person, and retrying it
 #	only buries the reason in a restart loop.
+#
+#	ENOENT is deliberately not here. It means a file is missing - schema.prisma
+#	or migrations/ absent from the image - which is exactly what the smoke job
+#	exists to catch, and no amount of waiting produces it. Retrying spent a
+#	minute burying the reason before failing anyway.
 is_retryable_failure() {
 	case "$1" in
-		*P1001* | *P1002* | *P1017* | *ECONNREFUSED* | *ENOENT* | \
+		*P1001* | *P1002* | *P1017* | *ECONNREFUSED* | \
 			*"Can't reach database server"*)
 			return 0
 			;;

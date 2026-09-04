@@ -1,0 +1,13 @@
+{
+  // 	The build config sets rootDir to ./src and excludes tests, so
+  // 	`tsc --noEmit` against it never saw test/ - which made the
+  // 	@ts-expect-error directives in there inert, since an unused one is
+  // 	normally an error itself. This widens the net without touching what
+  // 	`npm run build` emits.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "test/**/*"]
+}

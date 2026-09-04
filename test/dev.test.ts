@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error - plain .mjs script, no type declarations
 import { devDefaults, resolveDevEnv } from '../scripts/dev.mjs';
 
 //	Precedence is the whole point of these: the defaults are written into

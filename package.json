@@ -12,7 +12,7 @@
     "debug": "node --inspect=0.0.0.0 ./build/index.js",
     "prepare": "husky",
     "postinstall": "node ./scripts/postinstall.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "format:check": "biome format",
     "check": "npm run lint && npm run typecheck && npm test",
     "lint": "biome check --error-on-warnings",

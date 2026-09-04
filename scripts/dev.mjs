@@ -40,7 +40,14 @@ export const devDefaults = {
 //	entry that already exists, so defaulting a key that .env also sets would make
 //	the default win silently. Someone with real EverQuest logs setting
 //	FAKE_LOGS=false would still get generated auctions and no explanation.
+/**
+ * @param {Record<string, string>} defaults
+ * @param {Record<string, string | undefined>} env
+ * @param {Record<string, string>} fromEnvFile
+ * @returns {Record<string, string>}
+ */
 export function resolveDevEnv(defaults, env, fromEnvFile) {
+	/** @type {Record<string, string>} */
 	const applied = {};
 	for (const [key, value] of Object.entries(defaults)) {
 		if (key in env || key in fromEnvFile) continue;
@@ -49,6 +56,10 @@ export function resolveDevEnv(defaults, env, fromEnvFile) {
 	return applied;
 }
 
+/**
+ * @param {string} path
+ * @returns {Record<string, string>}
+ */
 export function readEnvFile(path) {
 	return existsSync(path) ? parse(readFileSync(path, 'utf8')) : {};
 }
