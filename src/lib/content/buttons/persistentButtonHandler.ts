@@ -1,5 +1,5 @@
-import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { PlayerLink, Server } from '../../../prisma/client';
+import { type ButtonInteraction, MessageFlags } from 'discord.js';
+import { type PlayerLink, Server } from '../../../prisma/client';
 import { parseCustomId, ButtonInteractionTypes } from './buttonBuilder';
 import * as handlers from './buttonInteractionHandlers/index';
 import {
@@ -7,7 +7,7 @@ import {
 	getWatchByWatchIdForWatchNotification,
 } from '../../../prisma/dbExecutors/watch';
 import { prisma } from '../../../prisma/init';
-import { WatchNotificationMetadata } from '../../watchNotification/watchNotification';
+import type { WatchNotificationMetadata } from '../../watchNotification/watchNotification';
 
 // Extract notification context (player, price, auctionMessage) from an
 // existing watch notification embed so we can reconstruct metadata after

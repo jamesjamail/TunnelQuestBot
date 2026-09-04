@@ -1,0 +1,10 @@
+#	Commits here are pure reformats. `git blame` skips them so authorship still
+#	points at whoever wrote the line.
+#
+#	Enable locally (once per clone):
+#	  git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+#	GitHub honours this file automatically.
+
+#	style: apply biome formatting
+30579d51c2ce4ef3ef9d6a9642534009d8c1f565

@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, CacheType } from 'discord.js';
+import type { AutocompleteInteraction, CacheType } from 'discord.js';
 import Fuse from 'fuse.js';
 import { toTitleCase } from '../../helpers/titleCase';
 import {

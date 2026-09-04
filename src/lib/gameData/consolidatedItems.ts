@@ -1,4 +1,4 @@
-import { InGameItemNamesType } from '../playerLink/playerLink';
+import type { InGameItemNamesType } from '../playerLink/playerLink';
 import inGameItemNamesRaw from './items.json';
 import inGameSpellNamesRaw from './spells.json';
 import inGameAliasesRaw from './aliases.json';

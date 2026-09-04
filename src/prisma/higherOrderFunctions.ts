@@ -1,4 +1,4 @@
-import { Interaction } from 'discord.js';
+import type { Interaction } from 'discord.js';
 import { prisma } from './init';
 
 //  users table PK is discord user id. feels like a waste to look it up everytime

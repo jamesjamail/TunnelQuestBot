@@ -1,8 +1,8 @@
-import { Client, Routes, SlashCommandOptionsOnlyBuilder } from 'discord.js';
+import { type Client, Routes, type SlashCommandOptionsOnlyBuilder } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { readdirSync } from 'fs';
 import { color } from '../functions';
-import { SlashCommand } from '../types';
+import type { SlashCommand } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 
 export function loadSlashCommands(

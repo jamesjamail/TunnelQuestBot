@@ -10,7 +10,7 @@ import {
 } from './autocompleteWatches';
 import { getWatchesByDiscordUser } from '../../../prisma/dbExecutors/watch';
 import { makeChatInteraction, makeWatch } from '../../../test/factories';
-import { AutocompleteInteraction } from 'discord.js';
+import type { AutocompleteInteraction } from 'discord.js';
 
 describe('autocompleteWatches', () => {
 	beforeEach(() => {

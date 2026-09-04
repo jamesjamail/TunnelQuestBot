@@ -1,5 +1,5 @@
 import {
-	GroupedWatchesType,
+	type GroupedWatchesType,
 	initializeGroupedWatches,
 } from '../../prisma/dbExecutors/watch';
 

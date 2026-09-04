@@ -8,12 +8,12 @@
   "files": {
     "includes": [
       "**",
-      "!build/**",
-      "!coverage/**",
+      "!build",
+      "!coverage",
       "!package-lock.json",
-      "!.claude/**",
-      "!src/prisma/generated/**",
-      "!src/prisma/migrations/**",
+      "!.claude",
+      "!src/prisma/generated",
+      "!src/prisma/migrations",
       "!src/lib/gameData/*.json",
       "!tsconfig.json"
     ]

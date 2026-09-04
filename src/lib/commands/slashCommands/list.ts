@@ -1,5 +1,5 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { SlashCommand } from '../../../types';
+import type { SlashCommand } from '../../../types';
 import { listCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
 	MessageTypes,

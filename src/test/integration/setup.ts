@@ -2,9 +2,9 @@ import { execSync } from 'node:child_process';
 import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import {
 	PostgreSqlContainer,
-	StartedPostgreSqlContainer,
+	type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
-import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
+import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
 
 let postgres: StartedPostgreSqlContainer;
 let redisContainer: StartedRedisContainer;

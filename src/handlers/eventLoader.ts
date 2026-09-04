@@ -1,7 +1,7 @@
-import { Client } from 'discord.js';
+import type { Client } from 'discord.js';
 import { readdirSync } from 'fs';
 import { color } from '../functions';
-import { BotEvent } from '../types';
+import type { BotEvent } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 
 export function loadEvents(eventsDir: string, client: Client): string[] {

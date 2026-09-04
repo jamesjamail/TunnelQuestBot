@@ -1,8 +1,8 @@
-import { Watch, BlockedPlayer } from '../../../prisma/client';
+import type { Watch, BlockedPlayer } from '../../../prisma/client';
 import {
-	ApplicationCommandOptionChoiceData,
-	AutocompleteInteraction,
-	CacheType,
+	type ApplicationCommandOptionChoiceData,
+	type AutocompleteInteraction,
+	type CacheType,
 	DiscordAPIError,
 	RESTJSONErrorCodes,
 } from 'discord.js';

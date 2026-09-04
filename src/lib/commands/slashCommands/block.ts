@@ -1,6 +1,6 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { SlashCommand } from '../../../types';
-import { Server } from '../../../prisma/client';
+import type { SlashCommand } from '../../../types';
+import type { Server } from '../../../prisma/client';
 import { addPlayerBlock } from '../../../prisma/dbExecutors/block';
 import {
 	buttonRowBuilder,

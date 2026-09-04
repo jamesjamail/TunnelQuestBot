@@ -21,7 +21,7 @@ import {
 	embeddedAuctionStreamMessageBuilder,
 	formatHoverText,
 	formatserverEnumToReadableString,
-	HistoricalData,
+	type HistoricalData,
 	getEmbedCharacterCount,
 	listCommandResponseBuilder,
 	packEmbedsForDiscord,

@@ -1,23 +1,27 @@
 import {
-	Watch,
-	Server,
-	User,
-	BlockedPlayer,
-	PlayerLink,
+	type Watch,
+	type Server,
+	type User,
+	type BlockedPlayer,
+	type PlayerLink,
 	WatchType,
 } from '../../../prisma/client';
-import { APIEmbedField, EmbedAuthorOptions, EmbedBuilder } from 'discord.js';
+import {
+	type APIEmbedField,
+	type EmbedAuthorOptions,
+	EmbedBuilder,
+} from 'discord.js';
 import {
 	formatSnoozeExpirationTimestamp,
 	formatWatchExpirationTimestamp,
 } from '../../helpers/datetime';
 import { getServerColorFromString } from '../../helpers/colors';
-import { EmbedField } from 'discord.js';
+import type { EmbedField } from 'discord.js';
 import {
 	formatPriceNumberToReadableString,
 	isSnoozed,
 } from '../../helpers/watches';
-import { AuctionData, ItemType } from '../../streams/streamAuction';
+import type { AuctionData, ItemType } from '../../streams/streamAuction';
 import { getEnvironmentVariable } from '../../helpers/env';
 import { getImageUrlForItem } from '../../helpers/images';
 import { getWikiUrlFromItem } from '../../helpers/wikiLinks';
@@ -582,7 +586,7 @@ export async function embeddedAuctionStreamMessageBuilder(
 			playerLink.discordUserId,
 		);
 		if (userName) {
-			userLinkValue = userLinkValue + ` (@${userName})`;
+			userLinkValue = `${userLinkValue} (@${userName})`;
 		}
 		combinedFields.push({
 			name: 'Discord User',

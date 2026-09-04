@@ -1,6 +1,6 @@
-import { TextChannel, ChannelType } from 'discord.js';
+import { type TextChannel, ChannelType } from 'discord.js';
 import { client } from '../..';
-import { Server } from '../../prisma/client';
+import type { Server } from '../../prisma/client';
 import {
 	embeddedAuctionStreamMessageBuilder,
 	packEmbedsForDiscord,

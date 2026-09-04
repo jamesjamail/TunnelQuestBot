@@ -32,7 +32,7 @@ vi.mock('../../../prisma/dbExecutors/watch', () => ({
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ButtonInteraction, MessageFlags } from 'discord.js';
+import { type ButtonInteraction, MessageFlags } from 'discord.js';
 import { Server } from '../../../prisma/client';
 import {
 	extractNotificationContext,

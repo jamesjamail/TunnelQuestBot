@@ -1,7 +1,7 @@
-import { Interaction, TextChannel } from 'discord.js';
+import type { Interaction, TextChannel } from 'discord.js';
 import crypto from 'crypto';
 import { client } from '../..';
-import { SlashCommand } from '../../types';
+import type { SlashCommand } from '../../types';
 
 // 	A repeating failure - a database outage, a duplicate-interaction storm - can
 // 	raise an error for every auction line. Each report costs a message, a thread

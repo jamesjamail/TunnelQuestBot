@@ -10,7 +10,7 @@ vi.mock('../lib/helpers/errors', () => ({
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Client } from 'discord.js';
+import type { Client } from 'discord.js';
 import ready, { initializeRuntime } from './ready';
 import { initializePrisma } from '../prisma/init';
 import { startLoggingAllServers } from '../lib/parser';

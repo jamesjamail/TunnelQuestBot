@@ -1,4 +1,4 @@
-import { Server } from '../../prisma/client';
+import type { Server } from '../../prisma/client';
 import { Tail } from 'tail';
 import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
@@ -173,7 +173,7 @@ export function monitorLogFile(server: Server) {
 		useWatchFile: true,
 	});
 
-	tail.on('line', async function (data) {
+	tail.on('line', async (data) => {
 		try {
 			await handleLogLine(server, data);
 		} catch (error) {
@@ -187,7 +187,7 @@ export function monitorLogFile(server: Server) {
 		}
 	});
 
-	tail.on('error', async function (error) {
+	tail.on('error', async (error) => {
 		await gracefullyHandleError(error);
 	});
 }

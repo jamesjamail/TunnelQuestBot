@@ -1,5 +1,5 @@
 import { consolidatedItemsAndAliases } from '../gameData/consolidatedItems';
-import { ItemType } from '../streams/streamAuction';
+import type { ItemType } from '../streams/streamAuction';
 
 // Oldschool JS lib works the best of all the options :(
 
@@ -37,19 +37,11 @@ export function preprocessMessage(msg: string): string {
 // Based on https://stackoverflow.com/a/30472781
 export function composeRanges(ranges: MatchRange[]) {
 	const starts = ranges
-		.map(function (r) {
-			return r.start;
-		})
-		.sort(function (a, b) {
-			return a - b;
-		});
+		.map((r) => r.start)
+		.sort((a, b) => a - b);
 	const ends = ranges
-		.map(function (r) {
-			return r.end;
-		})
-		.sort(function (a, b) {
-			return a - b;
-		});
+		.map((r) => r.end)
+		.sort((a, b) => a - b);
 	let i = 0,
 		j = 0,
 		active = 0;

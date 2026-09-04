@@ -1,4 +1,4 @@
-import { Server } from '../../prisma/client';
+import type { Server } from '../../prisma/client';
 import * as fs from 'fs';
 import { config } from 'dotenv';
 import { expand } from 'dotenv-expand';

@@ -1,4 +1,4 @@
-import { Server } from '../../prisma/client';
+import type { Server } from '../../prisma/client';
 import { client } from '../..';
 import { messageCopy } from '../content/copy/messageCopy';
 import { authPlayerLink } from '../../prisma/dbExecutors/playerLink';

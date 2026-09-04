@@ -1,9 +1,9 @@
-import { Watch } from '../../../../prisma/client';
-import { ButtonInteraction } from 'discord.js';
+import type { Watch } from '../../../../prisma/client';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { isSnoozed } from '../../../helpers/watches';
-import { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
+import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 import { extendWatch } from '../../../../prisma/dbExecutors/watch';
 

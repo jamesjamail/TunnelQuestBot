@@ -1,9 +1,9 @@
-import { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { unwatch } from '../../../../prisma/dbExecutors/watch';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
-import { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
+import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 
 export default async function handleWatchNotificationUnwatchInactive<T>(
 	interaction: ButtonInteraction,
