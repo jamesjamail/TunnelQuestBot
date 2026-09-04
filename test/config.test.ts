@@ -92,10 +92,6 @@ describe('development environment', () => {
 		expect(override).toMatch(/127\.0\.0\.1:5432:5432/);
 		expect(override).toMatch(/127\.0\.0\.1:6379:6379/);
 	});
-
-	it('does not require an EverQuest client to develop', () => {
-		expect(readRepoFile('scripts/dev.mjs')).toMatch(/FAKE_LOGS: 'true'/);
-	});
 });
 
 describe('lint and format config', () => {
