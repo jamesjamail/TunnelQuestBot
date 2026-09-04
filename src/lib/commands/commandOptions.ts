@@ -1,4 +1,7 @@
-import type { SlashCommandNumberOption, SlashCommandStringOption } from 'discord.js';
+import type {
+	SlashCommandNumberOption,
+	SlashCommandStringOption,
+} from 'discord.js';
 
 export const watchTypeOptions = (option: SlashCommandStringOption) =>
 	option

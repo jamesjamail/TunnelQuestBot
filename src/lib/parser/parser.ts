@@ -36,12 +36,8 @@ export function preprocessMessage(msg: string): string {
 // Thanks rici from StackOverflow for saving me time!
 // Based on https://stackoverflow.com/a/30472781
 export function composeRanges(ranges: MatchRange[]) {
-	const starts = ranges
-		.map((r) => r.start)
-		.sort((a, b) => a - b);
-	const ends = ranges
-		.map((r) => r.end)
-		.sort((a, b) => a - b);
+	const starts = ranges.map((r) => r.start).sort((a, b) => a - b);
+	const ends = ranges.map((r) => r.end).sort((a, b) => a - b);
 	let i = 0,
 		j = 0,
 		active = 0;

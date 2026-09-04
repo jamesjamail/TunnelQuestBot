@@ -4,7 +4,10 @@ import {
 	PostgreSqlContainer,
 	type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
-import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
+import {
+	RedisContainer,
+	type StartedRedisContainer,
+} from '@testcontainers/redis';
 
 let postgres: StartedPostgreSqlContainer;
 let redisContainer: StartedRedisContainer;
