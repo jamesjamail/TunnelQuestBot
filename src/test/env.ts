@@ -1,3 +1,5 @@
+import { Server } from '../prisma/client';
+
 //	The environment both test setups need, in one place.
 //
 //	config() validates the whole environment on first read, so a suite that sets
@@ -24,7 +26,9 @@ export function applyTestEnvironment(): void {
 	//	no suite tails a real log file
 	process.env.FAKE_LOGS = 'true';
 
-	for (const server of ['BLUE', 'GREEN', 'RED']) {
+	//	Derived from the enum rather than listed, so adding a server to
+	//	schema.prisma does not need this file edited to match.
+	for (const server of Object.keys(Server)) {
 		process.env[`SERVERS_${server}_STREAM_CHANNEL_CLASSIC_ID`] =
 			`${server}-classic`;
 		process.env[`SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID`] =
