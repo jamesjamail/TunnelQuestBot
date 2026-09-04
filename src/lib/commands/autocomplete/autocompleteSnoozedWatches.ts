@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, CacheType } from 'discord.js';
+import type { AutocompleteInteraction, CacheType } from 'discord.js';
 import { getSnoozedWatchesByDiscordUser } from '../../../prisma/dbExecutors/watch';
 import {
 	parseWatchesForAutocomplete,

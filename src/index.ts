@@ -11,7 +11,7 @@ export const client = new Client({
 	],
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction], //	needed for handling interactions from DM's
 });
-import { SlashCommand } from './types';
+import type { SlashCommand } from './types';
 import { registerCommandHandlers } from './handlers/Command';
 import { registerEventHandlers } from './handlers/Event';
 import { config } from 'dotenv';

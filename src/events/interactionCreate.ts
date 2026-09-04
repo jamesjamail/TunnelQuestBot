@@ -1,5 +1,5 @@
-import { Interaction, MessageFlags } from 'discord.js';
-import { BotEvent } from '../types';
+import { type Interaction, MessageFlags } from 'discord.js';
+import type { BotEvent } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 import { handleButtonInteraction } from '../lib/content/buttons/persistentButtonHandler';
 

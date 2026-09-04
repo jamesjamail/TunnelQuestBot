@@ -1,11 +1,11 @@
 import {
 	Server,
-	WatchType,
-	Watch,
-	BlockedPlayerByWatch,
-	User,
+	type WatchType,
+	type Watch,
+	type BlockedPlayerByWatch,
+	type User,
 } from '../client';
-import {
+import type {
 	Interaction,
 	ChatInputCommandInteraction,
 	User as DiscordUser,

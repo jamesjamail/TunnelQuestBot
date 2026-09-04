@@ -1,5 +1,5 @@
-import { Watch } from '../../../../prisma/client';
-import { ButtonInteraction } from 'discord.js';
+import type { Watch } from '../../../../prisma/client';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { watchCommandResponseBuilder } from '../../messages/messageBuilder';
 import { MessageTypes, buttonRowBuilder } from '../buttonRowBuilder';

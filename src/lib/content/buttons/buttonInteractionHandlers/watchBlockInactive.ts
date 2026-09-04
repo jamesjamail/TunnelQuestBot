@@ -1,9 +1,9 @@
-import { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { addPlayerBlockByWatch } from '../../../../prisma/dbExecutors/block';
 import {
 	getWatchByWatchId,
-	WatchWithUserAndBlockedWatches,
+	type WatchWithUserAndBlockedWatches,
 } from '../../../../prisma/dbExecutors/watch';
 import { isSnoozed } from '../../../helpers/watches';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';

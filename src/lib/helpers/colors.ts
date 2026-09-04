@@ -1,5 +1,5 @@
-import { Server } from '../../prisma/client';
-import { ColorResolvable } from 'discord.js';
+import type { Server } from '../../prisma/client';
+import type { ColorResolvable } from 'discord.js';
 
 // TODO: make these colors option envs
 

@@ -1,5 +1,5 @@
-import { Server } from '../client';
-import { Interaction } from 'discord.js';
+import type { Server } from '../client';
+import type { Interaction } from 'discord.js';
 import { prisma } from '../init';
 
 export async function getPlayerBlocks(

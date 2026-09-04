@@ -1,5 +1,5 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { SlashCommand } from '../../../types';
+import type { SlashCommand } from '../../../types';
 import {
 	autoCompleteWatchOptionsForSnooze,
 	snoozeHoursOptions,
@@ -8,7 +8,7 @@ import {
 	listCommandResponseBuilder,
 	watchCommandResponseBuilder,
 } from '../../content/messages/messageBuilder';
-import { Watch } from '../../../prisma/client';
+import type { Watch } from '../../../prisma/client';
 import { messageCopy } from '../../content/copy/messageCopy';
 import {
 	MessageTypes,

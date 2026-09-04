@@ -1,5 +1,5 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { SlashCommand } from '../../../types';
+import type { SlashCommand } from '../../../types';
 import { autoCompleteWatchOptionsForInfoCommand } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
@@ -13,7 +13,7 @@ import {
 	getWatchByItemName,
 	getWatchByWatchId,
 } from '../../../prisma/dbExecutors/watch';
-import { Watch } from '../../../prisma/client';
+import type { Watch } from '../../../prisma/client';
 import { isSnoozed } from '../../helpers/watches';
 import { gracefullyHandleError } from '../../helpers/errors';
 

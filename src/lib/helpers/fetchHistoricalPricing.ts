@@ -1,7 +1,7 @@
 import { Server } from '../../prisma/client';
 import { redis } from '../../redis/init';
-import { AuctionData } from '../streams/streamAuction';
-import { HistoricalData } from '../content/messages/messageBuilder';
+import type { AuctionData } from '../streams/streamAuction';
+import type { HistoricalData } from '../content/messages/messageBuilder';
 import { normalizeStoredWatchItemName } from './watches';
 
 // Helper function to generate a Redis key based on item name and server

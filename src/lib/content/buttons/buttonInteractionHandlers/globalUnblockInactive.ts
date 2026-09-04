@@ -1,5 +1,5 @@
-import { BlockedPlayer } from '../../../../prisma/client';
-import { ButtonInteraction } from 'discord.js';
+import type { BlockedPlayer } from '../../../../prisma/client';
+import type { ButtonInteraction } from 'discord.js';
 import { messageCopy } from '../../copy/messageCopy';
 import { removePlayerBlockById } from '../../../../prisma/dbExecutors/block';
 import { blockCommandResponseBuilder } from '../../messages/messageBuilder';

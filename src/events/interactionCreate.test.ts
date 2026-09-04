@@ -9,7 +9,7 @@ vi.mock('../lib/content/buttons/persistentButtonHandler', () => ({
 import { describe, it, expect, afterEach } from 'vitest';
 import event from './interactionCreate';
 import { makeChatInteraction } from '../test/factories';
-import { ChatInputCommandInteraction } from 'discord.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
 
 describe('interactionCreate cooldowns', () => {
 	afterEach(() => {

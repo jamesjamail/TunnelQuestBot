@@ -1,7 +1,7 @@
-import { PlayerLink, Server, Prisma } from '../client';
+import { type PlayerLink, type Server, Prisma } from '../client';
 import { randomUUID } from 'crypto';
 import { add } from 'date-fns';
-import { Interaction } from 'discord.js';
+import type { Interaction } from 'discord.js';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
 

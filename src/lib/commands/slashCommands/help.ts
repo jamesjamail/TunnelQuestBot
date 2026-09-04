@@ -1,5 +1,5 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
-import { SlashCommand } from '../../../types';
+import type { SlashCommand } from '../../../types';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { gracefullyHandleError } from '../../helpers/errors';
 
