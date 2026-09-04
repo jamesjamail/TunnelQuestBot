@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
+import { parse } from 'dotenv';
+import { parseConfig } from '../src/config';
 import { join } from 'path';
 
 const readRepoFile = (relativePath: string) =>
@@ -238,5 +240,39 @@ describe('startup migration invariants', () => {
 		expect(compose).toMatch(
 			/depends_on:\s*\n\s*postgres:\s*\n\s*condition: service_healthy/,
 		);
+	});
+});
+
+//	These two guard the first-run path: a contributor copies .env.example, fills
+//	in the Discord section, and runs `npm run doctor`. Both failures this covers
+//	were silent - the config parsed fine in CI and in a configured checkout, and
+//	only broke for someone starting from the shipped example.
+describe('first-run path', () => {
+	it('accepts .env.example once the Discord section is filled in', () => {
+		const example = parse(readRepoFile('.env.example'));
+
+		//	Stand in for the values a contributor supplies. Every other key in the
+		//	file has to carry a default that parseConfig already accepts, which is
+		//	the property under test - notably FAKE_LOGS, since the log paths are
+		//	composed by compose and are absent on the host.
+		for (const [key, value] of Object.entries(example)) {
+			if (value !== '') continue;
+			example[key] =
+				key === 'TOKEN' ? 'placeholder.token' : '1'.repeat(18);
+		}
+
+		expect(() => parseConfig(example)).not.toThrow();
+	});
+
+	it('builds before running doctor, which reads from build/', () => {
+		const pkg = JSON.parse(readRepoFile('package.json')) as {
+			scripts?: Record<string, string>;
+		};
+		const doctor = pkg.scripts?.doctor ?? '';
+
+		//	Nothing in the quickstart compiles, so a doctor script that only ran
+		//	build/doctor.js failed with MODULE_NOT_FOUND on a fresh clone.
+		expect(doctor).toMatch(/build\/doctor\.js/);
+		expect(doctor).toMatch(/npm run build/);
 	});
 });
