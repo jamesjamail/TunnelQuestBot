@@ -187,3 +187,79 @@ describe('parseEnvFile', () => {
 		});
 	});
 });
+
+describe('applyEnvUpdates with duplicate keys', () => {
+	//	dotenv and parseEnvFile both let the last assignment win, so the last one
+	//	is the line that has to change. Updating the first rewrote a line nobody
+	//	read and left the stale value in effect, while reporting success.
+	const source = [
+		'COMMAND_CHANNEL=111111111111111111',
+		'# a later block overrides it',
+		'COMMAND_CHANNEL=222222222222222222',
+		'',
+	].join('\n');
+
+	it('rewrites the occurrence that actually wins', () => {
+		const result = applyEnvUpdates(source, {
+			COMMAND_CHANNEL: '999999999999999999',
+		});
+
+		expect(parseEnvFile(result).COMMAND_CHANNEL).toBe('999999999999999999');
+	});
+
+	it('changes exactly one line', () => {
+		const result = applyEnvUpdates(source, {
+			COMMAND_CHANNEL: '999999999999999999',
+		});
+		const assignments = result
+			.split('\n')
+			.filter((line) => line.startsWith('COMMAND_CHANNEL='));
+
+		expect(assignments).toEqual([
+			'COMMAND_CHANNEL=111111111111111111',
+			'COMMAND_CHANNEL=999999999999999999',
+		]);
+	});
+});
+
+describe('planChannels records what a write would overwrite', () => {
+	const channels = [
+		{ envKey: 'COMMAND_CHANNEL', channelName: 'commands', description: '' },
+	];
+	const existingChannels = [{ name: 'commands', id: '222222222222222222' }];
+
+	it('flags a configured id that --force would replace', () => {
+		const [entry] = planChannels({
+			channels,
+			env: { COMMAND_CHANNEL: '111111111111111111' },
+			existingChannels,
+			force: true,
+		});
+
+		expect(entry.action).toBe('adopt');
+		expect(entry.previousId).toBe('111111111111111111');
+	});
+
+	it('leaves previousId unset when nothing is being replaced', () => {
+		const [entry] = planChannels({
+			channels,
+			env: {},
+			existingChannels,
+			force: true,
+		});
+
+		expect(entry.action).toBe('adopt');
+		expect(entry.previousId).toBeUndefined();
+	});
+
+	it('keeps a configured id untouched without --force', () => {
+		const [entry] = planChannels({
+			channels,
+			env: { COMMAND_CHANNEL: '111111111111111111' },
+			existingChannels,
+			force: false,
+		});
+
+		expect(entry.action).toBe('keep');
+	});
+});
