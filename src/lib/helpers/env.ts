@@ -1,4 +1,4 @@
-import { config } from '../../config';
+import { type Config, config } from '../../config';
 
 //	Dynamic lookup for the `SERVERS_<NAME>_*` keys, whose names are built from
 //	the Prisma Server enum at runtime and so cannot be read as static properties.
@@ -8,7 +8,7 @@ import { config } from '../../config';
 //	without the config schema picking it up - a programming error, not a
 //	configuration one. Going through config() is also what keeps this from
 //	becoming a second, unvalidated way to read the environment.
-export function getEnvironmentVariable(name: string): string {
+export function getEnvironmentVariable(name: keyof Config): string {
 	const value = config()[name];
 	if (typeof value !== 'string' || value === '') {
 		throw new Error(`Environment variable ${name} is not defined.`);

@@ -42,7 +42,7 @@ function main(): number {
 	//	The schema only checks these are present. A value that is not a snowflake
 	//	is almost always a channel *name* pasted where an id belongs, which
 	//	otherwise fails much later as a confusing "unknown channel" from Discord.
-	const channelKeys = [
+	const channelKeys: (keyof typeof parsed)[] = [
 		...CHANNEL_ID_KEYS,
 		...servers.flatMap((server) => [
 			serverEnvKeys(server).classicChannel,

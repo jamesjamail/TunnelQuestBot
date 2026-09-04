@@ -15,11 +15,15 @@ import { Server } from './prisma/client';
 //	rather than failing at runtime the first time that server sees an auction.
 const SERVER_NAMES = Object.keys(Server) as (keyof typeof Server)[];
 
-export const serverEnvKeys = (server: keyof typeof Server) => ({
-	logFile: `SERVERS_${server}_LOG_FILE_PATH`,
-	classicChannel: `SERVERS_${server}_STREAM_CHANNEL_CLASSIC_ID`,
-	embeddedChannel: `SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID`,
-});
+//	Generic and `as const` so the results are literal key types rather than
+//	`string`. That is what lets callers index Config without an index signature,
+//	and so what keeps a typo in a fixed key a compile error.
+export const serverEnvKeys = <S extends keyof typeof Server>(server: S) =>
+	({
+		logFile: `SERVERS_${server}_LOG_FILE_PATH`,
+		classicChannel: `SERVERS_${server}_STREAM_CHANNEL_CLASSIC_ID`,
+		embeddedChannel: `SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID`,
+	}) as const;
 
 //	Presence is enforced; shape is not. Discord ids are 17-20 digit snowflakes,
 //	but asserting that here would reject the symbolic ids the test suite uses as
@@ -46,6 +50,26 @@ const envBoolean = z
 	.optional()
 	.transform((value) => /^[tT]/.test(value ?? ''));
 
+//	A URL is "resolved" when every part .env interpolates into it is present:
+//	a user, a database name, and either a TCP host or a socket directory.
+function isResolvedPostgresUrl(value: string): boolean {
+	let url: URL;
+	try {
+		url = new URL(value);
+	} catch {
+		return false;
+	}
+
+	if (!['postgresql:', 'postgres:'].includes(url.protocol)) return false;
+	if (url.username === '') return false;
+	if (url.pathname.replace(/^\//, '') === '') return false;
+
+	//	`?host=` carries the unix socket directory the compose stack uses; without
+	//	it the hostname has to be a real one.
+	const socketDir = url.searchParams.get('host');
+	return socketDir !== null ? socketDir !== '' : url.hostname !== '';
+}
+
 const baseSchema = {
 	//	Discord
 	TOKEN: z.string().min(1, 'required - see README for how to get one'),
@@ -60,7 +84,13 @@ const baseSchema = {
 	HISTORICAL_AUCTION_DATA_API: url,
 
 	//	Behaviour
-	WATCH_DURATION_IN_DAYS: z.coerce.number().int().positive().default(7),
+	//	`.default()` only fires on undefined, so a key left blank in .env - a
+	//	normal thing to find - coerced to 0 and failed .positive(), reported as
+	//	"expected number to be >0" rather than falling back to 7.
+	WATCH_DURATION_IN_DAYS: z.preprocess(
+		(value) => (value === '' ? undefined : value),
+		z.coerce.number().int().positive().default(7),
+	),
 
 	//	Infrastructure. DATABASE_URL is composed from POSTGRES_* in .env; by the
 	//	time this runs dotenv-expand has already resolved it.
@@ -71,7 +101,19 @@ const baseSchema = {
 	//	environment - the integration suite points them at testcontainers without
 	//	supplying any Discord configuration. They are validated here so `doctor`
 	//	still reports on them.
-	DATABASE_URL: z.string().min(1),
+	//	Assembled from POSTGRES_* by dotenv-expand, so the interesting failure is
+	//	a missing part rather than a missing value: expansion of an unset variable
+	//	yields `postgresql://:@localhost/?host=`, which is non-empty and a valid
+	//	URL, and used to pass. It resurfaced later as a connection error, which is
+	//	the deferred failure this module exists to end.
+	DATABASE_URL: z
+		.string()
+		.min(1)
+		.refine(isResolvedPostgresUrl, {
+			message:
+				'looks unresolved - check POSTGRES_USER, POSTGRES_PASSWORD, ' +
+				'POSTGRES_DB and DB_SOCKET_DIR are all set',
+		}),
 	REDIS_URL: z.string().optional(),
 	REDIS_SOCKET_DIR: z.string().optional(),
 
@@ -96,22 +138,24 @@ function buildSchema() {
 	return z.object(shape);
 }
 
-export type Config = {
-	TOKEN: string;
-	CLIENT_ID: string;
-	COMMAND_CHANNEL: string;
-	FEEDBACK_AND_IDEAS_CHANNEL: string;
-	ERROR_LOG_CHANNEL_ID: string;
-	IMAGE_BUCKET_URL: string;
-	WIKI_BASE_URL: string;
-	HISTORICAL_AUCTION_DATA_API: string;
-	WATCH_DURATION_IN_DAYS: number;
-	DATABASE_URL: string;
-	REDIS_URL?: string;
-	REDIS_SOCKET_DIR?: string;
-	FAKE_LOGS: boolean;
-	DEBUG_MODE: boolean;
-} & Record<string, unknown>;
+//	Derived from the schema rather than restated. The hand-written version could
+//	drift silently - changing WATCH_DURATION_IN_DAYS in the schema left the type
+//	still claiming `number` with no error anywhere.
+type ServerName = keyof typeof Server;
+
+//	The dynamic `SERVERS_<NAME>_*` keys still need to be in the type, but as a
+//	template-literal union rather than `Record<string, unknown>`. That index
+//	signature made `config().TYPOED_KEY` compile and return undefined, which is
+//	the exact failure this module exists to eliminate.
+type ServerConfig = {
+	[K in `SERVERS_${ServerName}_LOG_FILE_PATH`]?: string;
+} & {
+	[K in
+		| `SERVERS_${ServerName}_STREAM_CHANNEL_CLASSIC_ID`
+		| `SERVERS_${ServerName}_STREAM_CHANNEL_EMBEDDED_ID`]: string;
+};
+
+export type Config = z.infer<z.ZodObject<typeof baseSchema>> & ServerConfig;
 
 export class ConfigError extends Error {
 	//	assigned in the body rather than as a parameter property: parameter

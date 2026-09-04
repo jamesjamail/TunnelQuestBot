@@ -5,6 +5,7 @@ import {
 	embeddedAuctionStreamMessageBuilder,
 	packEmbedsForDiscord,
 } from '../content/messages/messageBuilder';
+import { serverEnvKeys } from '../../config';
 import { gracefullyHandleError } from '../helpers/errors';
 import { getEnvironmentVariable } from '../helpers/env';
 
@@ -25,11 +26,10 @@ export async function streamAuctionToAllStreamChannels(
 	auctionText: string,
 	auctionData: AuctionData,
 ): Promise<void> {
-	const classicEnvVarName = `SERVERS_${server.toUpperCase()}_STREAM_CHANNEL_CLASSIC_ID`;
-	const embeddedEnvVarName = `SERVERS_${server.toUpperCase()}_STREAM_CHANNEL_EMBEDDED_ID`;
+	const keys = serverEnvKeys(server);
 
-	const classicChannelId = getEnvironmentVariable(classicEnvVarName);
-	const embeddedChannelId = getEnvironmentVariable(embeddedEnvVarName);
+	const classicChannelId = getEnvironmentVariable(keys.classicChannel);
+	const embeddedChannelId = getEnvironmentVariable(keys.embeddedChannel);
 
 	const rawAuction = `\`\`\`\n${player} auctions, '${auctionText}'\`\`\``;
 

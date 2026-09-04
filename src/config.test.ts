@@ -69,6 +69,61 @@ describe('parseConfig', () => {
 		).toBe(14);
 	});
 
+	it('falls back to the default when the watch duration is blank', () => {
+		//	`.default()` only fires on undefined, so `WATCH_DURATION_IN_DAYS=` used
+		//	to coerce to 0 and fail .positive() - reported as "expected number to be
+		//	>0" rather than falling back. A blanked key is normal in a .env.
+		expect(
+			parseConfig(validEnv({ WATCH_DURATION_IN_DAYS: '' }))
+				.WATCH_DURATION_IN_DAYS,
+		).toBe(7);
+	});
+
+	describe('DATABASE_URL', () => {
+		//	It is assembled from POSTGRES_* by dotenv-expand, so the failure worth
+		//	catching is a missing part. Expanding an unset variable yields a string
+		//	that is non-empty and a valid URL, so a min(1) check passed it through
+		//	and it resurfaced later as a connection error.
+		const unresolved = 'postgresql://:@localhost/?host=';
+
+		it('rejects a url left unresolved by a missing POSTGRES_ variable', () => {
+			expect(() =>
+				parseConfig(validEnv({ DATABASE_URL: unresolved })),
+			).toThrow(/DATABASE_URL/);
+		});
+
+		it('names the variables to check', () => {
+			expect(() =>
+				parseConfig(validEnv({ DATABASE_URL: unresolved })),
+			).toThrow(/POSTGRES_USER/);
+		});
+
+		it('accepts the socket form the compose stack uses', () => {
+			const url =
+				'postgresql://user:pass@localhost/tunnelquestbot?host=/var/run/postgresql';
+
+			expect(
+				parseConfig(validEnv({ DATABASE_URL: url })).DATABASE_URL,
+			).toBe(url);
+		});
+
+		it('accepts the tcp form the dev script uses', () => {
+			const url = 'postgresql://user:pass@localhost:5432/tunnelquestbot';
+
+			expect(
+				parseConfig(validEnv({ DATABASE_URL: url })).DATABASE_URL,
+			).toBe(url);
+		});
+
+		it('rejects a url with no database name', () => {
+			expect(() =>
+				parseConfig(
+					validEnv({ DATABASE_URL: 'postgresql://user:pass@host/' }),
+				),
+			).toThrow(/DATABASE_URL/);
+		});
+	});
+
 	it('rejects a non-positive watch duration', () => {
 		expect(() =>
 			parseConfig(validEnv({ WATCH_DURATION_IN_DAYS: '0' })),
