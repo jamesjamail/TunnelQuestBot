@@ -5,6 +5,9 @@
 
 # Secrets and local configuration
 .env*
+p99-logger/*.json
+p99-logger/data
+logs
 
 # Reinstalled or regenerated inside the image
 node_modules

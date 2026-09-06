@@ -77,6 +77,55 @@ docker compose up --build
 
 Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
 `FAKE_LOGS=true` to run the container stack without a game client.
+`LOG_SOURCE_PATH` defaults to `./logs`; point it at your EverQuest log directory
+when reading client logs.
+
+## Headless P99 log collectors
+
+The optional `p99-loggers` Compose profile runs one
+[`p99-logger-client`](https://github.com/rm-you/p99-logger-client) container
+for Green and another for Blue. Each character logs in without the EverQuest
+client and appends auction and OOC messages to a private JSONL file.
+TunnelQuestBot reads auction messages and player-link requests from those JSONL
+files alongside the original EverQuest text-log format.
+
+Copy the two templates and replace only the login account, password, and
+existing character for each server. The public Green and Blue server names and
+all connection and output settings are already filled in:
+
+```sh
+cp p99-logger/green.example.json p99-logger/green.json
+cp p99-logger/blue.example.json p99-logger/blue.json
+chmod 600 p99-logger/green.json p99-logger/blue.json
+```
+
+The credential files are ignored by Git and excluded from Docker build
+contexts. Both accounts and characters must already exist. The pinned logger
+image includes the current P99 asset checksum inventory, so users do not need
+an EverQuest installation or separate asset configuration. In `.env`, set
+`FAKE_LOGS=false` and uncomment the three `SERVERS_*_LOG_FILE_PATH` values under
+the headless collector section. Set `P99_UID` and `P99_GID` to the owner of the
+two private configuration files; on Linux these are normally the output of
+`id -u` and `id -g`. The Red path points to an empty initialized log because
+there is no Red collector.
+
+Leave `LOG_SOURCE_PATH=./logs` for headless collection; Compose creates this
+unused directory automatically. Log-file initialization runs before the bot in
+every configuration. Keep the `p99-loggers` profile enabled to run the collectors
+and receive new messages.
+
+Start the bot and collectors with:
+
+```sh
+docker compose --profile p99-loggers pull p99-green-logger p99-blue-logger
+docker compose --profile p99-loggers up -d --build
+docker compose --profile p99-loggers ps
+docker compose logs -f p99-green-logger p99-blue-logger tunnelquestbot
+```
+
+The credential files, JSONL logs, and health state are kept out of the bot
+image. The collectors run without capabilities, with read-only root
+filesystems, and use a named volume shared read-only with the bot.
 
 ## Running In Production
 

@@ -48,17 +48,93 @@ export function generateAuctionKey(auctionText: string) {
 
 const parser = new AuctionParser();
 
-export async function handleLogLine(server: Server, data: string) {
-	// filter for log lines that start with "soAndSo auctions,"
-	const auctionMatch = data.match(/(\w+) auctions?, '(.+)'/);
-	const linkMatch = data.match(
-		/(\w+) says? out of character, 'Link me: ([0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12})'/,
-	);
+export type ParsedLogLine =
+	| { kind: 'auction'; playerName: string; text: string }
+	| { kind: 'link'; playerName: string; linkCode: string };
 
+type P99LoggerRecord = {
+	type?: unknown;
+	channel_name?: unknown;
+	sender?: unknown;
+	text?: unknown;
+};
+
+const UUID_PATTERN =
+	/[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}/
+		.source;
+const LINK_CODE = new RegExp(`^Link me: (${UUID_PATTERN})$`);
+const TEXT_LINK = new RegExp(
+	`(\\w+) says? out of character, 'Link me: (${UUID_PATTERN})'`,
+);
+
+/** Read an auction or player-link request from either supported log format. */
+export function parseLogLine(data: string): ParsedLogLine | undefined {
+	if (data.trimStart().startsWith('{')) {
+		let record: P99LoggerRecord;
+		try {
+			record = JSON.parse(data) as P99LoggerRecord;
+		} catch {
+			return undefined;
+		}
+
+		if (
+			record.type !== 'chat' ||
+			typeof record.sender !== 'string' ||
+			record.sender.length === 0 ||
+			typeof record.text !== 'string'
+		) {
+			return undefined;
+		}
+
+		if (record.channel_name === 'auction') {
+			return {
+				kind: 'auction',
+				playerName: record.sender,
+				text: record.text,
+			};
+		}
+
+		if (record.channel_name === 'ooc') {
+			const match = record.text.match(LINK_CODE);
+			if (match) {
+				return {
+					kind: 'link',
+					playerName: record.sender,
+					linkCode: match[1],
+				};
+			}
+		}
+
+		return undefined;
+	}
+
+	const auctionMatch = data.match(/(\w+) auctions?, '(.+)'/);
 	if (auctionMatch) {
-		debug(`Auction Match: ${auctionMatch}`);
-		// extract the timestamp, player, and auction message from the log line
-		const [, playerName, auctionText] = auctionMatch;
+		return {
+			kind: 'auction',
+			playerName: auctionMatch[1],
+			text: auctionMatch[2],
+		};
+	}
+
+	const linkMatch = data.match(TEXT_LINK);
+	if (linkMatch) {
+		return {
+			kind: 'link',
+			playerName: linkMatch[1],
+			linkCode: linkMatch[2],
+		};
+	}
+
+	return undefined;
+}
+
+export async function handleLogLine(server: Server, data: string) {
+	const parsed = parseLogLine(data);
+
+	if (parsed?.kind === 'auction') {
+		const { playerName, text: auctionText } = parsed;
+		debug(`Auction Match: ${playerName}: ${auctionText}`);
 		const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
 		const cachedAuctionData = await redis.get(auctionLogKey);
 		let auctionData: AuctionData;
@@ -156,12 +232,9 @@ export async function handleLogLine(server: Server, data: string) {
 				);
 			}
 		}
-	} else if (linkMatch) {
-		debug(`Link Match: ${linkMatch}`);
-		const [, playerName, linkCode] = linkMatch;
-		// console.log(playerName, linkMatch);
-
-		await handleLinkMatch(playerName, server, linkCode);
+	} else if (parsed?.kind === 'link') {
+		debug(`Link Match: ${parsed.playerName}: ${parsed.linkCode}`);
+		await handleLinkMatch(parsed.playerName, server, parsed.linkCode);
 	}
 }
 

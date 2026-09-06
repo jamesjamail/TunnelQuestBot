@@ -1,0 +1,9 @@
+{
+  "user": "EXAMPLE_GREEN_LOGIN_ACCOUNT",
+  "pass": "EXAMPLE_GREEN_PASSWORD",
+  "server": "Project 1999: Green (Velious, PvE)",
+  "character": "ExampleGreenCharacter",
+  "channels": ["auc", "ooc"],
+  "output": "/data/green/chat.jsonl",
+  "health": "/data/green/health.json"
+}
