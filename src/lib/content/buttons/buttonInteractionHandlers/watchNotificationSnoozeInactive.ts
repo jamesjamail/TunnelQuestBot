@@ -5,6 +5,7 @@ import type { Watch } from '../../../../prisma/client';
 import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 import { snoozeWatch } from '../../../../prisma/dbExecutors/watch';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleWatchNotificationSnoozeInactive<T>(
 	interaction: ButtonInteraction,
@@ -29,5 +30,5 @@ export default async function handleWatchNotificationSnoozeInactive<T>(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.yourWatchHasBeenSnoozed());
+	debug(messageCopy.yourWatchHasBeenSnoozed());
 }

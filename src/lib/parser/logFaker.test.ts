@@ -6,7 +6,7 @@ vi.mock('../lib/helpers/errors', () => ({
 	gracefullyHandleError: vi.fn(async () => undefined),
 }));
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { generateLogLine } from './logFaker';
 
 const AUCTION_REGEX = /(\w+) auctions?, '(.+)'/;

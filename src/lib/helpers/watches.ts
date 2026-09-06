@@ -24,7 +24,7 @@ export function formatPriceNumberToReadableString(price: number | '-'): string {
 
 	if (price < 1000) {
 		// Price is less than 1000
-		return price + 'pp';
+		return `${price}pp`;
 	} else {
 		// Calculate price in thousands with two decimal places
 		const priceInThousands = price / 1000;
@@ -32,11 +32,11 @@ export function formatPriceNumberToReadableString(price: number | '-'): string {
 
 		if (roundedPrice * 1000 === price) {
 			// If rounded value multiplied by 1000 equals the original price, use the 'k' format
-			return roundedPrice + 'k';
+			return `${roundedPrice}k`;
 		} else {
 			// Otherwise, format with commas and append 'pp'
 			const formattedPrice = price.toLocaleString('en-US');
-			return formattedPrice + 'pp';
+			return `${formattedPrice}pp`;
 		}
 	}
 }

@@ -28,7 +28,7 @@ const command: SlashCommand = {
 			await Promise.all(
 				data.map(async (link) => {
 					const embed = playerlinkCommandResponseBuilder(link);
-					if (embed != undefined) {
+					if (embed !== undefined) {
 						linkCount += 1;
 						const embeds = [embed];
 						const components = buttonRowBuilder(

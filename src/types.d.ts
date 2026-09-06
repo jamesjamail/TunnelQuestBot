@@ -17,8 +17,12 @@ export interface SlashCommand {
 export interface BotEvent {
 	name: string;
 	once?: boolean | false;
-	// discord.js passes heterogeneous event args; callers cast at the boundary
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	//	discord.js passes heterogeneous event args; callers cast at the boundary.
+	//	The return type stays `void` rather than `undefined` because handlers may
+	//	be sync or async and their result is always discarded - narrowing it would
+	//	reject a sync handler that happens to return anything at all.
+	// biome-ignore lint/suspicious/noExplicitAny: heterogeneous discord.js event args
+	// biome-ignore lint/suspicious/noConfusingVoidType: handler results are discarded
 	execute: (...args: any[]) => Promise<unknown> | void;
 }
 

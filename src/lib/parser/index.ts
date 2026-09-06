@@ -18,16 +18,6 @@ function safeInterval(task: () => Promise<void>, intervalMs: number) {
 }
 
 export async function startLoggingAllServers() {
-	// Set DEBUG_MODE variable for use elsewhere
-	globalThis.DEBUG_MODE = !!(process.env.DEBUG_MODE || 'false').match(
-		/^[tT]/,
-	);
-	globalThis.debug_console = (message) => {
-		if (globalThis.DEBUG_MODE) {
-			console.log(message);
-		}
-	};
-
 	// Initial fetch
 	const allWatchedItems = await getWatchesGroupedByServer();
 	state.watchedItems = allWatchedItems;

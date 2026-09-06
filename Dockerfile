@@ -12,8 +12,15 @@ RUN apk add --no-cache openssl
 # Copy only the package.json files to utilize layer cache
 COPY package*.json /app/
 
-# Install node dependencies
-RUN npm install
+# Install node dependencies. `npm ci` rather than `npm install` so the image is
+# built from the same dependency tree CI tested against; `npm install` is free to
+# resolve differently, which would let a green CI ship an image nobody has run.
+#
+# --ignore-scripts because only package*.json exists at this layer: the postinstall
+# and prepare scripts live in scripts/ and .husky/, which are copied later (or, for
+# .husky, not at all). Neither is wanted here anyway — `npm run build` below runs
+# `prisma generate` explicitly, and git hooks are meaningless in an image.
+RUN npm ci --ignore-scripts
 
 # Copy over necessary source/configs
 COPY tsconfig.json prisma.config.ts /app/
@@ -45,7 +52,11 @@ COPY --from=build_image /app/build /app/build
 COPY --from=build_image /app/prisma.config.ts /app/
 COPY --from=build_image /app/src/prisma/schema.prisma /app/src/prisma/
 COPY --from=build_image /app/src/prisma/migrations /app/src/prisma/migrations
-COPY --from=build_image /app/src/lib/gameData/*.json /app/src/lib/gameData/
+
+# src/lib/gameData/*.json is deliberately not copied. resolveJsonModule makes
+# tsc emit those files into build/lib/gameData/ alongside the code that imports
+# them, and the compiled `require("./items.json")` resolves there. Copying them
+# under /app/src as well duplicated 600KB that nothing reads.
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh

@@ -72,56 +72,46 @@ type HandlerFn = (
 
 // Same mapping as the old collector, keyed by the action type string
 const handlerMapping: Record<string, HandlerFn> = {
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchSnoozeInactive]]:
+	[ButtonInteractionTypes.WatchSnoozeInactive]:
 		handlers.handleWatchSnoozeInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchSnoozeActive]]:
+	[ButtonInteractionTypes.WatchSnoozeActive]:
 		handlers.handleWatchSnoozeActive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UnwatchInactive]]:
-		handlers.handleUnwatchInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UnwatchActive]]:
-		handlers.handleUnwatchActive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchRefreshInactive]]:
+	[ButtonInteractionTypes.UnwatchInactive]: handlers.handleUnwatchInactive,
+	[ButtonInteractionTypes.UnwatchActive]: handlers.handleUnwatchActive,
+	[ButtonInteractionTypes.WatchRefreshInactive]:
 		handlers.handleWatchRefreshInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchRefreshActive]]:
+	[ButtonInteractionTypes.WatchRefreshActive]:
 		handlers.handleWatchRefreshInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.GlobalRefreshInactive]]:
+	[ButtonInteractionTypes.GlobalRefreshInactive]:
 		handlers.handleGlobalRefreshInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.GlobalRefreshActive]]:
+	[ButtonInteractionTypes.GlobalRefreshActive]:
 		handlers.handleGlobalRefreshInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UserSnoozeInactive]]:
+	[ButtonInteractionTypes.UserSnoozeInactive]:
 		handlers.handleUserSnoozeInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UserSnoozeActive]]:
-		handlers.handleUserSnoozeActive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.GlobalUnblockInactive]]:
+	[ButtonInteractionTypes.UserSnoozeActive]: handlers.handleUserSnoozeActive,
+	[ButtonInteractionTypes.GlobalUnblockInactive]:
 		handlers.handleGlobalUnblockInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.GlobalUnblockActive]]:
+	[ButtonInteractionTypes.GlobalUnblockActive]:
 		handlers.handleGlobalUnblockActive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UnlinkCharacterInactive]]:
+	[ButtonInteractionTypes.UnlinkCharacterInactive]:
 		handlers.handleUnlinkCharacterInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.UnlinkCharacterActive]]:
+	[ButtonInteractionTypes.UnlinkCharacterActive]:
 		handlers.handleUnlinkCharacterActive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchBlockInactive]]:
+	[ButtonInteractionTypes.WatchBlockInactive]:
 		handlers.handleWatchBlockInactive,
-	[ButtonInteractionTypes[ButtonInteractionTypes.WatchBlockActive]]:
-		handlers.handleWatchBlockActive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationSnoozeInactive
-	]]: handlers.handleWatchNotificationSnoozeInactive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationSnoozeActive
-	]]: handlers.handleWatchNotificationSnoozeActive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationUnwatchInactive
-	]]: handlers.handleWatchNotificationUnwatchInactive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationUnwatchActive
-	]]: handlers.handleWatchNotificationUnwatchActive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationWatchRefreshInactive
-	]]: handlers.handleWatchNotificationRefreshInactive,
-	[ButtonInteractionTypes[
-		ButtonInteractionTypes.WatchNotificationWatchRefreshActive
-	]]: handlers.handleWatchNotificationRefreshInactive,
+	[ButtonInteractionTypes.WatchBlockActive]: handlers.handleWatchBlockActive,
+	[ButtonInteractionTypes.WatchNotificationSnoozeInactive]:
+		handlers.handleWatchNotificationSnoozeInactive,
+	[ButtonInteractionTypes.WatchNotificationSnoozeActive]:
+		handlers.handleWatchNotificationSnoozeActive,
+	[ButtonInteractionTypes.WatchNotificationUnwatchInactive]:
+		handlers.handleWatchNotificationUnwatchInactive,
+	[ButtonInteractionTypes.WatchNotificationUnwatchActive]:
+		handlers.handleWatchNotificationUnwatchActive,
+	[ButtonInteractionTypes.WatchNotificationWatchRefreshInactive]:
+		handlers.handleWatchNotificationRefreshInactive,
+	[ButtonInteractionTypes.WatchNotificationWatchRefreshActive]:
+		handlers.handleWatchNotificationRefreshInactive,
 };
 
 async function fetchMetadata(
@@ -130,7 +120,7 @@ async function fetchMetadata(
 	entityId?: string,
 	extra?: string,
 ): Promise<unknown> {
-	const id = entityId ? parseInt(entityId) : undefined;
+	const id = entityId ? parseInt(entityId, 10) : undefined;
 
 	if (
 		actionType.startsWith('WatchSnooze') ||

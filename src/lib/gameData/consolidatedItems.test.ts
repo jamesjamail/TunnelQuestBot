@@ -24,10 +24,8 @@ describe('consolidatedItems data shape', () => {
 				consolidatedItems[key],
 			);
 		}
-		expect(consolidatedItemsAndAliases['FBSS']).toBe(
-			inGameAliasesRaw['FBSS'],
-		);
-		expect(consolidatedItems['FBSS']).toBeUndefined();
+		expect(consolidatedItemsAndAliases.FBSS).toBe(inGameAliasesRaw.FBSS);
+		expect(consolidatedItems.FBSS).toBeUndefined();
 	});
 
 	it('maps apostrophe and backtick variants to the same wiki path', () => {

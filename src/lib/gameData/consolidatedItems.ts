@@ -19,8 +19,10 @@ function fixApostrophes(items: InGameItemNamesType) {
 	return { ...items, ...duped_items };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function addSpellPrefix(spells: InGameItemNamesType) {
+//	Unused, kept deliberately: spells are currently consolidated without a
+//	prefix, and this is the shape we would go back to if that changes.
+//	The leading underscore is what marks it intentional to the linter.
+function _addSpellPrefix(spells: InGameItemNamesType) {
 	const spell_items: InGameItemNamesType = {};
 	for (const spell of Object.entries(spells)) {
 		spell_items[`SPELL: ${spell[0]}`] = spell[1];

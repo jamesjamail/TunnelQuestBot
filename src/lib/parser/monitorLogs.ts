@@ -1,4 +1,5 @@
 import type { Server } from '../../prisma/client';
+import { config, serverEnvKeys } from '../../config';
 import { Tail } from 'tail';
 import { redis } from '../../redis/init';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
@@ -8,20 +9,23 @@ import {
 	AuctionTypes,
 	auctionIncludesUnknownItem,
 } from './parser';
+import type { AuctionData } from '../streams/streamAuction';
 import { state } from './state';
 import path from 'path';
 import { handleLinkMatch } from '../playerLink/playerLink';
 import crypto from 'crypto';
 import { gracefullyHandleError } from '../helpers/errors';
 import { resolveCanonicalItemName } from '../gameData/consolidatedItems';
+import { debug } from '../helpers/logger';
 
 export function getLogFilePath(server: Server): string {
 	let logFilePath: string | undefined;
-	if ((process.env.FAKE_LOGS || 'false').match(/^[tT]/)) {
+	if (config().FAKE_LOGS) {
 		logFilePath = path.join(__dirname, '..', 'fakeLogs', `${server}.log`);
 	} else {
-		const envVarName = `SERVERS_${server}_LOG_FILE_PATH`;
-		logFilePath = process.env[envVarName] as string;
+		logFilePath = config()[serverEnvKeys(server).logFile] as
+			| string
+			| undefined;
 	}
 
 	if (!logFilePath) {
@@ -52,12 +56,12 @@ export async function handleLogLine(server: Server, data: string) {
 	);
 
 	if (auctionMatch) {
-		debug_console(`Auction Match: ${auctionMatch}`);
+		debug(`Auction Match: ${auctionMatch}`);
 		// extract the timestamp, player, and auction message from the log line
 		const [, playerName, auctionText] = auctionMatch;
 		const auctionLogKey = generateAuctionKey(auctionText.toUpperCase());
 		const cachedAuctionData = await redis.get(auctionLogKey);
-		let auctionData;
+		let auctionData: AuctionData;
 
 		if (!cachedAuctionData) {
 			// Parse the auction message if not in cache
@@ -71,7 +75,7 @@ export async function handleLogLine(server: Server, data: string) {
 			);
 		} else {
 			// Use the cached data
-			auctionData = JSON.parse(cachedAuctionData);
+			auctionData = JSON.parse(cachedAuctionData) as AuctionData;
 		}
 
 		if (!auctionData) {
@@ -153,7 +157,7 @@ export async function handleLogLine(server: Server, data: string) {
 			}
 		}
 	} else if (linkMatch) {
-		debug_console(`Link Match: ${linkMatch}`);
+		debug(`Link Match: ${linkMatch}`);
 		const [, playerName, linkCode] = linkMatch;
 		// console.log(playerName, linkMatch);
 
@@ -164,9 +168,7 @@ export async function handleLogLine(server: Server, data: string) {
 export function monitorLogFile(server: Server) {
 	const logFilePath = getLogFilePath(server);
 
-	console.log(
-		'Starting log monitoring for server ' + server + ': ' + logFilePath,
-	);
+	console.log(`Starting log monitoring for server ${server}: ${logFilePath}`);
 	const tail = new Tail(logFilePath, {
 		follow: true,
 		flushAtEOF: true,

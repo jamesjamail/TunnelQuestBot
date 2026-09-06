@@ -4,6 +4,7 @@ import { messageCopy } from '../../copy/messageCopy';
 import { buttonRowBuilder, MessageTypes } from '../buttonRowBuilder';
 import { playerlinkCommandResponseBuilder } from '../../messages/messageBuilder';
 import { removePlayerLinkById } from '../../../../prisma/dbExecutors/playerLink';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleUnlinkCharacterInactive<T>(
 	interaction: ButtonInteraction,
@@ -39,5 +40,5 @@ export default async function handleUnlinkCharacterInactive<T>(
 			),
 		});
 	}
-	debug_console(message);
+	debug(message);
 }

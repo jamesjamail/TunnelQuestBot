@@ -1,16 +1,82 @@
-## Containerized Local Development
+# TunnelQuestBot
 
-Set up and run everything (database and app) nicely isolated in local
-docker containers with just one command!
+A Discord bot that watches Project 1999 auction channels and notifies you when
+items you care about are being sold.
 
-### How?
-* Install Docker Desktop with WSL2 via this guide:
-https://docs.docker.com/desktop/wsl/
-  * Or, install docker and docker-compose on your platform of choice.
-* Copy `.env.example` to `.env` and configure your `TOKEN`/`CLIENT_ID` and log file paths.
-* Run `docker-compose up --build`
-  * Re-run this command any time you make code or config changes.
-  * If you'd prefer not to run everquest clients for the log files, you can tell the app to fake them: `$env:FAKE_LOGS='true'; docker-compose up --build`. This runs `npm run dev` in the container, which runs logFaker.ts in paralell
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, how to
+add a command, and what to run before opening a PR. Licensed
+[ISC](LICENSE).
+
+## Local Development
+
+You need Docker and Node 24 (`.nvmrc` pins it). You do **not** need EverQuest —
+the dev loop generates fake auction lines.
+
+```sh
+npm install
+cp .env.example .env      # then fill in the Discord section
+npm run dev:deps          # postgres + redis in docker
+npm run dev               # migrates, then runs the bot on your host, reloading on save
+```
+
+`npm run dev` runs the bot on your machine while its dependencies stay in
+containers. A save recompiles and restarts in about a second, rather than
+rebuilding an image. It applies any pending database migrations first — the
+container stack does that in its entrypoint, which the host loop never runs, so
+without it `dev:deps` leaves an empty database and the bot fails on missing
+tables.
+
+It also supplies `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS`, so the only thing
+`.env` needs is your Discord configuration. The `DATABASE_URL` in
+`.env.example` is the container stack's — it connects over a unix socket that
+does not exist on your host — so `npm run dev` uses a localhost TCP URL
+instead. A `DATABASE_URL` you write yourself for host development is used as-is.
+
+Stop the dependencies with `npm run dev:deps:down`.
+
+### Getting the Discord configuration
+
+You need your own bot application — never develop against the production token.
+
+1. Create an app at https://discord.com/developers/applications, add a bot, and
+   copy the token into `TOKEN` and the Application ID into `CLIENT_ID`.
+2. Invite it to a server you control, with the **Manage Channels** permission.
+3. Run `npm run setup -- <guild-id>`.
+
+`setup` creates the nine channels the bot needs and writes their ids into
+`.env`. To get the guild id, enable Developer Mode (Settings → Advanced), then
+right-click the **server** — not a channel — and pick "Copy Server ID".
+
+```sh
+npm run setup -- 123456789012345678 --dry-run   # show the plan, change nothing
+npm run setup -- 123456789012345678             # create, after confirming
+npm run setup -- 123456789012345678 --force     # re-resolve ids already in .env
+```
+
+It shows what it will create and asks before touching your server, adopts
+channels that already exist by name rather than duplicating them, and leaves
+ids already present in `.env` alone. Re-running after a partial failure is
+safe. It uses the REST API only — no gateway connection, no slash-command
+registration — so it cannot disturb a bot that is already live.
+
+The list of servers comes from the `Server` enum in `schema.prisma`, so adding
+one there is all that is needed for `setup` to provision its channels.
+
+If anything is missing or malformed, `npm run doctor` reports every problem at
+once and tells you what it expected. The bot performs the same check at startup
+and refuses to boot on a bad `.env`.
+
+### Running the whole stack in containers
+
+Closer to production, and the way to run against real EverQuest logs. Slower to
+iterate on, because every change needs a rebuild.
+
+```sh
+docker compose up --build
+```
+
+Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
+`FAKE_LOGS=true` to run the container stack without a game client.
 
 ## Running In Production
 
@@ -50,6 +116,38 @@ Lines prefixed with `[entrypoint]` come from the startup sequence:
 
 To confirm the running version, use the bot's `/version` command.
 
+## Testing
+
+```sh
+npm test              # unit tests
+npm run test:watch    # unit tests, watching
+npm run test:coverage # unit tests + coverage thresholds (what CI runs)
+npm run test:integration   # needs Docker running
+npm run test:all      # both suites
+npm run check         # lint + typecheck + unit tests, i.e. everything CI gates on
+```
+
+**`test:integration` requires Docker.** It starts real Postgres and Redis via
+testcontainers, applies migrations, and truncates between tests. Without Docker
+running it fails on a container-start timeout rather than anything informative,
+so start Docker first. The unit suite has no such requirement.
+
+Most tests are unit tests over logic pulled out of the Discord handlers.
+`src/test/mocks/` holds the discord.js, Prisma and Redis fakes, `src/test/env.ts`
+the environment both suites share, and `src/test/factories.ts` the object
+builders.
+
+## Editor setup
+
+VS Code will offer the Biome extension via `.vscode/extensions.json`, and
+`.vscode/settings.json` turns on format-on-save with it. `.editorconfig` covers
+editors that read it. Nothing here is required — CI checks the same rules.
+
+`.debug/` holds shared JetBrains run configurations for the containerised
+workflow: **Run App** brings up `docker-compose.yml --build`, and **Remote Node
+Debug** attaches to the inspector on port 9229. They live outside the gitignored
+`.idea/` on purpose so they can be checked in.
+
 ## Discord Template
 
 This repo is based on the following template for discordjs:
@@ -58,11 +156,33 @@ https://github.com/MericcaN41/discordjs-v14-template-ts
 
 This was done with that hope that any breaking changes from discordjs can be cross referenced and implemented.
 
-## Linter Config  & TypeScript Config
+## Linting, Formatting & TypeScript
 
-This project enforces eslint rules in a pre-commit hook.  This can be overridden with the --no-verify flag, but should be avoided.  Rather, if you have a good reason for disabling any of the eslint rules, feel free to do so.
+[Biome](https://biomejs.dev) handles both linting and formatting, configured in
+`biome.json`. Install the Biome editor extension and you get format-on-save
+matching CI; VS Code will offer it automatically via `.vscode/extensions.json`.
 
-Similarily, if there are any TypeScript config you feel should be changed, please do so.  The goal of TypeScript is to aid development by enforcing type safety.  If you are confident in your approach and TypeScript is being difficult, it is preferrable to cast the type with `as [TYPE]` rather than make your code hard to read.
+```sh
+npm run lint       # check (fails on warnings)
+npm run lint:fix   # check and apply fixes
+npm run typecheck  # tsc --noEmit
+```
+
+A pre-commit hook formats and lints staged files. It can be skipped with
+`--no-verify`, but CI runs the same checks, so that only defers the failure.
+
+If a rule is wrong for a specific line, suppress it with a
+`// biome-ignore lint/<group>/<rule>: <reason>` comment (single line — a wrapped
+comment silently stops working) rather than turning it off repo-wide. If a rule
+is wrong everywhere, change `biome.json`.
+
+Note that a malformed `biome.json` does **not** fail the run: Biome falls back to
+its defaults and reports success. `test/config.test.ts` guards against this.
+
+For TypeScript config, change it if you have reason to. The goal is to aid
+development by enforcing type safety — if you are confident in your approach and
+TypeScript is being difficult, `as [TYPE]` is preferable to code that is hard to
+read.
 
 ## Extensibility
 

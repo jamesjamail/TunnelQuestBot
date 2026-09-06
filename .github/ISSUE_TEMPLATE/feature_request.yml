@@ -1,0 +1,19 @@
+name: Feature request
+description: Something the bot should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: >
+        The problem, not the solution. "I miss auctions while I'm at work" tells
+        us more than "add a digest command", and often has a simpler answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional — a shape for the solution, if you have one.

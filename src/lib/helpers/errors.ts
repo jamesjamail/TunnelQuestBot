@@ -1,6 +1,7 @@
 import type { Interaction, TextChannel } from 'discord.js';
 import crypto from 'crypto';
 import { client } from '../..';
+import { config } from '../../config';
 import type { SlashCommand } from '../../types';
 
 // 	A repeating failure - a database outage, a duplicate-interaction storm - can
@@ -105,13 +106,8 @@ async function reportErrorToDiscord(
 	const truncateForDiscord = (text: string, max = MAX_DISCORD_MESSAGE) =>
 		text.length > max ? `${text.slice(0, max - 1)}…` : text;
 
-	const errorChannelId = process.env.ERROR_LOG_CHANNEL_ID;
-
-	if (!errorChannelId) {
-		throw new Error(
-			'Error log channel ID is missing in environment variables.',
-		);
-	}
+	//	validated at startup
+	const errorChannelId = config().ERROR_LOG_CHANNEL_ID;
 
 	// 	before login (or during a gateway outage) there is no usable REST session,
 	// 	so reporting would fail anyway and only mask the original error

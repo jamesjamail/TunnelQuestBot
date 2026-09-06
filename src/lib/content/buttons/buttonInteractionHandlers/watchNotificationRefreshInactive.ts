@@ -6,6 +6,7 @@ import { isSnoozed } from '../../../helpers/watches';
 import type { WatchNotificationMetadata } from '../../../watchNotification/watchNotification';
 import { watchNotificationBuilder } from '../../messages/messageBuilder';
 import { extendWatch } from '../../../../prisma/dbExecutors/watch';
+import { debug } from '../../../helpers/logger';
 
 export default async function handleWatchNotificationRefreshInactive<T>(
 	interaction: ButtonInteraction,
@@ -29,5 +30,5 @@ export default async function handleWatchNotificationRefreshInactive<T>(
 		embeds,
 		components,
 	});
-	debug_console(messageCopy.yourWatchHasBeenExtended);
+	debug(messageCopy.yourWatchHasBeenExtended);
 }

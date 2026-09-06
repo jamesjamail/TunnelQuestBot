@@ -5,6 +5,7 @@ import {
 } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { readdirSync } from 'fs';
+import { config } from '../config';
 import { color } from '../functions';
 import type { SlashCommand } from '../types';
 import { gracefullyHandleError } from '../lib/helpers/errors';
@@ -29,20 +30,22 @@ export function loadSlashCommands(
 export async function registerSlashCommands(
 	slashCommands: SlashCommandOptionsOnlyBuilder[],
 ): Promise<void> {
-	const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+	const rest = new REST({ version: '10' }).setToken(config().TOKEN);
 
 	await rest
-		.put(Routes.applicationCommands(process.env.CLIENT_ID), {
+		.put(Routes.applicationCommands(config().CLIENT_ID), {
 			body: slashCommands.map((command) => command.toJSON()),
 		})
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		.then((data: any) => {
+		.then((data) => {
+			//	the REST client types this as `unknown`; the route returns the
+			//	array of registered commands
+			const registered = Array.isArray(data) ? data.length : 0;
 			console.log(
 				color(
 					'text',
 					`🔥 Successfully loaded ${color(
 						'variable',
-						data.length,
+						String(registered),
 					)} slash command(s)`,
 				),
 			);

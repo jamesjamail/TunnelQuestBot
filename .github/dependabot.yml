@@ -1,0 +1,26 @@
+#	Security updates arrive without this file; scheduled version bumps do not.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      #	One PR per ecosystem rather than one per package. CI runs the full suite
+      #	on each, so a dozen separate PRs is a dozen redundant runs.
+      dev-dependencies:
+        dependency-type: development
+      production-dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
