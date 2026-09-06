@@ -1,8 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import {
+	chmodSync,
+	existsSync,
+	mkdtempSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import {
 	applyEnvUpdates,
+	writeEnvAtomically,
 	parseEnvFile,
 	parseServerNames,
 	planChannels,
@@ -261,5 +270,55 @@ describe('planChannels records what a write would overwrite', () => {
 		});
 
 		expect(entry.action).toBe('keep');
+	});
+});
+
+describe('writeEnvAtomically', () => {
+	//	.env holds the only copy of the bot token. A default-mode temp file is
+	//	0644 under the usual umask, so renaming it over a 0600 .env used to widen
+	//	the token to every local user on the machine.
+	function envAt(mode: number) {
+		const dir = mkdtempSync(join(tmpdir(), 'env-perms-'));
+		const path = join(dir, '.env');
+		writeFileSync(path, 'TOKEN=secret\n');
+		chmodSync(path, mode);
+		return path;
+	}
+
+	const modeOf = (path: string) => statSync(path).mode & 0o777;
+
+	it('leaves a private file private', () => {
+		const previousUmask = process.umask(0o022);
+		try {
+			const path = envAt(0o600);
+
+			writeEnvAtomically(path, 'TOKEN=rotated\n');
+
+			expect(modeOf(path)).toBe(0o600);
+			expect(readFileSync(path, 'utf8')).toBe('TOKEN=rotated\n');
+		} finally {
+			process.umask(previousUmask);
+		}
+	});
+
+	it('does not tighten a file the user deliberately opened up', () => {
+		const previousUmask = process.umask(0o022);
+		try {
+			const path = envAt(0o644);
+
+			writeEnvAtomically(path, 'TOKEN=rotated\n');
+
+			expect(modeOf(path)).toBe(0o644);
+		} finally {
+			process.umask(previousUmask);
+		}
+	});
+
+	it('leaves no temp file behind', () => {
+		const path = envAt(0o600);
+
+		writeEnvAtomically(path, 'TOKEN=rotated\n');
+
+		expect(existsSync(`${path}.setup-${process.pid}`)).toBe(false);
 	});
 });

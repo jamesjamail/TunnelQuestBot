@@ -15,8 +15,13 @@ import { consolidatedItemsAndAliases } from './lib/gameData/consolidatedItems';
 import { Server } from './prisma/client';
 //	Imported for the same reason as the game data: the runtime image copies a
 //	hand-maintained list of paths, and this is the module that notices when the
-//	list falls behind. Importing it does not open a connection - ioredis connects
-//	lazily - so this stays a configuration check.
+//	list falls behind.
+//
+//	This is not connection-free. src/redis/init.ts constructs `new Redis(...)`
+//	without `lazyConnect`, so ioredis starts connecting on import; the process
+//	exits synchronously below long before that could matter, but that is a race
+//	being won rather than a guarantee. Making the initializer lazy would change
+//	how the bot itself connects, so the honest fix is to say so here.
 import './redis/init';
 import { Client, Collection } from 'discord.js';
 import { join } from 'path';

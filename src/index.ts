@@ -26,34 +26,7 @@ import {
 //	longer expands those references for us.
 expand(loadDotenv());
 
-// 	Validate the whole environment before doing anything else. Every consumer
-// 	reads through config(), which memoises this first call, so a bad .env fails
-// 	here with the full list of problems rather than surfacing later as an
-// 	`undefined` interpolated into a URL or a channel id.
-try {
-	appConfig();
-} catch (error) {
-	if (error instanceof ConfigError) {
-		console.error(error.message);
-		process.exit(1);
-	}
-	throw error;
-}
-
-// 	The bot talks to Discord, Postgres and Redis constantly, and any of them can
-// 	fail transiently. Without these handlers Node terminates the process on the
-// 	first stray rejection, which under `restart: always` turns a blip into a
-// 	restart loop that drops log monitoring for every server.
-process.on('unhandledRejection', (reason) => {
-	void gracefullyHandleError(reason);
-});
-
 let handlingFatalException = false;
-process.on('uncaughtException', (error) => {
-	if (handlingFatalException) return;
-	handlingFatalException = true;
-	void handleFatalError(error);
-});
 
 client.slashCommands = new Collection<string, SlashCommand>();
 client.cooldowns = new Collection<string, number>();
@@ -66,6 +39,41 @@ client.cooldowns = new Collection<string, number>();
 // 	script, and `doctor` in particular could not touch the handler directories
 // 	without logging in with the production token.
 function boot(): void {
+	// 	Validate the whole environment before doing anything else. Every consumer
+	// 	reads through config(), which memoises this first call, so a bad .env fails
+	// 	here with the full list of problems rather than surfacing later as an
+	// 	`undefined` interpolated into a URL or a channel id.
+	//
+	// 	Inside boot() rather than at module scope: this calls process.exit(1), and
+	// 	at module scope any consumer reaching errors.ts -> index.ts with an
+	// 	incomplete environment terminated just by importing it.
+	try {
+		appConfig();
+	} catch (error) {
+		if (error instanceof ConfigError) {
+			console.error(error.message);
+			process.exit(1);
+		}
+		throw error;
+	}
+
+	// 	The bot talks to Discord, Postgres and Redis constantly, and any of them
+	// 	can fail transiently. Without these handlers Node terminates the process
+	// 	on the first stray rejection, which under `restart: always` turns a blip
+	// 	into a restart loop that drops log monitoring for every server.
+	//
+	// 	Also startup-only: installing global process handlers is a side effect no
+	// 	importer asked for.
+	process.on('unhandledRejection', (reason) => {
+		void gracefullyHandleError(reason);
+	});
+
+	process.on('uncaughtException', (error) => {
+		if (handlingFatalException) return;
+		handlingFatalException = true;
+		void handleFatalError(error);
+	});
+
 	// 	Called explicitly rather than scanned from handlers/: the scan also invoked
 	// 	the loader modules, which export named functions instead of a callable, and
 	// 	the resulting throw skipped the login() call below. Imported rather than

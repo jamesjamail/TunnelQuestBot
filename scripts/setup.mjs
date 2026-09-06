@@ -18,7 +18,14 @@
 //	slash-command registration, so running it cannot disturb a bot that is
 //	already live.
 
-import { renameSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+	chmodSync,
+	renameSync,
+	readFileSync,
+	statSync,
+	unlinkSync,
+	writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import process from 'node:process';
@@ -184,6 +191,36 @@ export function applyEnvUpdates(source, updates) {
  * @param {string} source
  * @returns {Record<string, string>}
  */
+//	Replace a file's contents without ever leaving a truncated or world-readable
+//	copy behind. .env holds the only copy of the bot token, so both matter: a
+//	crash midway through a plain write truncates it, and a default-mode temp file
+//	is 0644 under the usual umask, which would widen a 0600 .env to every local
+//	user on the rename.
+/**
+ * @param {string} path
+ * @param {string} contents
+ */
+export function writeEnvAtomically(path, contents) {
+	const tmpPath = `${path}.setup-${process.pid}`;
+	const previousMode = statSync(path).mode & 0o777;
+
+	//	'wx' fails rather than reusing a file someone else created, which would
+	//	mean writing the token into a handle we do not control.
+	writeFileSync(tmpPath, contents, { mode: 0o600, flag: 'wx' });
+	try {
+		//	at least as restrictive as 0600, and possibly more
+		chmodSync(tmpPath, previousMode);
+		renameSync(tmpPath, path);
+	} catch (error) {
+		try {
+			unlinkSync(tmpPath);
+		} catch {
+			//	nothing useful to do; the write already failed
+		}
+		throw error;
+	}
+}
+
 export function parseEnvFile(source) {
 	/** @type {Record<string, string>} */
 	const env = {};
@@ -421,12 +458,7 @@ async function main() {
 	const updates = Object.fromEntries(
 		writes.map((entry) => [entry.envKey, entry.id]),
 	);
-	//	Write through a temp file in the same directory and rename over the
-	//	original. .env holds the only copy of the bot token, and a crash midway
-	//	through a plain write truncates it.
-	const tmpPath = `${envPath}.setup-${process.pid}`;
-	writeFileSync(tmpPath, applyEnvUpdates(envSource, updates));
-	renameSync(tmpPath, envPath);
+	writeEnvAtomically(envPath, applyEnvUpdates(envSource, updates));
 
 	console.log(`\nWrote ${Object.keys(updates).length} id(s) to .env.`);
 	console.log(
