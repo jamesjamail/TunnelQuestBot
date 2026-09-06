@@ -128,7 +128,7 @@ jobs:
       #	Replaces whoan/docker-build-with-cache-action, a third-party action that
       #	wrapped its own caching scheme. The official action uses the GitHub
       #	Actions cache backend directly.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           push: true
