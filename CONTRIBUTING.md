@@ -13,7 +13,7 @@ npm install
 cp .env.example .env      # then fill in the Discord section
 npm run setup -- <guild-id>   # creates the channels, writes their ids into .env
 npm run dev:deps          # postgres + redis in docker
-npm run dev               # the bot, on your host, reloading on save
+npm run dev               # migrates, then runs the bot on your host, reloading on save
 ```
 
 `npm run doctor` reports anything missing or malformed in `.env`, all at once.

@@ -16,13 +16,21 @@ the dev loop generates fake auction lines.
 npm install
 cp .env.example .env      # then fill in the Discord section
 npm run dev:deps          # postgres + redis in docker
-npm run dev               # the bot, on your host, reloading on save
+npm run dev               # migrates, then runs the bot on your host, reloading on save
 ```
 
 `npm run dev` runs the bot on your machine while its dependencies stay in
 containers. A save recompiles and restarts in about a second, rather than
-rebuilding an image. It sets `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS` for
-you, so the only thing `.env` needs is your Discord configuration.
+rebuilding an image. It applies any pending database migrations first — the
+container stack does that in its entrypoint, which the host loop never runs, so
+without it `dev:deps` leaves an empty database and the bot fails on missing
+tables.
+
+It also supplies `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS`, so the only thing
+`.env` needs is your Discord configuration. The `DATABASE_URL` in
+`.env.example` is the container stack's — it connects over a unix socket that
+does not exist on your host — so `npm run dev` uses a localhost TCP URL
+instead. A `DATABASE_URL` you write yourself for host development is used as-is.
 
 Stop the dependencies with `npm run dev:deps:down`.
 

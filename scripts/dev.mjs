@@ -34,26 +34,92 @@ export const devDefaults = {
 	FAKE_LOGS: 'true',
 };
 
+//	A value that only makes sense inside the container stack. .env.example ships
+//	the compose DATABASE_URL, whose `?host=` names a socket directory that exists
+//	in the container and not on the host - publishing port 5432 does not make it
+//	reachable. Treating that as a user override would point host development at a
+//	socket that is not there, so the host default wins over it. A URL the user
+//	actually wrote for host development has no socket parameter and is honoured.
+/**
+ * @param {string} key
+ * @param {string} value
+ */
+function isContainerOnly(key, value) {
+	return key === 'DATABASE_URL' && /[?&]host=/.test(value);
+}
+
 //	Precedence, highest first: an exported shell variable, then .env, then these
-//	defaults. The .env check is the load-bearing part - these are written into
-//	process.env before the children are spawned, and dotenv does not overwrite an
-//	entry that already exists, so defaulting a key that .env also sets would make
-//	the default win silently. Someone with real EverQuest logs setting
-//	FAKE_LOGS=false would still get generated auctions and no explanation.
+//	defaults.
+//
+//	Returns both halves because they are not the same thing. `effective` is what
+//	the run will actually use, and every launcher decision has to read from it -
+//	the children load .env themselves, so a value set only there is invisible in
+//	process.env and reading that instead made the launcher disagree with the bot
+//	it was starting. `applied` is the subset this script has to write into
+//	process.env, which is only ever its own literal defaults: .env values can
+//	contain ${...} references that dotenv-expand resolves in the child, and
+//	copying them across unexpanded would break them.
 /**
  * @param {Record<string, string>} defaults
  * @param {Record<string, string | undefined>} env
  * @param {Record<string, string>} fromEnvFile
- * @returns {Record<string, string>}
+ * @returns {{ effective: Record<string, string>, applied: Record<string, string> }}
  */
 export function resolveDevEnv(defaults, env, fromEnvFile) {
 	/** @type {Record<string, string>} */
+	const effective = {};
+	/** @type {Record<string, string>} */
 	const applied = {};
-	for (const [key, value] of Object.entries(defaults)) {
-		if (key in env || key in fromEnvFile) continue;
-		applied[key] = value;
+
+	for (const [key, fallback] of Object.entries(defaults)) {
+		const exported = env[key];
+		if (exported !== undefined) {
+			effective[key] = exported;
+			continue;
+		}
+
+		const configured = fromEnvFile[key];
+		if (configured !== undefined && !isContainerOnly(key, configured)) {
+			effective[key] = configured;
+			continue;
+		}
+
+		effective[key] = fallback;
+		applied[key] = fallback;
 	}
-	return applied;
+
+	return { effective, applied };
+}
+
+//	Which children the run will start, and the build outputs each needs before it
+//	can be started. Exported so the decision can be tested from an .env file
+//	directly, rather than inferred from which defaults were applied.
+/**
+ * @param {Record<string, string>} effective
+ * @returns {{ label: string, entrypoint: string }[]}
+ */
+export function plannedChildren(effective) {
+	const children = [{ label: 'node', entrypoint: 'build/index.js' }];
+
+	if (isEnabled(effective.FAKE_LOGS)) {
+		//	FAKE_LOGS makes the parser tail build/lib/fakeLogs/<SERVER>.log, which
+		//	only exists because logFaker writes to it.
+		children.unshift({
+			label: 'logFaker',
+			entrypoint: 'build/lib/parser/logFaker.js',
+		});
+	}
+
+	return children;
+}
+
+//	The same spelling the bot uses, so the launcher and the process it starts
+//	never disagree about whether fake logs are on.
+/**
+ * @param {string | undefined} value
+ */
+export function isEnabled(value) {
+	return /^[tT]/.test(value ?? '');
 }
 
 /**
@@ -139,14 +205,12 @@ for (const signal of ['SIGINT', 'SIGTERM']) {
 }
 
 function main() {
-	Object.assign(
+	const { effective, applied } = resolveDevEnv(
+		devDefaults,
 		process.env,
-		resolveDevEnv(
-			devDefaults,
-			process.env,
-			readEnvFile(join(repoRoot, '.env')),
-		),
+		readEnvFile(join(repoRoot, '.env')),
 	);
+	Object.assign(process.env, applied);
 
 	for (const signal of ['SIGINT', 'SIGTERM']) {
 		process.on(signal, () => {
@@ -171,11 +235,32 @@ function main() {
 		process.exit(1);
 	}
 
-	const fakeLogs = process.env.FAKE_LOGS === 'true';
+	//	Migrations are applied by docker-entrypoint.sh, which the host loop never
+	//	runs. Without this, `dev:deps` leaves an empty database and the bot fails
+	//	on missing tables the moment it queries - the documented quickstart went
+	//	straight from starting the containers to starting the bot with nothing in
+	//	between. Applied with the resolved URL rather than whatever is in .env,
+	//	since that may be the container's socket form.
+	console.log('[dev] applying database migrations');
+	try {
+		execFileSync('npx', ['prisma', 'migrate', 'deploy'], {
+			stdio: 'ignore',
+			shell: process.platform === 'win32',
+			env: { ...process.env, DATABASE_URL: effective.DATABASE_URL },
+		});
+	} catch {
+		console.error(
+			`[dev] could not apply migrations to ${effective.DATABASE_URL}\n` +
+				'[dev] is `npm run dev:deps` up? `npm run migrate` shows the error.',
+		);
+		process.exit(1);
+	}
+
+	const planned = plannedChildren(effective);
 
 	console.log('[dev] watching src/ -> build/, restarting on change');
 	console.log(
-		fakeLogs
+		planned.some((child) => child.label === 'logFaker')
 			? '[dev] FAKE_LOGS is on; no EverQuest client required\n'
 			: '[dev] FAKE_LOGS is off; tailing the configured EverQuest logs\n',
 	);
@@ -188,14 +273,9 @@ function main() {
 	//	scanning several hundred freshly emitted files, can take well over a few
 	//	seconds, and the children below exit non-zero if their entrypoint is
 	//	missing - which the handler in run() turns into a teardown on the first run.
-	const entrypoints = [join(repoRoot, 'build', 'index.js')];
-	if (fakeLogs) {
-		//	FAKE_LOGS makes the parser tail build/lib/fakeLogs/<SERVER>.log, which
-		//	only exists because logFaker writes to it.
-		entrypoints.push(
-			join(repoRoot, 'build', 'lib', 'parser', 'logFaker.js'),
-		);
-	}
+	const entrypoints = planned.map((child) =>
+		join(repoRoot, ...child.entrypoint.split('/')),
+	);
 
 	const startedAt = Date.now();
 	let announcedWait = false;
@@ -204,13 +284,19 @@ function main() {
 		if (shuttingDown) return;
 
 		if (entrypoints.every((file) => existsSync(file))) {
-			if (fakeLogs)
-				run('logFaker', 'node', ['./build/lib/parser/logFaker.js']);
-			run('node', 'node', [
-				'--watch',
-				'--enable-source-maps',
-				'./build/index.js',
-			]);
+			for (const child of planned) {
+				run(
+					child.label,
+					'node',
+					child.label === 'node'
+						? [
+								'--watch',
+								'--enable-source-maps',
+								`./${child.entrypoint}`,
+							]
+						: [`./${child.entrypoint}`],
+				);
+			}
 			return;
 		}
 
