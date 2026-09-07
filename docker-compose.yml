@@ -1,7 +1,14 @@
+x-default-logging: &default-logging
+  driver: local
+  options:
+    max-size: "${DOCKER_LOG_MAX_SIZE:-10m}"
+    max-file: "${DOCKER_LOG_MAX_FILES:-5}"
+
 services:
     postgres:
       image: postgres:18-alpine
       container_name: postgres
+      logging: *default-logging
       environment:
         POSTGRES_USER: "${POSTGRES_USER}"
         POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
@@ -22,6 +29,7 @@ services:
     redis:
       image: redis:alpine
       container_name: redis
+      logging: *default-logging
       environment:
         REDIS_CONFIG: |
           unixsocket /var/run/redis/redis.sock
@@ -42,6 +50,7 @@ services:
 
     p99-logger-init:
       image: busybox:1.37.0
+      logging: *default-logging
       environment:
         P99_UID: "${P99_UID:-65534}"
         P99_GID: "${P99_GID:-65534}"
@@ -61,11 +70,14 @@ services:
     p99-green-logger:
       image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}"
       profiles: ["p99-loggers"]
+      logging: *default-logging
       user: "${P99_UID:-65534}:${P99_GID:-65534}"
       command: ["/config/config.json"]
       depends_on:
         p99-logger-init:
           condition: service_completed_successfully
+        p99-log-retention:
+          condition: service_started
       volumes:
         - type: bind
           source: "${P99_GREEN_CONFIG_FILE:-./p99-logger/green.json}"
@@ -88,11 +100,14 @@ services:
     p99-blue-logger:
       image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}"
       profiles: ["p99-loggers"]
+      logging: *default-logging
       user: "${P99_UID:-65534}:${P99_GID:-65534}"
       command: ["/config/config.json"]
       depends_on:
         p99-logger-init:
           condition: service_completed_successfully
+        p99-log-retention:
+          condition: service_started
       volumes:
         - type: bind
           source: "${P99_BLUE_CONFIG_FILE:-./p99-logger/blue.json}"
@@ -112,11 +127,35 @@ services:
         retries: 3
         start_period: 60s
 
+    p99-log-retention:
+      build:
+        context: .
+        dockerfile: p99-logger/retention.Dockerfile
+      profiles: ["p99-loggers"]
+      logging: *default-logging
+      user: "${P99_UID:-65534}:${P99_GID:-65534}"
+      environment:
+        P99_JSONL_MAX_SIZE: "${P99_JSONL_MAX_SIZE:-100M}"
+        P99_JSONL_ROTATE_COUNT: "${P99_JSONL_ROTATE_COUNT:-5}"
+        P99_JSONL_ROTATE_INTERVAL_SECONDS: "${P99_JSONL_ROTATE_INTERVAL_SECONDS:-300}"
+      depends_on:
+        p99-logger-init:
+          condition: service_completed_successfully
+      volumes:
+        - p99-logger-data:/data
+      read_only: true
+      tmpfs:
+        - /tmp:mode=1777,size=1m
+      cap_drop: ["ALL"]
+      security_opt: ["no-new-privileges:true"]
+      restart: unless-stopped
+
     tunnelquestbot:
       build:
         context: .
         dockerfile: Dockerfile
       container_name: tunnelquestbot
+      logging: *default-logging
       depends_on:
         postgres:
           condition: service_healthy

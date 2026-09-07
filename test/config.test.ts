@@ -290,6 +290,22 @@ describe('startup migration invariants', () => {
 			/depends_on:\s*\n\s*postgres:\s*\n\s*condition: service_healthy/,
 		);
 	});
+
+	it('bounds container logs and rotates collector JSONL files', () => {
+		const compose = readRepoFile('docker-compose.yml');
+		const retention = readRepoFile('p99-logger/retention-entrypoint.sh');
+
+		expect(compose).toMatch(/driver: local/);
+		expect(compose).toMatch(/DOCKER_LOG_MAX_SIZE:-10m/);
+		expect(compose).toMatch(/DOCKER_LOG_MAX_FILES:-5/);
+		expect(compose).toMatch(/p99-log-retention:/);
+		expect(compose).toMatch(/P99_JSONL_MAX_SIZE:-100M/);
+		expect(retention).toMatch(/copytruncate/);
+		expect(retention).toMatch(/compress/);
+		expect(retention).toMatch(
+			/\/data\/green\/chat\.jsonl \/data\/blue\/chat\.jsonl/,
+		);
+	});
 });
 
 //	These two guard the first-run path: a contributor copies .env.example, fills

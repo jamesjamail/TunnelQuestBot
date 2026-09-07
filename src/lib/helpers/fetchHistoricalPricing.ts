@@ -15,6 +15,20 @@ function getServerIntForExternalApi(server: Server) {
 	return Server[server];
 }
 
+function logUnavailablePricing(
+	server: Server,
+	itemName: string,
+	error: unknown,
+): void {
+	const reason =
+		error instanceof Error
+			? `${error.name}: ${error.message}`
+			: String(error);
+	console.warn(
+		`Historical pricing unavailable for ${server}/${itemName}; continuing without it (${reason})`,
+	);
+}
+
 export async function fetchHistoricalPricingForItem(
 	itemName: string,
 	server: Server,
@@ -29,7 +43,13 @@ export async function fetchHistoricalPricingForItem(
 		}/api/item/get/${getServerIntForExternalApi(
 			server,
 		)}/${encodeURIComponent(pricingItemName)}`;
-		const res = await fetch(endpoint);
+		let res: Response;
+		try {
+			res = await fetch(endpoint);
+		} catch (error) {
+			logUnavailablePricing(server, pricingItemName, error);
+			return null;
+		}
 
 		if (res.status === 204) {
 			return null;
@@ -40,7 +60,12 @@ export async function fetchHistoricalPricingForItem(
 			return null;
 		}
 
-		historicalPrice = await res.json();
+		try {
+			historicalPrice = await res.json();
+		} catch (error) {
+			logUnavailablePricing(server, pricingItemName, error);
+			return null;
+		}
 		await redis.set(
 			key,
 			JSON.stringify(historicalPrice),
