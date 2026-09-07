@@ -204,6 +204,21 @@ describe('watch dbExecutor (integration)', () => {
 			expect(await getWatchesByItemName('100', '')).toHaveLength(2);
 		});
 
+		it('getWatchesByItemName filters case-insensitively', async () => {
+			const { upsertWatch, getWatchesByItemName } = await import(
+				'./watch'
+			);
+			await seedUser();
+
+			await upsertWatch('100', {
+				...defaultWatchData,
+				itemName: 'MAGIC SWORD',
+			});
+
+			expect(await getWatchesByItemName('100', 'sword')).toHaveLength(1);
+			expect(await getWatchesByItemName('100', 'Sword')).toHaveLength(1);
+		});
+
 		it('getWatchByWatchId throws when the watch is missing', async () => {
 			const { getWatchByWatchId } = await import('./watch');
 
