@@ -41,20 +41,20 @@
     "node": ">=24"
   },
   "dependencies": {
-    "@discordjs/rest": "^2.0.1",
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
+    "@discordjs/rest": "^2.6.3",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "ahocorasick": "^1.0.2",
     "chalk": "^5.6.2",
-    "date-fns": "^4.1.0",
-    "discord.js": "^14.25.1",
+    "date-fns": "^4.4.0",
+    "discord.js": "^14.27.0",
     "dotenv": "^17.2.3",
     "dotenv-expand": "^13.0.0",
-    "fuse.js": "^7.1.0",
+    "fuse.js": "^7.5.0",
     "ioredis": "^5.3.2",
-    "prisma": "^7.9.1",
+    "prisma": "^7.10.0",
     "tail": "^2.2.6",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.7",
