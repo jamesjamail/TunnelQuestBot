@@ -1,15 +1,15 @@
-import { PrismaPg } from '@prisma/adapter-pg';
+import { createSqliteAdapter } from './sqlite';
 import { PrismaClient } from './client';
 import { color } from '../functions';
 import { gracefullyHandleError } from '../lib/helpers/errors';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
-//	Prisma 7 requires a driver adapter. Neither the adapter nor the pool it wraps
-//	opens a connection here, so a missing DATABASE_URL stays a soft failure that
-//	initializePrisma reports below.
+// The adapter opens the local database when Prisma first connects.
 export const prisma = new PrismaClient({
-	adapter: new PrismaPg({ connectionString: DATABASE_URL }),
+	adapter: createSqliteAdapter(
+		DATABASE_URL ?? 'file:./data/tunnelquestbot.db',
+	),
 });
 
 export async function initializePrisma() {

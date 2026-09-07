@@ -12,7 +12,7 @@ the dev loop generates fake auction lines.
 npm install
 cp .env.example .env      # then fill in the Discord section
 npm run setup -- <guild-id>   # creates the channels, writes their ids into .env
-npm run dev:deps          # postgres + redis in docker
+npm run dev:deps          # Redis in Docker; SQLite is a local file
 npm run dev               # migrates, then runs the bot on your host, reloading on save
 ```
 
@@ -31,8 +31,8 @@ Full detail, including the container-based workflow, is in the [README](README.m
 npm run check   # lint + typecheck + unit tests — the same gates CI runs
 ```
 
-`npm run test:integration` needs Docker running; it starts real Postgres and
-Redis via testcontainers. CI runs it too, so it's worth running locally if you
+`npm run test:integration` needs Docker running; it uses temporary SQLite files and Redis via testcontainers. The PostgreSQL
+import tests also start a disposable source database. CI runs it too, so it's worth running locally if you
 touched anything under `src/prisma/`.
 
 A pre-commit hook formats and lints staged files. You can skip it with

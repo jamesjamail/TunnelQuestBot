@@ -140,7 +140,7 @@ describe('block dbExecutor (integration)', () => {
 
 			await expect(
 				prisma.user.delete({ where: { discordUserId: '100' } }),
-			).rejects.toThrow(/Watch_discordUserId_fkey/);
+			).rejects.toMatchObject({ code: 'P2003' });
 		});
 	});
 });

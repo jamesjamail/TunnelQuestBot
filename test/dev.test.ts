@@ -149,94 +149,35 @@ describe('resolveDevEnv against the shipped .env.example', () => {
 		expect(labels).toContain('logFaker');
 	});
 
-	it('ignores the container database url in favour of the host default', () => {
-		//	.env.example ships the compose URL, whose ?host= names a socket
-		//	directory that exists in the container and not on the host.
-		const shipped = envExample().DATABASE_URL;
-		expect(shipped).toMatch(/[?&]host=/);
-
+	it('uses the same SQLite URL for host migrations and the bot', () => {
 		const { effective, applied } = resolveDevEnv(
 			devDefaults,
 			{},
 			envExample(),
 		);
-
-		expect(effective.DATABASE_URL).toBe(devDefaults.DATABASE_URL);
-		expect(effective.DATABASE_URL).not.toMatch(/[?&]host=/);
-		//	imposed, so the child uses it too
-		expect(applied.DATABASE_URL).toBe(devDefaults.DATABASE_URL);
+		expect(effective.DATABASE_URL).toBe('file:./data/tunnelquestbot.db');
+		expect(applied.DATABASE_URL).toBe(effective.DATABASE_URL);
 	});
-
-	it('still honours a database url written for host development', () => {
-		const mine = 'postgresql://me:pw@localhost:5555/mydb';
-		const { effective, applied } = resolveDevEnv(
-			devDefaults,
-			{},
-			{ ...envExample(), DATABASE_URL: mine },
-		);
-
-		expect(effective.DATABASE_URL).toBe(mine);
-		expect(applied.DATABASE_URL).toBe(mine);
-	});
-
-	it.each([
-		'?host=/tmp/local-postgres',
-		'?sslmode=disable&host=/tmp/local-postgres',
-	])('preserves a custom socket URL with %s', (query) => {
-		const database = `postgresql://example:fake@localhost/custom_db${query}`;
+	it('preserves custom SQLite paths and expands references', () => {
 		const { effective, applied } = resolveDevEnv(
 			devDefaults,
 			{},
 			{
 				...envExample(),
-				DATABASE_URL: database,
+				DATABASE_URL: `file:\${DATA_DIRECTORY}/custom.db`,
+				DATA_DIRECTORY: '/tmp/tqb',
 			},
 		);
-		expect(effective.DATABASE_URL).toBe(database);
-		expect(applied.DATABASE_URL).toBe(database);
+		expect(effective.DATABASE_URL).toBe('file:/tmp/tqb/custom.db');
+		expect(applied.DATABASE_URL).toBe(effective.DATABASE_URL);
 	});
-
-	it('preserves a custom socket directory in the Compose template', () => {
+	it('honours the exported database URL', () => {
 		const { effective } = resolveDevEnv(
 			devDefaults,
-			{},
-			{
-				...envExample(),
-				DB_SOCKET_DIR: '/tmp/local-postgres',
-				POSTGRES_DB: 'custom_db',
-			},
-		);
-		const database = new URL(effective.DATABASE_URL);
-		expect(database.searchParams.get('host')).toBe('/tmp/local-postgres');
-		expect(database.pathname).toBe('/custom_db');
-	});
-
-	it('keeps configured credentials and database when translating the shipped socket', () => {
-		const { effective } = resolveDevEnv(
-			devDefaults,
-			{},
-			{
-				...envExample(),
-				POSTGRES_USER: 'example',
-				POSTGRES_PASSWORD: 'fake',
-				POSTGRES_DB: 'custom_db',
-			},
-		);
-		expect(effective.DATABASE_URL).toBe(
-			'postgresql://example:fake@localhost:5432/custom_db',
-		);
-	});
-
-	it('still honours an exported container-shaped url', () => {
-		//	an explicit export is a deliberate act, unlike the shipped sample
-		const exported = 'postgresql://u:p@localhost/db?host=/tmp/sock';
-		const { effective } = resolveDevEnv(
-			devDefaults,
-			{ DATABASE_URL: exported },
+			{ DATABASE_URL: 'file:/tmp/override.db' },
 			envExample(),
 		);
-
-		expect(effective.DATABASE_URL).toBe(exported);
+		expect(effective.DATABASE_URL).toBe('file:/tmp/override.db');
 	});
 });
 

@@ -110,7 +110,7 @@ describe('development environment', () => {
 		//	the production stack talks over unix sockets, which the host cannot
 		//	reach; the dev override publishes ports so `npm run dev` can connect
 		const override = readRepoFile('docker-compose.dev.yml');
-		expect(override).toMatch(/127\.0\.0\.1:5432:5432/);
+		expect(override).not.toMatch(/postgres:/);
 		expect(override).toMatch(/127\.0\.0\.1:6379:6379/);
 	});
 });
@@ -290,13 +290,12 @@ describe('startup migration invariants', () => {
 		expect(pkg.scripts?.migrate).toMatch(/migrate deploy/);
 	});
 
-	it('waits for postgres and redis to report healthy before starting', () => {
+	it('uses persistent SQLite storage and waits for Redis', () => {
 		const compose = readRepoFile('docker-compose.yml');
-		expect(compose).toMatch(/pg_isready/);
+		expect(compose).not.toMatch(/postgres:/);
+		expect(compose).toMatch(/sqlite-data:\/data/);
 		expect(compose).toMatch(/redis-cli/);
-		expect(compose).toMatch(
-			/depends_on:\s*\n\s*postgres:\s*\n\s*condition: service_healthy/,
-		);
+		expect(compose).toMatch(/redis:\s*\n\s*condition: service_healthy/);
 	});
 
 	it('bounds container logs and rotates collector JSONL files', () => {

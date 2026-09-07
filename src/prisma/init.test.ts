@@ -36,7 +36,7 @@ describe('initializePrisma', () => {
 	});
 
 	it('routes a rejected $connect through gracefullyHandleError', async () => {
-		process.env.DATABASE_URL = 'postgresql://localhost:5432/test';
+		process.env.DATABASE_URL = 'file:./data/init-test.db';
 		const error = new Error('connection refused');
 		mockConnect.mockRejectedValue(error);
 
@@ -48,7 +48,7 @@ describe('initializePrisma', () => {
 	});
 
 	it('logs success when $connect resolves', async () => {
-		process.env.DATABASE_URL = 'postgresql://localhost:5432/test';
+		process.env.DATABASE_URL = 'file:./data/init-test.db';
 		mockConnect.mockResolvedValue(undefined);
 
 		const { initializePrisma } = await import('./init');

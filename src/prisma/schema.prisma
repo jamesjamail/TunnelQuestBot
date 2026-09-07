@@ -6,14 +6,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
   discordUserId   String    @id @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  discordUsername String    @db.VarChar(255)
+  discordUsername String
   snoozedUntil    DateTime?
 
   watches               Watch[]
@@ -38,12 +38,12 @@ model Watch {
   discordUserId         String
   server                Server
   watchType             WatchType
-  itemName              String    @db.VarChar(255)
+  itemName              String
   priceRequirement      Int?
   created               DateTime  @default(now())
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
-  notes                 String?   @db.Text
+  notes                 String?
   // allow other discord users to contact regarding item
   isPublicallyTradeable Boolean   @default(true)
 
@@ -58,7 +58,7 @@ model BlockedPlayerByWatch {
   id            Int    @id @default(autoincrement())
   discordUserId String
   watchId       Int
-  player        String @db.VarChar(255)
+  player        String
   watch         Watch  @relation(fields: [watchId], references: [id], onDelete: Cascade)
   user          User   @relation(fields: [discordUserId], references: [discordUserId])
 
@@ -70,7 +70,7 @@ model BlockedPlayer {
   id            Int     @id @default(autoincrement())
   discordUserId String
   server        Server
-  player        String  @db.VarChar(255)
+  player        String
   active        Boolean @default(true)
 
   user User @relation(fields: [discordUserId], references: [discordUserId])
@@ -82,12 +82,19 @@ model PlayerLink {
   id             Int       @id @default(autoincrement())
   discordUserId  String
   server         Server?
-  player         String?   @db.VarChar(255)
-  linkCode       String?   @db.Uuid
+  player         String?
+  linkCode       String?
   linkCodeExpiry DateTime?
 
   user User @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([server, player])
   @@index([server, player])
+}
+
+// Records a completed import in the same transaction as the imported rows.
+model DataMigration {
+  name        String   @id
+  completedAt DateTime @default(now())
+  counts      String
 }

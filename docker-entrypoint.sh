@@ -55,8 +55,7 @@ apply_migrations() {
 
 		if [ "$attempt" -ge "$MIGRATE_MAX_ATTEMPTS" ]; then
 			log "ERROR: database was still unreachable after $attempt attempts."
-			log 'Check that the postgres service is running and that DATABASE_URL'
-			log 'points at it.'
+			log 'Check DATABASE_URL and the database file directory permissions.'
 			return 1
 		fi
 
@@ -67,6 +66,7 @@ apply_migrations() {
 }
 
 apply_migrations
+node ./build/prisma/import-postgres.js
 
 #	Smoke mode: prove the image can actually start, then exit instead of
 #	connecting to Discord. Reaching this point already establishes that the

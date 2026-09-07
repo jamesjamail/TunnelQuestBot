@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 // Execute the real entrypoint with isolated command stand-ins. The image smoke
 // test separately exercises the actual Prisma client, writer and doctor.
 function runEntrypoint(
-	failure?: 'migrations' | 'writer' | 'doctor',
+	failure?: 'migrations' | 'import' | 'writer' | 'doctor',
 	smoke = true,
 ) {
 	const directory = mkdtempSync(join(tmpdir(), 'tqb-entrypoint-'));
@@ -23,6 +23,7 @@ function runEntrypoint(
 		const commands = {
 			prisma: 'echo migrations >> "$TRACE"; [ "$FAILURE" != migrations ]',
 			node: `case "$1" in
+  *import-postgres.js) echo import >> "$TRACE"; [ "$FAILURE" != import ] ;;
   *logFaker.js) echo "writer $2" >> "$TRACE"; [ "$FAILURE" != writer ] ;;
   *doctor.js) echo doctor >> "$TRACE"; [ "$FAILURE" != doctor ] ;;
   *) exit 99 ;;
@@ -66,14 +67,15 @@ describe.skipIf(process.platform === 'win32')('container smoke startup', () => {
 	it('migrates, writes fake logs once, then validates without starting the bot', () => {
 		expect(runEntrypoint()).toEqual({
 			status: 0,
-			trace: ['migrations', 'writer --once', 'doctor'],
+			trace: ['migrations', 'import', 'writer --once', 'doctor'],
 		});
 	});
 
 	it.each([
 		['migrations', ['migrations']],
-		['writer', ['migrations', 'writer --once']],
-		['doctor', ['migrations', 'writer --once', 'doctor']],
+		['import', ['migrations', 'import']],
+		['writer', ['migrations', 'import', 'writer --once']],
+		['doctor', ['migrations', 'import', 'writer --once', 'doctor']],
 	] as const)('fails smoke when %s fails', (failure, trace) => {
 		const result = runEntrypoint(failure);
 		expect(result.status).toBe(1);
@@ -88,6 +90,7 @@ describe.skipIf(process.platform === 'win32')('container smoke startup', () => {
 			// The background writer and bot may append in either order.
 			expect(result.trace.map((line) => line.trim()).sort()).toEqual([
 				'bot',
+				'import',
 				'migrations',
 				'writer',
 			]);

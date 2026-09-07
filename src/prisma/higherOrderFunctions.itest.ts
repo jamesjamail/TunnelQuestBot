@@ -14,7 +14,7 @@ function makeInteraction(userId = '999', username = 'newbie') {
 }
 
 describe('attemptAndCreateUserIfNeeded (integration)', () => {
-	it('creates the user and retries when a watch insert hits P2003', async () => {
+	it('ensures a new user exists before creating their watch', async () => {
 		const { attemptAndCreateUserIfNeeded } = await import(
 			'./higherOrderFunctions'
 		);
@@ -97,7 +97,7 @@ describe('attemptAndCreateUserIfNeeded (integration)', () => {
 		expect(await prisma.user.count()).toBe(2);
 	});
 
-	it('rethrows P2003 when the violated constraint is not discordUserId', async () => {
+	it('preserves foreign-key failures unrelated to user creation', async () => {
 		const { attemptAndCreateUserIfNeeded } = await import(
 			'./higherOrderFunctions'
 		);

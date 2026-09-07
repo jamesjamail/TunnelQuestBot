@@ -1,17 +1,5 @@
-#	Development override: publishes Postgres and Redis to localhost so the bot can
-#	run on the host with a fast reload loop, while its dependencies stay in Docker.
-#
-#	Used only by `npm run dev:deps`, which layers it over docker-compose.yml and
-#	starts the two data services. The production stack in docker-compose.yml is
-#	untouched and keeps talking over unix sockets.
-#
-#	Bound to 127.0.0.1 rather than 0.0.0.0 so a laptop on a shared network is not
-#	handing out a database.
+# Host development uses a local SQLite file; only Redis needs a container.
 services:
-    postgres:
-        ports:
-            - '127.0.0.1:5432:5432'
-
     redis:
         ports:
             - '127.0.0.1:6379:6379'
