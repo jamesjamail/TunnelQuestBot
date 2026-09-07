@@ -140,7 +140,11 @@ truncates it in place, compresses the copy, and retains five archives. Keeping
 the active path and inode stable lets both the collector and TunnelQuestBot
 continue using it without a restart. Configure this with
 `P99_JSONL_MAX_SIZE`, `P99_JSONL_ROTATE_COUNT`, and
-`P99_JSONL_ROTATE_INTERVAL_SECONDS`.
+`P99_JSONL_ROTATE_INTERVAL_SECONDS`. The size must be a positive whole number
+followed by `k`, `K`, `M`, or `G` (for example, `100M`); bare byte counts and
+zero sizes are rejected. The interval must be a positive whole number of seconds.
+If a rotation pass fails, the sidecar reports it and retries after that interval
+without restarting or discarding its rotation state.
 
 Archives live beside the active file in the private `p99-logger-data` volume
 as files such as `chat.jsonl.1.gz`. As with any `copytruncate` rotation, a line
