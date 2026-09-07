@@ -53,6 +53,7 @@ describe('fetchHistoricalPricingForItem', () => {
 
 	afterEach(() => {
 		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
 	});
 
 	it('returns parsed pricing for a 200 response', async () => {
@@ -95,15 +96,31 @@ describe('fetchHistoricalPricingForItem', () => {
 		consoleError.mockRestore();
 	});
 
-	it('rejects when fetch rejects', async () => {
+	it('returns null when fetch rejects without reporting to Discord', async () => {
+		const consoleWarn = vi
+			.spyOn(console, 'warn')
+			.mockImplementation(() => undefined);
 		vi.mocked(fetch).mockRejectedValueOnce(new Error('network down'));
 
 		await expect(
 			fetchHistoricalPricingForItem('FBSS', Server.BLUE),
-		).rejects.toThrow('network down');
+		).resolves.toBeNull();
+
+		expect(consoleWarn).toHaveBeenCalledWith(
+			expect.stringContaining(
+				`Historical pricing unavailable for BLUE/${CANONICAL_FBSS}`,
+			),
+		);
+		expect(consoleWarn).toHaveBeenCalledWith(
+			expect.stringContaining('Error: network down'),
+		);
+		expect(gracefullyHandleError).not.toHaveBeenCalled();
 	});
 
-	it('rejects when response JSON is malformed', async () => {
+	it('returns null when response JSON is malformed', async () => {
+		const consoleWarn = vi
+			.spyOn(console, 'warn')
+			.mockImplementation(() => undefined);
 		vi.mocked(fetch).mockResolvedValueOnce({
 			ok: true,
 			status: 200,
@@ -114,7 +131,12 @@ describe('fetchHistoricalPricingForItem', () => {
 
 		await expect(
 			fetchHistoricalPricingForItem('FBSS', Server.BLUE),
-		).rejects.toThrow('invalid json');
+		).resolves.toBeNull();
+
+		expect(consoleWarn).toHaveBeenCalledWith(
+			expect.stringContaining('Error: invalid json'),
+		);
+		expect(gracefullyHandleError).not.toHaveBeenCalled();
 	});
 
 	it('skips fetch on a cache hit', async () => {

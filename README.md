@@ -127,6 +127,31 @@ The credential files, JSONL logs, and health state are kept out of the bot
 image. The collectors run without capabilities, with read-only root
 filesystems, and use a named volume shared read-only with the bot.
 
+### Log retention
+
+Every Compose service uses Docker's rotating `local` log driver. By default,
+Docker keeps five 10 MB stdout/stderr files per container; override
+`DOCKER_LOG_MAX_SIZE` or `DOCKER_LOG_MAX_FILES` in `.env` if needed. This
+includes all TunnelQuestBot application output.
+
+The `p99-log-retention` sidecar checks the Green and Blue JSONL files every
+five minutes. When an active file exceeds 100 MB, `logrotate` copies and
+truncates it in place, compresses the copy, and retains five archives. Keeping
+the active path and inode stable lets both the collector and TunnelQuestBot
+continue using it without a restart. Configure this with
+`P99_JSONL_MAX_SIZE`, `P99_JSONL_ROTATE_COUNT`, and
+`P99_JSONL_ROTATE_INTERVAL_SECONDS`. The size must be a positive whole number
+followed by `k`, `K`, `M`, or `G` (for example, `100M`); bare byte counts and
+zero sizes are rejected. The interval must be a positive whole number of seconds.
+If a rotation pass fails, the sidecar reports it and retries after that interval
+without restarting or discarding its rotation state.
+
+Archives live beside the active file in the private `p99-logger-data` volume
+as files such as `chat.jsonl.1.gz`. As with any `copytruncate` rotation, a line
+written during the brief copy/truncate window can be absent from the archive
+or the bot's tail. The window is short and rotation is infrequent, but this is
+not a lossless archival mechanism.
+
 ## Running In Production
 
 ### Updating to a new version
