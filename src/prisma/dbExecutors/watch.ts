@@ -141,7 +141,7 @@ export async function getWatchesByItemName(
 ) {
 	const watches = await getWatchesByUser(discordUserId);
 	return watches.filter((watch) => {
-		return watch.itemName.includes(itemName);
+		return watch.itemName.includes(itemName.toUpperCase());
 	});
 }
 
