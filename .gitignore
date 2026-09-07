@@ -14,3 +14,9 @@ src/prisma/generated
 !.vscode/settings.json
 .idea
 .claude
+
+# Local P99 login credentials and collected chat logs
+/logs/
+p99-logger/*.json
+!p99-logger/*.example.json
+p99-logger/data/

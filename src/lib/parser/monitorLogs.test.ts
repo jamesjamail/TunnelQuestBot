@@ -17,7 +17,7 @@ vi.mock('../playerLink/playerLink', () => ({
 
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { Server } from '../../prisma/client';
-import { handleLogLine, generateAuctionKey } from './monitorLogs';
+import { handleLogLine, generateAuctionKey, parseLogLine } from './monitorLogs';
 import { state } from './state';
 import { initializeGroupedWatches } from '../../prisma/dbExecutors/watch';
 import { streamAuctionToAllStreamChannels } from '../streams/streamAuction';
@@ -26,6 +26,25 @@ import { handleLinkMatch } from '../playerLink/playerLink';
 import { redis } from '../../test/mocks/redis';
 
 const LINK_CODE = '12345678-1234-1234-1234-123456789012';
+
+function p99LoggerRecord(overrides: Record<string, unknown> = {}): string {
+	return JSON.stringify({
+		timestamp: '2026-09-05T12:34:56.789Z',
+		server: 'Project 1999: Blue (Velious, PvE)',
+		character: 'ExampleCharacter',
+		zone: 'ecommons',
+		session_id: 'example-session',
+		message_id: 1,
+		type: 'chat',
+		opcode: 4100,
+		channel: 4,
+		channel_name: 'auction',
+		sender: 'Soandso',
+		target: '',
+		text: 'WTS FBSS 100pp',
+		...overrides,
+	});
+}
 
 describe('handleLogLine', () => {
 	beforeEach(() => {
@@ -68,6 +87,40 @@ describe('handleLogLine', () => {
 		expect(triggerFoundWatchedItems).toHaveBeenCalled();
 	});
 
+	it('parses p99-logger-client JSONL auction records', async () => {
+		state.watchedItems.BLUE.WTS.knownItems = {
+			'FLOWING BLACK SILK SASH': [1],
+		};
+
+		await handleLogLine(
+			Server.BLUE,
+			p99LoggerRecord({
+				text: 'WTS FBSS 100pp',
+				item_links: [
+					{
+						body: '00002A0000000000000000000000000000000ABCDEF12',
+						text: 'FBSS',
+						start: 4,
+						end: 55,
+						item_id: 42,
+					},
+				],
+			}),
+		);
+
+		expect(streamAuctionToAllStreamChannels).toHaveBeenCalledWith(
+			'Soandso',
+			Server.BLUE,
+			'WTS FBSS 100pp',
+			expect.objectContaining({
+				selling: expect.arrayContaining([
+					expect.objectContaining({ item: 'FBSS', price: 100 }),
+				]),
+			}),
+		);
+		expect(triggerFoundWatchedItems).toHaveBeenCalled();
+	});
+
 	it('routes OOC link lines to handleLinkMatch and not auction handling', async () => {
 		const line = `Soandso says out of character, 'Link me: ${LINK_CODE}'`;
 
@@ -80,6 +133,40 @@ describe('handleLogLine', () => {
 		);
 		expect(streamAuctionToAllStreamChannels).not.toHaveBeenCalled();
 		expect(redis.get).not.toHaveBeenCalled();
+	});
+
+	it('routes p99-logger-client JSONL OOC links', async () => {
+		await handleLogLine(
+			Server.BLUE,
+			p99LoggerRecord({
+				channel: 5,
+				channel_name: 'ooc',
+				text: `Link me: ${LINK_CODE}`,
+			}),
+		);
+
+		expect(handleLinkMatch).toHaveBeenCalledWith(
+			'Soandso',
+			Server.BLUE,
+			LINK_CODE,
+		);
+		expect(streamAuctionToAllStreamChannels).not.toHaveBeenCalled();
+	});
+
+	it('ignores malformed and unrelated JSONL records', async () => {
+		expect(parseLogLine('{bad json')).toBeUndefined();
+		expect(
+			parseLogLine(
+				p99LoggerRecord({ channel: 0, channel_name: 'guild' }),
+			),
+		).toBeUndefined();
+		expect(
+			parseLogLine(p99LoggerRecord({ type: 'decode_error' })),
+		).toBeUndefined();
+
+		await handleLogLine(Server.BLUE, '{bad json');
+		expect(streamAuctionToAllStreamChannels).not.toHaveBeenCalled();
+		expect(handleLinkMatch).not.toHaveBeenCalled();
 	});
 
 	it('does not throw on a malformed partial auction line', async () => {

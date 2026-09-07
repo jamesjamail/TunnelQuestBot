@@ -1,0 +1,9 @@
+{
+  "user": "EXAMPLE_BLUE_LOGIN_ACCOUNT",
+  "pass": "EXAMPLE_BLUE_PASSWORD",
+  "server": "Project 1999: Blue (Velious, PvE)",
+  "character": "ExampleBlueCharacter",
+  "channels": ["auc", "ooc"],
+  "output": "/data/blue/chat.jsonl",
+  "health": "/data/blue/health.json"
+}
