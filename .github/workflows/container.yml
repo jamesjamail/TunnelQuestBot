@@ -1,0 +1,60 @@
+name: Build and smoke-test container
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+
+# Inherit the caller's permissions: PR smoke runs have contents:read only.
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        if: inputs.publish
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Main pushes an untagged digest; PRs load the build into the local daemon.
+      # Neither path builds again after smoke testing.
+      - uses: docker/build-push-action@v7
+        id: build
+        with:
+          context: .
+          platforms: linux/amd64
+          load: ${{ !inputs.publish }}
+          tags: ${{ !inputs.publish && 'tunnelquestbot:smoke' || '' }}
+          outputs: ${{ inputs.publish && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE_NAME) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Pull the candidate by digest
+        if: inputs.publish
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: docker pull "$IMAGE_NAME@$DIGEST"
+
+      - name: Smoke-test the built image
+        env:
+          TEST_IMAGE: ${{ inputs.publish && format('{0}@{1}', env.IMAGE_NAME, steps.build.outputs.digest) || 'tunnelquestbot:smoke' }}
+        run: sh scripts/ci-smoke.sh "$TEST_IMAGE"
+
+      # This step runs only after smoke succeeds, and tags the same manifest.
+      - name: Promote the tested digest
+        if: inputs.publish
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools create --prefer-index=false \
+            --tag "$IMAGE_NAME:$GITHUB_SHA" \
+            --tag "$IMAGE_NAME:latest" \
+            "$IMAGE_NAME@$DIGEST"

@@ -30,7 +30,10 @@ It also supplies `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS`, so the only thing
 `.env` needs is your Discord configuration. The `DATABASE_URL` in
 `.env.example` is the container stack's — it connects over a unix socket that
 does not exist on your host — so `npm run dev` uses a localhost TCP URL
-instead. A `DATABASE_URL` you write yourself for host development is used as-is.
+instead, retaining the configured database and credentials. Custom database
+URLs and socket directories are preserved. Exported shell variables take
+precedence over `.env`; `${...}` references are expanded before the launcher,
+migrations and child processes use them, including `FAKE_LOGS`.
 
 Stop the dependencies with `npm run dev:deps:down`.
 
@@ -302,3 +305,19 @@ The most complex aspect of the repo lies in parsing the auction contents from lo
 In earlier versions of this bot, a bug existed where users watching `Black Sapphire` would get false positive hits on items like `Black Sapphire Necklace`.  However, sometimes it makes sense to trigger a watch notification even if the watched "item" is part of a longer word.  For example, a user watching "Banded" expects to trigger watch notifications on "Banded Boots" as well as "Various Banded Armor Pieces".
 
 To alleviate this issue, we check if each watched item is a known item from the game or not, and store them separately in state.  When checking auction data for matches, we handle matches differently for each case.  Known items only trigger watch notification if that exact item is listed (no substrings).  For example, "Black Sapphire" does not trigger on "Black Sapphire Necklace.  Unknown items trigger if any item auction contains the watched item (substrings).  This all happens behinds the scenes from a user perspective.
+
+### Container validation and publishing
+
+PR checks build the bot once and run that image against a disposable Compose
+stack with fake credentials. Smoke testing applies migrations, runs the real
+fake-log writer once, checks all three log files, and validates runtime assets
+without logging in to Discord or P99.
+
+On `main`, the same workflow pushes a candidate by digest after unit and
+integration checks pass, pulls that exact digest for smoke testing, then assigns
+its commit SHA and `latest` tags only after smoke succeeds. A failed candidate
+never replaces either release tag. The image is not rebuilt for publishing.
+
+To smoke-test an image already present locally, run
+`sh scripts/ci-smoke.sh IMAGE`. This uses temporary configuration and volumes;
+it does not require or overwrite your `.env`.

@@ -5,8 +5,7 @@ on:
     branches: [main]
   pull_request:
 
-#	Scoped to the job that needs it. At workflow level, test/integration/smoke
-#	all received registry write on same-repo PR runs for no reason.
+# Registry writes are granted only to the main-branch image job.
 permissions:
   contents: read
 
@@ -45,96 +44,19 @@ jobs:
       - run: npx prisma generate
       - run: npm run test:integration
 
-  #	Building the image proves it compiles. It does not prove the container can
-  #	start: the Dockerfile copies runtime files through a hand-maintained list of
-  #	paths, and the entrypoint has its own migration and retry logic. Both fail
-  #	only at boot. This brings the real compose stack up and runs the bot image
-  #	in smoke mode, which applies migrations and validates configuration and
-  #	runtime assets before exiting.
+  # Both paths use the same build and smoke steps. PRs have no registry writes.
   smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Write a fixture environment
-        run: |
-          mkdir -p ci-logs
-          cat > .env <<'ENV'
-          TOKEN=smoke-test-token
-          CLIENT_ID=100000000000000001
-          COMMAND_CHANNEL=100000000000000002
-          FEEDBACK_AND_IDEAS_CHANNEL=100000000000000003
-          ERROR_LOG_CHANNEL_ID=100000000000000004
-          SERVERS_BLUE_STREAM_CHANNEL_CLASSIC_ID=100000000000000005
-          SERVERS_BLUE_STREAM_CHANNEL_EMBEDDED_ID=100000000000000006
-          SERVERS_GREEN_STREAM_CHANNEL_CLASSIC_ID=100000000000000007
-          SERVERS_GREEN_STREAM_CHANNEL_EMBEDDED_ID=100000000000000008
-          SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID=100000000000000009
-          SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID=100000000000000010
-          WATCH_DURATION_IN_DAYS=7
-          IMAGE_BUCKET_URL=https://p99-item-thumbnails.s3.amazonaws.com
-          WIKI_BASE_URL=https://wiki.project1999.com
-          HISTORICAL_AUCTION_DATA_API=https://pigparse.azurewebsites.net
-          LOG_SOURCE_PATH=./ci-logs
-          SERVERS_BLUE_LOG_FILE=blue.txt
-          SERVERS_GREEN_LOG_FILE=green.txt
-          SERVERS_RED_LOG_FILE=red.txt
-          FAKE_LOGS=true
-          DEBUG_MODE=false
-          SMOKE_TEST=true
-          REDIS_SOCKET_DIR=/redis_socket
-          DB_SOCKET_DIR=/dbsocket
-          POSTGRES_USER=tunnelquestbot
-          POSTGRES_PASSWORD=tunn3lb0tp4ss
-          POSTGRES_DB=tunnelquestbot
-          DATABASE_URL=postgresql://tunnelquestbot:tunn3lb0tp4ss@localhost/tunnelquestbot?host=/dbsocket
-          ENV
-
-      #	compose does not read SMOKE_TEST from .env into the container, because
-      #	the service lists its environment explicitly
-      - name: Bring up the stack in smoke mode
-        run: |
-          docker compose build tunnelquestbot
-          docker compose up -d postgres redis
-          docker compose run --rm -e SMOKE_TEST=true tunnelquestbot
-
-      - name: Show logs on failure
-        if: failure()
-        run: docker compose logs
-
-      - name: Tear down
-        if: always()
-        run: docker compose down -v
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/container.yml
+    permissions:
+      contents: read
 
   build-image-and-push:
-    needs: [test, integration, smoke]
+    needs: [test, integration]
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/container.yml
+    with:
+      publish: true
     permissions:
       contents: read
       packages: write
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: docker/setup-buildx-action@v4
-
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      #	Replaces whoan/docker-build-with-cache-action, a third-party action that
-      #	wrapped its own caching scheme. The official action uses the GitHub
-      #	Actions cache backend directly.
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          #	:latest alone left no rollback target and no way to pin a deploy.
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:latest
-            ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

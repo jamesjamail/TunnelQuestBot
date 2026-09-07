@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { parse } from 'dotenv';
+import { expand } from 'dotenv-expand';
+import { parseConfig } from '../src/config';
 import { describe, expect, it } from 'vitest';
 import {
 	devDefaults,
@@ -33,9 +35,8 @@ describe('resolveDevEnv', () => {
 		);
 
 		expect(effective.FAKE_LOGS).toBe('false');
-		//	not written into process.env - the child reads .env for itself, and
-		//	copying values across can break ${...} references
-		expect(applied).not.toHaveProperty('FAKE_LOGS');
+		// Expanded values are passed to the children unchanged.
+		expect(applied.FAKE_LOGS).toBe('false');
 	});
 
 	it('defers to an exported shell variable over .env', () => {
@@ -52,6 +53,48 @@ describe('resolveDevEnv', () => {
 		const { effective } = resolveDevEnv(defaults, {}, { FAKE_LOGS: '' });
 
 		expect(effective.FAKE_LOGS).toBe('');
+	});
+
+	it.each(['true', 'false'])(
+		'expands FAKE_LOGS=%s before planning children',
+		(value) => {
+			const fromFile = {
+				USE_FAKE_LOGS: value,
+				FAKE_LOGS: `\${USE_FAKE_LOGS}`,
+			};
+			const { effective, applied } = resolveDevEnv(
+				defaults,
+				{},
+				fromFile,
+			);
+			// Run the same dotenv expansion the bot performs after inheriting values.
+			const childEnv = { ...process.env, ...fromFile, ...applied };
+			expand({ parsed: { ...fromFile }, processEnv: childEnv });
+			const fakeLogs = parseConfig({
+				...childEnv,
+				SERVERS_BLUE_LOG_FILE_PATH: '/logs/blue.log',
+				SERVERS_GREEN_LOG_FILE_PATH: '/logs/green.log',
+				SERVERS_RED_LOG_FILE_PATH: '/logs/red.log',
+			}).FAKE_LOGS;
+			expect(fakeLogs).toBe(value === 'true');
+			expect(
+				plannedChildren(effective).some(
+					(child) => child.label === 'logFaker',
+				),
+			).toBe(fakeLogs);
+		},
+	);
+
+	it('uses exported variables in forward references without mutating inputs', () => {
+		const env = { USE_FAKE_LOGS: 'false' };
+		const fromFile = {
+			FAKE_LOGS: `\${USE_FAKE_LOGS}`,
+			USE_FAKE_LOGS: 'true',
+		};
+		const { effective } = resolveDevEnv(defaults, env, fromFile);
+		expect(effective.FAKE_LOGS).toBe('false');
+		expect(env).toEqual({ USE_FAKE_LOGS: 'false' });
+		expect(fromFile.FAKE_LOGS).toBe(`\${USE_FAKE_LOGS}`);
 	});
 
 	it('does not require an EverQuest client to develop', () => {
@@ -133,7 +176,55 @@ describe('resolveDevEnv against the shipped .env.example', () => {
 		);
 
 		expect(effective.DATABASE_URL).toBe(mine);
-		expect(applied).not.toHaveProperty('DATABASE_URL');
+		expect(applied.DATABASE_URL).toBe(mine);
+	});
+
+	it.each([
+		'?host=/tmp/local-postgres',
+		'?sslmode=disable&host=/tmp/local-postgres',
+	])('preserves a custom socket URL with %s', (query) => {
+		const database = `postgresql://example:fake@localhost/custom_db${query}`;
+		const { effective, applied } = resolveDevEnv(
+			devDefaults,
+			{},
+			{
+				...envExample(),
+				DATABASE_URL: database,
+			},
+		);
+		expect(effective.DATABASE_URL).toBe(database);
+		expect(applied.DATABASE_URL).toBe(database);
+	});
+
+	it('preserves a custom socket directory in the Compose template', () => {
+		const { effective } = resolveDevEnv(
+			devDefaults,
+			{},
+			{
+				...envExample(),
+				DB_SOCKET_DIR: '/tmp/local-postgres',
+				POSTGRES_DB: 'custom_db',
+			},
+		);
+		const database = new URL(effective.DATABASE_URL);
+		expect(database.searchParams.get('host')).toBe('/tmp/local-postgres');
+		expect(database.pathname).toBe('/custom_db');
+	});
+
+	it('keeps configured credentials and database when translating the shipped socket', () => {
+		const { effective } = resolveDevEnv(
+			devDefaults,
+			{},
+			{
+				...envExample(),
+				POSTGRES_USER: 'example',
+				POSTGRES_PASSWORD: 'fake',
+				POSTGRES_DB: 'custom_db',
+			},
+		);
+		expect(effective.DATABASE_URL).toBe(
+			'postgresql://example:fake@localhost:5432/custom_db',
+		);
 	});
 
 	it('still honours an exported container-shaped url', () => {
