@@ -68,6 +68,12 @@ apply_migrations() {
 
 apply_migrations
 
+# Create and write the real fake-log files synchronously. Both smoke mode and
+# normal startup fail if the writer or its assets are missing or unwritable.
+case "$FAKE_LOGS" in
+	[tT]*) node ./build/lib/parser/logFaker.js --once ;;
+esac
+
 #	Smoke mode: prove the image can actually start, then exit instead of
 #	connecting to Discord. Reaching this point already establishes that the
 #	entrypoint runs, that the database is reachable and migrations apply, and

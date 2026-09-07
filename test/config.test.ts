@@ -233,23 +233,30 @@ describe('startup migration invariants', () => {
 	it('exits after the smoke check instead of starting the bot', () => {
 		//	CI runs the real image against the real compose stack in this mode.
 		//	It has to come after migrations (so it proves they applied) and
-		//	before every branch that starts the bot.
+		//	after synchronous fake-log setup, before any branch starts the bot.
 		const source = entrypoint();
 		const smokeIndex = source.indexOf('$SMOKE_TEST');
 
 		expect(smokeIndex).toBeGreaterThan(
 			source.indexOf('apply_migrations\n'),
 		);
-		expect(smokeIndex).toBeLessThan(source.indexOf('$FAKE_LOGS'));
+		expect(smokeIndex).toBeGreaterThan(
+			source.indexOf('logFaker.js --once'),
+		);
+		expect(smokeIndex).toBeLessThan(source.lastIndexOf('$FAKE_LOGS'));
 		expect(source).toMatch(/exec node \.\/build\/doctor\.js/);
 	});
 
 	it('runs the smoke check in CI against the compose stack', () => {
 		//	building the image proves it compiles, not that it can start
 		const workflow = readRepoFile('.github/workflows/docker-build.yml');
-		expect(workflow).toMatch(/SMOKE_TEST=true/);
-		expect(workflow).toMatch(/docker compose run --rm/);
-		expect(workflow).toMatch(/needs: \[test, integration, smoke\]/);
+		expect(workflow).toMatch(
+			/uses: \.\/\.github\/workflows\/container\.yml/,
+		);
+		const smoke = readRepoFile('scripts/ci-smoke.sh');
+		expect(smoke).toMatch(/SMOKE_TEST=true/);
+		expect(smoke).toMatch(/compose run --rm/);
+		expect(workflow).toMatch(/needs: \[test, integration\]/);
 	});
 
 	it('does not duplicate game data that tsc already emits into build/', () => {

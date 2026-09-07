@@ -93,5 +93,7 @@ function appendFakeLogs() {
 // 	Only self-start when run directly, so tests can import the helpers.
 if (require.main === module) {
 	appendFakeLogs();
-	setInterval(appendFakeLogs, 1000);
+	if (!process.argv.includes('--once')) {
+		setInterval(appendFakeLogs, 1000);
+	}
 }
