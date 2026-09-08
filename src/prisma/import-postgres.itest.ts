@@ -118,6 +118,25 @@ describe('PostgreSQL to SQLite import', () => {
 		).toBeNull();
 	});
 
+	it('reports rejected credentials without disclosing the connection URL', async () => {
+		const invalid = new URL(sourceUrl);
+		invalid.password = 'synthetic-invalid-password';
+		let failure: unknown;
+		try {
+			await importPostgres(invalid.toString(), process.env.DATABASE_URL!);
+		} catch (error) {
+			failure = error;
+		}
+		expect(failure).toBeInstanceOf(Error);
+		expect((failure as Error).message).toBe(
+			'connecting to PostgreSQL: PostgreSQL authentication failed (28P01)',
+		);
+		expect(String(failure)).not.toContain('synthetic-invalid-password');
+		const { prisma } = await import('./init');
+		expect(await prisma.user.count()).toBe(0);
+		expect(await prisma.dataMigration.count()).toBe(0);
+	});
+
 	it('refuses to replace existing SQLite data', async () => {
 		const { prisma } = await import('./init');
 		await prisma.user.create({
@@ -125,7 +144,9 @@ describe('PostgreSQL to SQLite import', () => {
 		});
 		await expect(
 			importPostgres(sourceUrl, process.env.DATABASE_URL!),
-		).rejects.toThrow('nonempty');
+		).rejects.toThrow(
+			'checking destination: Refusing to import into a nonempty SQLite database',
+		);
 		expect(await prisma.user.count()).toBe(1);
 		expect(await prisma.watch.count()).toBe(0);
 	});
@@ -138,7 +159,9 @@ describe('PostgreSQL to SQLite import', () => {
 			);
 			await expect(
 				importPostgres(sourceUrl, process.env.DATABASE_URL!),
-			).rejects.toThrow('synthetic failure');
+			).rejects.toThrow(
+				'copying table (BlockedPlayer): destination constraint rejected an imported row (SQLITE_CONSTRAINT)',
+			);
 			for (const table of [
 				'User',
 				'Watch',

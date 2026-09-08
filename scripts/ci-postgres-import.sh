@@ -60,6 +60,21 @@ if docker run --rm --network none \
 fi
 grep -q 'PostgreSQL settings remain in .env' "$smoke_dir/guard.log"
 
+# Exercise the real CLI failure path without connecting or exposing either URL.
+if docker run --rm --network none \
+	-e POSTGRES_MIGRATION_URL=postgresql://synthetic-account:synthetic-password@localhost/db \
+	-e DATABASE_URL=postgresql://private-row-data@localhost/invalid-target \
+	--entrypoint node "$TQB_SMOKE_IMAGE" ./build/prisma/import-postgres.js \
+	> "$smoke_dir/diagnostics.log" 2>&1; then
+	echo 'Expected invalid migration configuration to fail' >&2
+	exit 1
+fi
+grep -q 'opening SQLite: DATABASE_URL must be a local SQLite file URL' "$smoke_dir/diagnostics.log"
+if grep -Eq 'synthetic-account|synthetic-password|private-row-data|postgresql://' "$smoke_dir/diagnostics.log"; then
+	echo 'Migration diagnostics exposed connection details' >&2
+	exit 1
+fi
+
 compose up -d --wait postgres redis
 for migration in src/prisma/postgres-migrations/*/migration.sql; do
 	compose exec -T postgres psql -v ON_ERROR_STOP=1 -U test -d tunnelquestbot_test < "$migration"

@@ -101,6 +101,19 @@ after verifying the import. A PostgreSQL role needs SELECT access to all five
 tables and the serial sequences. The source schema must include the archived
 migrations; update an older source with the old application before importing.
 
+## Diagnosing an import failure
+
+The first error line names the failed stage and, during a table copy, the table.
+For example, `connecting to PostgreSQL: PostgreSQL authentication failed (28P01)`
+points to the source credentials, while `copying table (Watch): source query timed
+out` identifies a stalled query. Validation failures retain their specific reason,
+such as a nonempty destination, count mismatch or failed integrity check.
+
+Diagnostics use known error categories and application-owned validation messages.
+They omit raw driver messages, connection URLs, SQL, row values and stack traces.
+An unfamiliar driver error is reported as `unclassified database failure` with
+the stage and table still available; it is not dumped to the logs.
+
 ## Backups and rollback
 
 For a simple SQLite backup, stop the bot and copy the database from its volume;
