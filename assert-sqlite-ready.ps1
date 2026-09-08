@@ -9,17 +9,17 @@ try {
         throw 'Missing .env in the deployment directory'
     }
     $envText = [IO.File]::ReadAllText((Resolve-Path '.env'))
-    $matches = [regex]::Matches(
+    $databaseMatches = [regex]::Matches(
         $envText,
         '(?m)^(?!\s*#)\s*DATABASE_URL\s*=\s*(.+?)\s*$'
     )
-    if ($matches.Count -ne 1) {
-        throw "Expected exactly one active DATABASE_URL in .env; found $($matches.Count)"
+    if ($databaseMatches.Count -ne 1) {
+        throw "Expected exactly one active DATABASE_URL in .env; found $($databaseMatches.Count)"
     }
-    if ($matches[0].Groups[1].Value -match '^\s*[''"]?postgres(?:ql)?:') {
+    if ($databaseMatches[0].Groups[1].Value -match '^\s*[''"]?postgres(?:ql)?:') {
         throw 'PostgreSQL cutover is pending. Run migrate-postgres-to-sqlite.bat instead.'
     }
-    if ($matches[0].Groups[1].Value -notmatch '^\s*[''"]?file:') {
+    if ($databaseMatches[0].Groups[1].Value -notmatch '^\s*[''"]?file:') {
         throw 'DATABASE_URL must be a persistent SQLite file URL'
     }
 } catch {

@@ -20,6 +20,7 @@ $environmentBackupPath = $null
 $temporaryEnv = $null
 $environmentSwitched = $false
 $postgresStopped = $false
+$sqliteActivated = $false
 
 function Assert-LastExitCode([string]$Action) {
     if ($LASTEXITCODE -ne 0) {
@@ -37,23 +38,6 @@ function Wait-ForPostgres {
         Start-Sleep -Seconds 2
     }
     throw 'PostgreSQL did not become healthy within two minutes'
-}
-
-function Wait-ForImport {
-    $deadline = (Get-Date).AddMinutes(2)
-    while ((Get-Date) -lt $deadline) {
-        $logs = (docker logs tunnelquestbot 2>&1 | Out-String)
-        if ($logs -match '\[database\] PostgreSQL import (complete|already completed)') {
-            return
-        }
-        if ($logs -match '\[database\] PostgreSQL import failed') {
-            docker logs --tail 100 tunnelquestbot
-            throw 'The PostgreSQL import failed; no partial import was committed'
-        }
-        Start-Sleep -Seconds 2
-    }
-    docker logs --tail 100 tunnelquestbot
-    throw 'The PostgreSQL import did not finish within two minutes'
 }
 
 function Get-PostgresCounts([hashtable]$PostgresEnvironment) {
@@ -103,7 +87,12 @@ db.close();
 console.log(JSON.stringify({ counts, marker, foreignKeyFailures, integrity }));
 if (marker !== 1 || foreignKeyFailures !== 0 || integrity !== 'ok') process.exit(1);
 '@
-    $output = ($verification | docker exec -i tunnelquestbot node | Out-String).Trim()
+    # Use the persistent volume without starting the bot or its dependencies.
+    $output = (
+        $verification |
+            docker compose run --rm --no-deps -T --entrypoint node tunnelquestbot |
+            Out-String
+    ).Trim()
     Assert-LastExitCode 'SQLite verification'
     try {
         $state = $output | ConvertFrom-Json
@@ -153,7 +142,7 @@ try {
     Assert-LastExitCode 'Compose configuration'
     $botImage = ($configText | ConvertFrom-Json).services.tunnelquestbot.image
     docker run --rm --entrypoint sh $botImage -ec `
-        'test -f /app/build/prisma/import-postgres.js && test -d /app/prisma/migrations'
+        'test -f /app/build/prisma/import-postgres.js && test -f /app/prisma.config.ts && test -d /app/src/prisma/migrations'
     Assert-LastExitCode 'SQLite migration support check in the production image'
 
     $postgresJson = (docker inspect postgres 2>$null | Out-String)
@@ -226,9 +215,11 @@ try {
     Write-Host "Validated PostgreSQL backup: $backupPath ($($backup.Length) bytes)"
     $postgresCounts = Get-PostgresCounts $postgresEnvironment
 
-    docker compose @migrationCompose up -d --force-recreate tunnelquestbot
-    Assert-LastExitCode 'Migration bot startup'
-    Wait-ForImport
+    # Import in a one-shot container. The service stays stopped until independent
+    # count and integrity checks succeed, so Discord commands cannot race them.
+    docker compose @migrationCompose run --rm --no-deps -T --entrypoint sh tunnelquestbot -ec `
+        './node_modules/.bin/prisma migrate deploy && node ./build/prisma/import-postgres.js'
+    Assert-LastExitCode 'PostgreSQL import'
     $sqliteState = Test-SqliteImport
     Compare-RowCounts $postgresCounts $sqliteState.counts
 
@@ -255,6 +246,9 @@ try {
 
     Remove-Item Env:POSTGRES_MIGRATION_URL
     $sourceVariableSet = $false
+    # Once startup is attempted, SQLite may receive writes even if Compose fails.
+    # Recovery must keep SQLite selected instead of restoring the old database.
+    $sqliteActivated = $true
     docker compose up -d --force-recreate tunnelquestbot
     Assert-LastExitCode 'SQLite bot startup'
     Start-Sleep -Seconds 10
@@ -267,8 +261,9 @@ try {
         docker logs --tail 100 tunnelquestbot
         throw "The SQLite bot is not stable (status=$botState, restarts=$restartCount)"
     }
-    $sqliteState = Test-SqliteImport
-    Compare-RowCounts $postgresCounts $sqliteState.counts
+    # Live traffic can legitimately add or delete rows after activation.
+    # Verify integrity and the marker here; strict reconciliation was offline.
+    $null = Test-SqliteImport
     docker compose ps
     Assert-LastExitCode 'Final service status'
 
@@ -285,7 +280,7 @@ try {
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
     if ($botStopped) {
         docker stop tunnelquestbot 2>$null | Out-Null
-        if ($environmentSwitched) {
+        if ($environmentSwitched -and -not $sqliteActivated) {
             try {
                 $temporaryEnv = "$envPath.sqlite-cutover-restore.tmp"
                 $restoreEncoding = New-Object Text.UTF8Encoding($false)
@@ -297,7 +292,7 @@ try {
                 Write-Host "WARNING: Could not restore .env automatically: $($_.Exception.Message)" -ForegroundColor Yellow
             }
         }
-        if ($postgresStopped) {
+        if ($postgresStopped -and -not $sqliteActivated) {
             docker start postgres 2>$null | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 Write-Host 'Restarted the retained PostgreSQL container.'
@@ -306,7 +301,12 @@ try {
             }
         }
         Write-Host 'The bot was left stopped. PostgreSQL data and any completed backup were retained.'
-        Write-Host 'Correct the reported problem before retrying or follow the rollback procedure.'
+        if ($sqliteActivated) {
+            Write-Host 'SQLite remains configured because it may contain new writes. Repair the startup problem and use start.bat.'
+            Write-Host 'Do not rerun the import or switch back to PostgreSQL without reconciling post-cutover changes.'
+        } else {
+            Write-Host 'Correct the reported problem before retrying or follow the rollback procedure.'
+        }
     }
     exit 1
 } finally {

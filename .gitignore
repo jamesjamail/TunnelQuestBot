@@ -7,3 +7,4 @@
 !*.ps1
 !*.yml
 !README.md
+!/tests/
