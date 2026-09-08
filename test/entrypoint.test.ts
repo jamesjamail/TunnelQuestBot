@@ -12,7 +12,10 @@ import { describe, expect, it } from 'vitest';
 
 // Execute the real entrypoint with isolated command stand-ins. The image smoke
 // test separately exercises the actual Prisma client, writer and doctor.
-function runSmoke(failure?: 'migrations' | 'writer' | 'doctor') {
+function runEntrypoint(
+	failure?: 'migrations' | 'writer' | 'doctor',
+	smoke = true,
+) {
 	const directory = mkdtempSync(join(tmpdir(), 'tqb-entrypoint-'));
 	try {
 		const bin = join(directory, 'node_modules', '.bin');
@@ -24,7 +27,7 @@ function runSmoke(failure?: 'migrations' | 'writer' | 'doctor') {
   *doctor.js) echo doctor >> "$TRACE"; [ "$FAILURE" != doctor ] ;;
   *) exit 99 ;;
 esac`,
-			npm: 'echo bot >> "$TRACE"; exit 99',
+			npm: 'echo bot >> "$TRACE"',
 		};
 		for (const [name, command] of Object.entries(commands)) {
 			writeFileSync(join(bin, name), `#!/bin/sh\n${command}\n`, {
@@ -42,7 +45,7 @@ esac`,
 					PATH: `${bin}:${process.env.PATH}`,
 					TRACE: trace,
 					FAILURE: failure ?? '',
-					SMOKE_TEST: 'true',
+					SMOKE_TEST: smoke ? 'true' : '',
 					FAKE_LOGS: 'true',
 				},
 				encoding: 'utf8',
@@ -61,7 +64,7 @@ esac`,
 // These process-level checks target the container's POSIX runtime.
 describe.skipIf(process.platform === 'win32')('container smoke startup', () => {
 	it('migrates, writes fake logs once, then validates without starting the bot', () => {
-		expect(runSmoke()).toEqual({
+		expect(runEntrypoint()).toEqual({
 			status: 0,
 			trace: ['migrations', 'writer --once', 'doctor'],
 		});
@@ -72,8 +75,22 @@ describe.skipIf(process.platform === 'win32')('container smoke startup', () => {
 		['writer', ['migrations', 'writer --once']],
 		['doctor', ['migrations', 'writer --once', 'doctor']],
 	] as const)('fails smoke when %s fails', (failure, trace) => {
-		const result = runSmoke(failure);
+		const result = runEntrypoint(failure);
 		expect(result.status).toBe(1);
 		expect(result.trace).toEqual(trace);
 	});
+
+	it.each([undefined, 'writer'] as const)(
+		'normal startup launches the generator once and starts the bot (failure: %s)',
+		(failure) => {
+			const result = runEntrypoint(failure, false);
+			expect(result.status).toBe(0);
+			// The background writer and bot may append in either order.
+			expect(result.trace.map((line) => line.trim()).sort()).toEqual([
+				'bot',
+				'migrations',
+				'writer',
+			]);
+		},
+	);
 });
