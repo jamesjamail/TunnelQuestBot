@@ -16,7 +16,10 @@ $migrationCompose = @(
 $sourceVariableSet = $false
 $botStopped = $false
 $backupPath = $null
+$environmentBackupPath = $null
 $temporaryEnv = $null
+$environmentSwitched = $false
+$postgresStopped = $false
 
 function Assert-LastExitCode([string]$Action) {
     if ($LASTEXITCODE -ne 0) {
@@ -53,6 +56,33 @@ function Wait-ForImport {
     throw 'The PostgreSQL import did not finish within two minutes'
 }
 
+function Get-PostgresCounts([hashtable]$PostgresEnvironment) {
+    $query = @'
+SELECT json_build_object(
+  'User', (SELECT count(*) FROM public."User"),
+  'Watch', (SELECT count(*) FROM public."Watch"),
+  'BlockedPlayer', (SELECT count(*) FROM public."BlockedPlayer"),
+  'BlockedPlayerByWatch', (SELECT count(*) FROM public."BlockedPlayerByWatch"),
+  'PlayerLink', (SELECT count(*) FROM public."PlayerLink")
+)::text;
+'@
+    $output = (
+        $query |
+            docker exec -i postgres psql `
+                -U $PostgresEnvironment.POSTGRES_USER `
+                -d $PostgresEnvironment.POSTGRES_DB -At |
+            Out-String
+    ).Trim()
+    Assert-LastExitCode 'PostgreSQL row-count query'
+    try {
+        $counts = $output | ConvertFrom-Json
+    } catch {
+        throw 'PostgreSQL returned an invalid row-count result'
+    }
+    Write-Host "PostgreSQL counts: $output"
+    return $counts
+}
+
 function Test-SqliteImport {
     $verification = @'
 const Database = require('better-sqlite3');
@@ -73,8 +103,26 @@ db.close();
 console.log(JSON.stringify({ counts, marker, foreignKeyFailures, integrity }));
 if (marker !== 1 || foreignKeyFailures !== 0 || integrity !== 'ok') process.exit(1);
 '@
-    $verification | docker exec -i tunnelquestbot node
+    $output = ($verification | docker exec -i tunnelquestbot node | Out-String).Trim()
     Assert-LastExitCode 'SQLite verification'
+    try {
+        $state = $output | ConvertFrom-Json
+    } catch {
+        throw 'SQLite returned an invalid verification result'
+    }
+    Write-Host "SQLite verification: $output"
+    return $state
+}
+
+function Compare-RowCounts([object]$PostgresCounts, [object]$SqliteCounts) {
+    foreach ($table in @('User', 'Watch', 'BlockedPlayer', 'BlockedPlayerByWatch', 'PlayerLink')) {
+        $source = [Int64]$PostgresCounts.$table
+        $target = [Int64]$SqliteCounts.$table
+        if ($source -ne $target) {
+            throw "Row-count mismatch for $table (PostgreSQL=$source, SQLite=$target)"
+        }
+    }
+    Write-Host 'PostgreSQL and SQLite row counts match.'
 }
 
 try {
@@ -156,6 +204,9 @@ try {
     New-Item -ItemType Directory -Force -Path $BackupDirectory | Out-Null
     $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
     $backupPath = Join-Path $BackupDirectory "tqb-before-sqlite-$stamp.sql"
+    $environmentBackupPath = Join-Path $BackupDirectory "tqb-before-sqlite-$stamp.env"
+    Copy-Item -LiteralPath $envPath -Destination $environmentBackupPath
+    Write-Host "Saved original environment: $environmentBackupPath"
     $containerBackup = '/tmp/tqb-before-sqlite.sql'
     docker exec postgres sh -ec `
         'umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" > /tmp/tqb-before-sqlite.sql'
@@ -173,14 +224,17 @@ try {
         throw 'The PostgreSQL dump did not pass validation'
     }
     Write-Host "Validated PostgreSQL backup: $backupPath ($($backup.Length) bytes)"
+    $postgresCounts = Get-PostgresCounts $postgresEnvironment
 
-    docker compose @migrationCompose up -d --no-deps --force-recreate tunnelquestbot
+    docker compose @migrationCompose up -d --force-recreate tunnelquestbot
     Assert-LastExitCode 'Migration bot startup'
     Wait-ForImport
-    Test-SqliteImport
+    $sqliteState = Test-SqliteImport
+    Compare-RowCounts $postgresCounts $sqliteState.counts
 
     docker compose @migrationCompose stop postgres
     Assert-LastExitCode 'PostgreSQL shutdown'
+    $postgresStopped = $true
 
     $updatedEnv = [regex]::Replace(
         $envText,
@@ -197,10 +251,11 @@ try {
     [IO.File]::WriteAllText($temporaryEnv, $updatedEnv, $utf8WithoutBom)
     Move-Item -Force $temporaryEnv $envPath
     $temporaryEnv = $null
+    $environmentSwitched = $true
 
     Remove-Item Env:POSTGRES_MIGRATION_URL
     $sourceVariableSet = $false
-    docker compose up -d --no-deps --force-recreate tunnelquestbot
+    docker compose up -d --force-recreate tunnelquestbot
     Assert-LastExitCode 'SQLite bot startup'
     Start-Sleep -Seconds 10
 
@@ -212,20 +267,44 @@ try {
         docker logs --tail 100 tunnelquestbot
         throw "The SQLite bot is not stable (status=$botState, restarts=$restartCount)"
     }
-    Test-SqliteImport
+    $sqliteState = Test-SqliteImport
+    Compare-RowCounts $postgresCounts $sqliteState.counts
     docker compose ps
     Assert-LastExitCode 'Final service status'
 
     $botStopped = $false
+    $environmentSwitched = $false
+    $postgresStopped = $false
     Write-Host ''
     Write-Host 'SQLite cutover completed successfully.'
     Write-Host "Rollback dump: $backupPath"
+    Write-Host "Rollback environment: $environmentBackupPath"
     Write-Host 'The stopped postgres container and its data volume were retained.'
 } catch {
     Write-Host ''
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
     if ($botStopped) {
         docker stop tunnelquestbot 2>$null | Out-Null
+        if ($environmentSwitched) {
+            try {
+                $temporaryEnv = "$envPath.sqlite-cutover-restore.tmp"
+                $restoreEncoding = New-Object Text.UTF8Encoding($false)
+                [IO.File]::WriteAllText($temporaryEnv, $envText, $restoreEncoding)
+                Move-Item -Force $temporaryEnv $envPath
+                $temporaryEnv = $null
+                Write-Host 'Restored the original PostgreSQL DATABASE_URL in .env.'
+            } catch {
+                Write-Host "WARNING: Could not restore .env automatically: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        }
+        if ($postgresStopped) {
+            docker start postgres 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host 'Restarted the retained PostgreSQL container.'
+            } else {
+                Write-Host 'WARNING: Could not restart the PostgreSQL container automatically.' -ForegroundColor Yellow
+            }
+        }
         Write-Host 'The bot was left stopped. PostgreSQL data and any completed backup were retained.'
         Write-Host 'Correct the reported problem before retrying or follow the rollback procedure.'
     }

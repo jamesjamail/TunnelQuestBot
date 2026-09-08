@@ -13,21 +13,31 @@ cutover. Update this branch on the deployment host, then run:
 migrate-postgres-to-sqlite.bat
 ```
 
-Do not use `update.bat` for the first SQLite deployment. The migration script:
+`start.bat` and `update.bat` refuse to run while `.env` still points to
+PostgreSQL. Use the migration script for the first SQLite deployment. It:
 
 1. pulls the promoted image and verifies that it contains the importer;
 2. reads the source credentials from the existing PostgreSQL container without
    printing them;
 3. asks for confirmation before stopping the bot;
-4. creates and validates a private PostgreSQL dump under
-   `%USERPROFILE%\TunnelQuestBot-backups`;
-5. imports and verifies SQLite before changing `.env`;
+4. saves the original `.env`, then creates and validates a PostgreSQL dump
+   under `%USERPROFILE%\TunnelQuestBot-backups`;
+5. independently compares all five PostgreSQL and SQLite table counts and
+   verifies SQLite foreign keys and integrity before changing `.env`;
 6. restarts the bot on the persistent `sqlite-data` volume; and
 7. stops PostgreSQL while retaining its container, volume and dump for rollback.
 
 The script supports Windows PowerShell 5.1 and current Docker Desktop Compose.
 If it fails after stopping the bot, it leaves the bot stopped and preserves the
-source data. Resolve the reported error before retrying or rolling back.
+source data. If it had already changed `.env` or stopped PostgreSQL, it restores
+the original `.env` and restarts PostgreSQL so the cutover can be retried.
+
+Both backup files contain private deployment data and must remain access
+controlled. For a full rollback, stop the SQLite bot, restore the pre-cutover
+`run` revision and the saved `.env`, and start that revision against the retained
+PostgreSQL volume. Do not return users to the old bot until any post-cutover
+changes have been reconciled; the importer does not synchronize SQLite changes
+back to PostgreSQL.
 
 ## Routine operation
 
