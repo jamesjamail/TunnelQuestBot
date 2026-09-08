@@ -232,16 +232,17 @@ describe('startup migration invariants', () => {
 
 	it('exits after the smoke check instead of starting the bot', () => {
 		//	CI runs the real image against the real compose stack in this mode.
-		//	It has to come after migrations (so it proves they applied) and
-		//	after synchronous fake-log setup, before any branch starts the bot.
+		//	It has to come after migrations (so it proves they applied), with
+		//	synchronous fake-log setup inside smoke mode before doctor runs.
 		const source = entrypoint();
 		const smokeIndex = source.indexOf('$SMOKE_TEST');
 
 		expect(smokeIndex).toBeGreaterThan(
 			source.indexOf('apply_migrations\n'),
 		);
-		expect(smokeIndex).toBeGreaterThan(
-			source.indexOf('logFaker.js --once'),
+		expect(smokeIndex).toBeLessThan(source.indexOf('logFaker.js --once'));
+		expect(source.indexOf('logFaker.js --once')).toBeLessThan(
+			source.indexOf('exec node ./build/doctor.js'),
 		);
 		expect(smokeIndex).toBeLessThan(source.lastIndexOf('$FAKE_LOGS'));
 		expect(source).toMatch(/exec node \.\/build\/doctor\.js/);
