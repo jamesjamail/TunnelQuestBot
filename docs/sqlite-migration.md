@@ -55,7 +55,24 @@ ordinary update cannot silently start the bot with empty SQLite data.
    or Git revision so it is available for rollback.
 
 2. Update the checkout, retaining the original PostgreSQL `DATABASE_URL` in
-   `.env`, then start the migration stack:
+   `.env`. Add a temporary, fully resolved source URL to `.env`:
+
+   ```dotenv
+   # Substitute the actual URL-encoded values; do not copy the angle brackets.
+   POSTGRES_MIGRATION_URL=postgresql://<user>:<password>@postgres/<database>
+   ```
+
+   Use `postgres` as the hostname for the PostgreSQL service restored by the
+   migration override. `localhost` would refer to the bot container itself, not
+   the PostgreSQL container. For an external source, use a hostname reachable
+   from the bot container.
+
+   Write the actual URL-encoded username, password and database name into this
+   temporary value. Do not set it to `${DATABASE_URL}`: Compose does not
+   recursively expand references such as `${POSTGRES_USER}` embedded in the old
+   `DATABASE_URL` when passing that value through another variable.
+
+   Start the migration stack:
 
    ```sh
    git pull
@@ -63,10 +80,8 @@ ordinary update cannot silently start the bot with empty SQLite data.
    docker compose logs -f tunnelquestbot
    ```
 
-   The target remains `file:/data/tunnelquestbot.db`. The override uses the old
-   `.env` `DATABASE_URL` as `POSTGRES_MIGRATION_URL`, waits for PostgreSQL, and
-   gives the bot access to the original socket. A custom/external source can
-   instead be supplied explicitly in `POSTGRES_MIGRATION_URL`.
+   The SQLite target remains `file:/data/tunnelquestbot.db`. The override waits
+   for PostgreSQL to become healthy before starting the importer.
 
 3. Look for `[database] PostgreSQL import complete` and the five table counts,
    then check existing watches, blocks, snoozes and player links in the bot.
@@ -108,6 +123,11 @@ For example, `connecting to PostgreSQL: PostgreSQL authentication failed (28P01)
 points to the source credentials, while `copying table (Watch): source query timed
 out` identifies a stalled query. Validation failures retain their specific reason,
 such as a nonempty destination, count mismatch or failed integrity check.
+
+For `ENOTFOUND`, check that an override-managed source uses the `postgres`
+hostname and that the configured URL contains no unexpanded `${...}` references.
+For `ECONNREFUSED`, confirm that the source hostname and port are correct and
+that PostgreSQL is healthy.
 
 Diagnostics use known error categories and application-owned validation messages.
 They omit raw driver messages, connection URLs, SQL, row values and stack traces.
