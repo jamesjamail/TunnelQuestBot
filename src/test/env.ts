@@ -22,7 +22,7 @@ export function applyTestEnvironment(): void {
 	process.env.HISTORICAL_AUCTION_DATA_API = 'https://pricing.example.com';
 	process.env.WATCH_DURATION_IN_DAYS = '7';
 	//	overwritten by the integration setup once its container is up
-	process.env.DATABASE_URL ??= 'postgresql://test@localhost/test';
+	process.env.DATABASE_URL ??= 'file:./data/unit-test.db';
 	//	no suite tails a real log file
 	process.env.FAKE_LOGS = 'true';
 

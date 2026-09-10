@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 //	Host-side development loop.
 //
-//	Postgres and Redis run in Docker (`npm run dev:deps`); the bot runs here, on
+//	Redis runs in Docker (`npm run dev:deps`); the bot runs here, on
 //	the host, so a save reloads in about a second instead of rebuilding an image.
 //
 //	Two processes rather than `node --watch src/index.ts`: Node can strip types
@@ -20,74 +20,40 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'dotenv';
+import { expand } from 'dotenv-expand';
 
 //	Resolve against the repo, not the cwd, so `node scripts/dev.mjs` behaves the
 //	same from a subdirectory as `npm run dev` does from the root.
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const devDefaults = {
-	//	the compose services publish these to localhost via docker-compose.dev.yml
-	DATABASE_URL:
-		'postgresql://tunnelquestbot:tunn3lb0tp4ss@localhost:5432/tunnelquestbot',
+	DATABASE_URL: 'file:./data/tunnelquestbot.db',
+	// Redis is published to localhost by docker-compose.dev.yml.
 	REDIS_URL: 'redis://localhost:6379',
 	//	so a contributor never needs an EverQuest client to develop
 	FAKE_LOGS: 'true',
 };
 
-//	A value that only makes sense inside the container stack. .env.example ships
-//	the compose DATABASE_URL, whose `?host=` names a socket directory that exists
-//	in the container and not on the host - publishing port 5432 does not make it
-//	reachable. Treating that as a user override would point host development at a
-//	socket that is not there, so the host default wins over it. A URL the user
-//	actually wrote for host development has no socket parameter and is honoured.
-/**
- * @param {string} key
- * @param {string} value
- */
-function isContainerOnly(key, value) {
-	return key === 'DATABASE_URL' && /[?&]host=/.test(value);
-}
-
-//	Precedence, highest first: an exported shell variable, then .env, then these
-//	defaults.
-//
-//	Returns both halves because they are not the same thing. `effective` is what
-//	the run will actually use, and every launcher decision has to read from it -
-//	the children load .env themselves, so a value set only there is invisible in
-//	process.env and reading that instead made the launcher disagree with the bot
-//	it was starting. `applied` is the subset this script has to write into
-//	process.env, which is only ever its own literal defaults: .env values can
-//	contain ${...} references that dotenv-expand resolves in the child, and
-//	copying them across unexpanded would break them.
-/**
+/** Resolve defaults, dotenv expansion and shell overrides once for all children.
  * @param {Record<string, string>} defaults
  * @param {Record<string, string | undefined>} env
  * @param {Record<string, string>} fromEnvFile
  * @returns {{ effective: Record<string, string>, applied: Record<string, string> }}
  */
 export function resolveDevEnv(defaults, env, fromEnvFile) {
-	/** @type {Record<string, string>} */
-	const effective = {};
-	/** @type {Record<string, string>} */
-	const applied = {};
+	const parsed = { ...defaults, ...fromEnvFile };
+	const exported = Object.fromEntries(
+		Object.entries(env).filter((entry) => entry[1] !== undefined),
+	);
+	// Match expand(config()): dotenv populates the environment before expansion.
+	const effective = { ...parsed, ...exported };
+	expand({ parsed, processEnv: effective });
 
-	for (const [key, fallback] of Object.entries(defaults)) {
-		const exported = env[key];
-		if (exported !== undefined) {
-			effective[key] = exported;
-			continue;
-		}
-
-		const configured = fromEnvFile[key];
-		if (configured !== undefined && !isContainerOnly(key, configured)) {
-			effective[key] = configured;
-			continue;
-		}
-
-		effective[key] = fallback;
-		applied[key] = fallback;
-	}
-
+	// Give migrations, the bot and logFaker the same expanded values, including
+	// references to other .env keys. Keep the caller's environment untouched.
+	const applied = Object.fromEntries(
+		Object.keys(parsed).map((key) => [key, effective[key]]),
+	);
 	return { effective, applied };
 }
 
@@ -250,8 +216,7 @@ function main() {
 		});
 	} catch {
 		console.error(
-			`[dev] could not apply migrations to ${effective.DATABASE_URL}\n` +
-				'[dev] is `npm run dev:deps` up? `npm run migrate` shows the error.',
+			'[dev] could not apply SQLite migrations; `npm run migrate` shows the error.',
 		);
 		process.exit(1);
 	}

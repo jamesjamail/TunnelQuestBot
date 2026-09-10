@@ -6,8 +6,8 @@ FROM node:24-alpine AS build_image
 # Set our working directory to /app
 WORKDIR /app
 
-# Install openssl for prisma
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma and build tools for the native SQLite driver.
+RUN apk add --no-cache openssl python3 make g++
 
 # Copy only the package.json files to utilize layer cache
 COPY package*.json /app/
@@ -20,7 +20,7 @@ COPY package*.json /app/
 # and prepare scripts live in scripts/ and .husky/, which are copied later (or, for
 # .husky, not at all). Neither is wanted here anyway — `npm run build` below runs
 # `prisma generate` explicitly, and git hooks are meaningless in an image.
-RUN npm ci --ignore-scripts
+RUN npm ci --ignore-scripts && npm rebuild better-sqlite3
 
 # Copy over necessary source/configs
 COPY tsconfig.json prisma.config.ts /app/
@@ -47,10 +47,11 @@ COPY --from=build_image /app/package*.json /app/
 COPY --from=build_image /app/node_modules /app/node_modules
 COPY --from=build_image /app/build /app/build
 # `prisma migrate deploy` runs on every container start and reads exactly these
-# three paths. The rest of src/prisma is TypeScript that only matters at build
-# time; the container runs its compiled form from /app/build.
+# configuration, URL helper, schema and migrations. The rest of src/prisma runs
+# in its compiled form from /app/build.
 COPY --from=build_image /app/prisma.config.ts /app/
 COPY --from=build_image /app/src/prisma/schema.prisma /app/src/prisma/
+COPY --from=build_image /app/src/prisma/sqlite-url.ts /app/src/prisma/
 COPY --from=build_image /app/src/prisma/migrations /app/src/prisma/migrations
 
 # src/lib/gameData/*.json is deliberately not copied. resolveJsonModule makes

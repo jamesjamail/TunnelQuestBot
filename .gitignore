@@ -20,3 +20,10 @@ src/prisma/generated
 p99-logger/*.json
 !p99-logger/*.example.json
 p99-logger/data/
+
+# Local SQLite databases and their journals
+/data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*

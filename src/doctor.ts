@@ -30,7 +30,7 @@ import { loadSlashCommands } from './handlers/commandLoader';
 import type { SlashCommand } from './types';
 
 //	Validates configuration and exits. Deliberately does not connect to Discord,
-//	Postgres or Redis, so it answers "is this environment set up correctly?"
+//	SQLite or Redis, so it answers "is this environment set up correctly?"
 //	without needing a bot token that works or a database that is up.
 //
 //	Two callers depend on that: a contributor checking their .env before the

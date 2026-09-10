@@ -22,8 +22,7 @@ import {
 	handleFatalError,
 	normalizeError,
 } from './lib/helpers/errors';
-//	DATABASE_URL is composed from POSTGRES_* and DB_SOCKET_DIR, and Prisma 7 no
-//	longer expands those references for us.
+// Expand user-defined .env references consistently with the launcher and CLI.
 expand(loadDotenv());
 
 let handlingFatalException = false;
@@ -57,7 +56,7 @@ function boot(): void {
 		throw error;
 	}
 
-	// 	The bot talks to Discord, Postgres and Redis constantly, and any of them
+	// 	The bot talks to Discord, SQLite and Redis constantly, and any of them
 	// 	can fail transiently. Without these handlers Node terminates the process
 	// 	on the first stray rejection, which under `restart: always` turns a blip
 	// 	into a restart loop that drops log monitoring for every server.

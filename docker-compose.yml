@@ -5,27 +5,6 @@ x-default-logging: &default-logging
     max-file: "${DOCKER_LOG_MAX_FILES:-5}"
 
 services:
-    postgres:
-      image: postgres:18-alpine
-      container_name: postgres
-      logging: *default-logging
-      environment:
-        POSTGRES_USER: "${POSTGRES_USER}"
-        POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-        POSTGRES_DB: "${POSTGRES_DB}"
-      volumes:
-        - postgres18-data:/var/lib/postgresql
-        - db-socket:/var/run/postgresql
-      restart: unless-stopped
-      # The bot connects over the shared socket, which only appears once postgres
-      # is actually accepting connections. start_period covers first-run initdb.
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
-        interval: 5s
-        timeout: 5s
-        retries: 12
-        start_period: 60s
-
     redis:
       image: redis:alpine
       container_name: redis
@@ -157,13 +136,13 @@ services:
       container_name: tunnelquestbot
       logging: *default-logging
       depends_on:
-        postgres:
-          condition: service_healthy
         redis:
           condition: service_healthy
         p99-logger-init:
           condition: service_completed_successfully
       environment:
+        DATABASE_URL: "${SQLITE_DATABASE_URL:-file:/data/tunnelquestbot.db}"
+        POSTGRES_MIGRATION_URL: "${POSTGRES_MIGRATION_URL:-}"
         SERVERS_BLUE_LOG_FILE_PATH: "${SERVERS_BLUE_LOG_FILE_PATH:-/logfiles/${SERVERS_BLUE_LOG_FILE}}"
         SERVERS_GREEN_LOG_FILE_PATH: "${SERVERS_GREEN_LOG_FILE_PATH:-/logfiles/${SERVERS_GREEN_LOG_FILE}}"
         SERVERS_RED_LOG_FILE_PATH: "${SERVERS_RED_LOG_FILE_PATH:-/logfiles/${SERVERS_RED_LOG_FILE}}"
@@ -181,7 +160,7 @@ services:
         - type: bind
           source: ".env"
           target: /app/.env
-        - "db-socket:${DB_SOCKET_DIR}"
+        - sqlite-data:/data
         - "redis-socket:${REDIS_SOCKET_DIR}"
       restart: always
       ports:
@@ -192,8 +171,7 @@ services:
         - "9229:9229"
 
 volumes:
-  postgres18-data:
-  db-socket:
+  sqlite-data:
   redis-socket:
   redis-data:
   p99-logger-data:

@@ -15,7 +15,7 @@ the dev loop generates fake auction lines.
 ```sh
 npm install
 cp .env.example .env      # then fill in the Discord section
-npm run dev:deps          # postgres + redis in docker
+npm run dev:deps          # Redis in Docker; SQLite is a local file
 npm run dev               # migrates, then runs the bot on your host, reloading on save
 ```
 
@@ -26,11 +26,12 @@ container stack does that in its entrypoint, which the host loop never runs, so
 without it `dev:deps` leaves an empty database and the bot fails on missing
 tables.
 
-It also supplies `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS`, so the only thing
-`.env` needs is your Discord configuration. The `DATABASE_URL` in
-`.env.example` is the container stack's — it connects over a unix socket that
-does not exist on your host — so `npm run dev` uses a localhost TCP URL
-instead. A `DATABASE_URL` you write yourself for host development is used as-is.
+It supplies `DATABASE_URL`, `REDIS_URL` and `FAKE_LOGS`, so `.env` only needs
+Discord configuration. Host development uses `file:./data/tunnelquestbot.db`;
+Compose uses `file:/data/tunnelquestbot.db` on the persistent `sqlite-data`
+volume. Custom database paths are preserved. Exported shell variables take
+precedence over `.env`, and `${...}` references are expanded before migrations
+and child processes use them.
 
 Stop the dependencies with `npm run dev:deps:down`.
 
@@ -154,6 +155,19 @@ not a lossless archival mechanism.
 
 ## Running In Production
 
+### SQLite storage and PostgreSQL upgrades
+
+The default stack uses SQLite and Redis. PostgreSQL is only needed while
+importing an existing installation. **Existing PostgreSQL deployments must
+follow [the one-time migration guide](docs/sqlite-migration.md) before their
+first update to this version**. Startup refuses old PostgreSQL settings without
+the migration override, preventing an accidental empty-database cutover.
+
+SQLite runs with foreign keys enabled, WAL journaling and a five-second busy
+wait. Run one bot instance with its database on a local persistent filesystem.
+Back up the database volume, not the container. See the migration guide for
+backup and rollback steps, preserved constraints and concurrency tradeoffs.
+
 ### Updating to a new version
 
 Two commands, from the repo directory:
@@ -163,11 +177,11 @@ git pull
 docker compose up -d --build
 ```
 
-That is the whole update. Database migrations are applied automatically when the
+After the one-time PostgreSQL import (if needed), that is the whole update. Database migrations are applied automatically when the
 bot container starts, so there is never a separate migration step to remember.
 Applying migrations twice is harmless, so re-running the command is always safe.
 
-Compose waits for Postgres and Redis to report healthy before it starts the bot,
+Compose waits for Redis to report healthy before it starts the bot,
 so a cold start on a brand new machine works the same way as a restart.
 
 ### When something goes wrong
@@ -180,8 +194,6 @@ docker compose logs -f tunnelquestbot
 
 Lines prefixed with `[entrypoint]` come from the startup sequence:
 
-* `database not reachable yet (attempt N/30)` — normal on a cold start; the
-  container waits for Postgres and continues on its own.
 * `database schema is up to date` — migrations finished and the bot is starting.
 * `ERROR: migrations could not be applied.` — the bot deliberately does **not**
   start, because running against a schema that disagrees with the code would
@@ -201,8 +213,9 @@ npm run test:all      # both suites
 npm run check         # lint + typecheck + unit tests, i.e. everything CI gates on
 ```
 
-**`test:integration` requires Docker.** It starts real Postgres and Redis via
-testcontainers, applies migrations, and truncates between tests. Without Docker
+**`test:integration` requires Docker.** It uses temporary SQLite files and Redis via
+testcontainers. The import tests also start a disposable PostgreSQL source.
+Migrations and test data are reset between tests. Without Docker
 running it fails on a container-start timeout rather than anything informative,
 so start Docker first. The unit suite has no such requirement.
 
@@ -302,3 +315,19 @@ The most complex aspect of the repo lies in parsing the auction contents from lo
 In earlier versions of this bot, a bug existed where users watching `Black Sapphire` would get false positive hits on items like `Black Sapphire Necklace`.  However, sometimes it makes sense to trigger a watch notification even if the watched "item" is part of a longer word.  For example, a user watching "Banded" expects to trigger watch notifications on "Banded Boots" as well as "Various Banded Armor Pieces".
 
 To alleviate this issue, we check if each watched item is a known item from the game or not, and store them separately in state.  When checking auction data for matches, we handle matches differently for each case.  Known items only trigger watch notification if that exact item is listed (no substrings).  For example, "Black Sapphire" does not trigger on "Black Sapphire Necklace.  Unknown items trigger if any item auction contains the watched item (substrings).  This all happens behinds the scenes from a user perspective.
+
+### Container validation and publishing
+
+PR checks build the bot once and run that image against a disposable Compose
+stack with fake credentials. Smoke testing applies migrations, runs the real
+fake-log writer once, checks all three log files, and validates runtime assets
+without logging in to Discord or P99.
+
+On `main`, the same workflow pushes a candidate by digest after unit and
+integration checks pass, pulls that exact digest for smoke testing, then assigns
+its commit SHA and `latest` tags only after smoke succeeds. A failed candidate
+never replaces either release tag. The image is not rebuilt for publishing.
+
+To smoke-test an image already present locally, run
+`sh scripts/ci-smoke.sh IMAGE`. This uses temporary configuration and volumes;
+it does not require or overwrite your `.env`.
