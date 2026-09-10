@@ -1,0 +1,38 @@
+# One-time PostgreSQL to SQLite upgrade only.
+# Run migrate-postgres-to-sqlite.bat instead of invoking this file directly.
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    logging:
+      driver: local
+      options:
+        max-size: "${DOCKER_LOG_MAX_SIZE:-10m}"
+        max-file: "${DOCKER_LOG_MAX_FILES:-5}"
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    volumes:
+      - postgres18-data:/var/lib/postgresql
+      - db-socket:/var/run/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  tunnelquestbot:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_MIGRATION_URL: "${POSTGRES_MIGRATION_URL:?Run migrate-postgres-to-sqlite.bat}"
+    volumes:
+      - "db-socket:${DB_SOCKET_DIR:-/dbsocket}"
+
+volumes:
+  postgres18-data:
+  db-socket:
