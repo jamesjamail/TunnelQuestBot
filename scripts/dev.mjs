@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 //	Host-side development loop.
 //
-//	Postgres and Redis run in Docker (`npm run dev:deps`); the bot runs here, on
+//	Redis runs in Docker (`npm run dev:deps`); the bot runs here, on
 //	the host, so a save reloads in about a second instead of rebuilding an image.
 //
 //	Two processes rather than `node --watch src/index.ts`: Node can strip types
@@ -27,17 +27,12 @@ import { expand } from 'dotenv-expand';
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const devDefaults = {
-	//	the compose services publish these to localhost via docker-compose.dev.yml
-	DATABASE_URL:
-		'postgresql://tunnelquestbot:tunn3lb0tp4ss@localhost:5432/tunnelquestbot',
+	DATABASE_URL: 'file:./data/tunnelquestbot.db',
+	// Redis is published to localhost by docker-compose.dev.yml.
 	REDIS_URL: 'redis://localhost:6379',
 	//	so a contributor never needs an EverQuest client to develop
 	FAKE_LOGS: 'true',
 };
-
-// Only the unmodified Compose URL template gets translated to host TCP.
-// A custom URL or socket directory is an explicit development setting.
-const composeDatabaseTemplate = `postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@localhost/\${POSTGRES_DB}?host=\${DB_SOCKET_DIR}`;
 
 /** Resolve defaults, dotenv expansion and shell overrides once for all children.
  * @param {Record<string, string>} defaults
@@ -53,17 +48,6 @@ export function resolveDevEnv(defaults, env, fromEnvFile) {
 	// Match expand(config()): dotenv populates the environment before expansion.
 	const effective = { ...parsed, ...exported };
 	expand({ parsed, processEnv: effective });
-
-	if (
-		env.DATABASE_URL === undefined &&
-		fromEnvFile.DATABASE_URL === composeDatabaseTemplate &&
-		effective.DB_SOCKET_DIR === '/dbsocket'
-	) {
-		const database = new URL(effective.DATABASE_URL);
-		database.searchParams.delete('host');
-		database.port = '5432';
-		effective.DATABASE_URL = database.toString();
-	}
 
 	// Give migrations, the bot and logFaker the same expanded values, including
 	// references to other .env keys. Keep the caller's environment untouched.
@@ -232,8 +216,7 @@ function main() {
 		});
 	} catch {
 		console.error(
-			`[dev] could not apply migrations to ${effective.DATABASE_URL}\n` +
-				'[dev] is `npm run dev:deps` up? `npm run migrate` shows the error.',
+			'[dev] could not apply SQLite migrations; `npm run migrate` shows the error.',
 		);
 		process.exit(1);
 	}

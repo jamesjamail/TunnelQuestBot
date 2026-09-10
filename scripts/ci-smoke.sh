@@ -33,8 +33,6 @@ cp test/fixtures/smoke.env "$TQB_SMOKE_ENV_FILE"
 mkdir -p "$TQB_SMOKE_LOGS" "$LOG_SOURCE_PATH"
 cat > "$smoke_dir/compose.yml" <<'YAML'
 services:
-  postgres:
-    container_name: !reset null
   redis:
     container_name: !reset null
   tunnelquestbot:
@@ -52,7 +50,7 @@ services:
         target: /app/build/lib/fakeLogs
 YAML
 
-compose up -d postgres redis
+compose up -d redis
 compose run --rm -e SMOKE_TEST=true tunnelquestbot
 
 # The real writer must have created a nonempty log for every supported server.

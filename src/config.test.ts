@@ -13,7 +13,7 @@ function validEnv(overrides: Record<string, string | undefined> = {}) {
 		IMAGE_BUCKET_URL: 'https://img.example.com/',
 		WIKI_BASE_URL: 'https://wiki.example.com/',
 		HISTORICAL_AUCTION_DATA_API: 'https://pricing.example.com',
-		DATABASE_URL: 'postgresql://user@localhost/db',
+		DATABASE_URL: 'file:./data/test.db',
 		FAKE_LOGS: 'true',
 	};
 
@@ -80,47 +80,33 @@ describe('parseConfig', () => {
 	});
 
 	describe('DATABASE_URL', () => {
-		//	It is assembled from POSTGRES_* by dotenv-expand, so the failure worth
-		//	catching is a missing part. Expanding an unset variable yields a string
-		//	that is non-empty and a valid URL, so a min(1) check passed it through
-		//	and it resurfaced later as a connection error.
-		const unresolved = 'postgresql://:@localhost/?host=';
-
-		it('rejects a url left unresolved by a missing POSTGRES_ variable', () => {
-			expect(() =>
-				parseConfig(validEnv({ DATABASE_URL: unresolved })),
-			).toThrow(/DATABASE_URL/);
+		it.each(['file:./data/test.db', 'file:/tmp/tqb.db'])(
+			'accepts %s',
+			(url) => {
+				expect(
+					parseConfig(validEnv({ DATABASE_URL: url })).DATABASE_URL,
+				).toBe(url);
+			},
+		);
+		it.each([
+			'',
+			'file:',
+			'file::memory:',
+			'file:db?mode=memory',
+			'postgresql://user:pass@localhost/db',
+		])('rejects %s', (url) => {
+			expect(() => parseConfig(validEnv({ DATABASE_URL: url }))).toThrow(
+				/DATABASE_URL/,
+			);
 		});
-
-		it('names the variables to check', () => {
-			expect(() =>
-				parseConfig(validEnv({ DATABASE_URL: unresolved })),
-			).toThrow(/POSTGRES_USER/);
-		});
-
-		it('accepts the socket form the compose stack uses', () => {
-			const url =
-				'postgresql://user:pass@localhost/tunnelquestbot?host=/var/run/postgresql';
-
-			expect(
-				parseConfig(validEnv({ DATABASE_URL: url })).DATABASE_URL,
-			).toBe(url);
-		});
-
-		it('accepts the tcp form the dev script uses', () => {
-			const url = 'postgresql://user:pass@localhost:5432/tunnelquestbot';
-
-			expect(
-				parseConfig(validEnv({ DATABASE_URL: url })).DATABASE_URL,
-			).toBe(url);
-		});
-
-		it('rejects a url with no database name', () => {
+		it('directs PostgreSQL upgrades to the import setting', () => {
 			expect(() =>
 				parseConfig(
-					validEnv({ DATABASE_URL: 'postgresql://user:pass@host/' }),
+					validEnv({
+						DATABASE_URL: 'postgresql://user@localhost/db',
+					}),
 				),
-			).toThrow(/DATABASE_URL/);
+			).toThrow(/POSTGRES_MIGRATION_URL/);
 		});
 	});
 

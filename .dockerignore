@@ -34,3 +34,9 @@ vitest.integration.config.ts
 
 # Docs
 *.md
+
+data
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite-*

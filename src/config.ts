@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Server } from './prisma/client';
+import { resolveSqliteUrl } from './prisma/sqlite-url';
 
 //	Every environment variable the bot reads, validated once at startup.
 //
@@ -50,26 +51,6 @@ const envBoolean = z
 	.optional()
 	.transform((value) => /^[tT]/.test(value ?? ''));
 
-//	A URL is "resolved" when every part .env interpolates into it is present:
-//	a user, a database name, and either a TCP host or a socket directory.
-function isResolvedPostgresUrl(value: string): boolean {
-	let url: URL;
-	try {
-		url = new URL(value);
-	} catch {
-		return false;
-	}
-
-	if (!['postgresql:', 'postgres:'].includes(url.protocol)) return false;
-	if (url.username === '') return false;
-	if (url.pathname.replace(/^\//, '') === '') return false;
-
-	//	`?host=` carries the unix socket directory the compose stack uses; without
-	//	it the hostname has to be a real one.
-	const socketDir = url.searchParams.get('host');
-	return socketDir !== null ? socketDir !== '' : url.hostname !== '';
-}
-
 const baseSchema = {
 	//	Discord
 	TOKEN: z.string().min(1, 'required - see README for how to get one'),
@@ -92,28 +73,21 @@ const baseSchema = {
 		z.coerce.number().int().positive().default(7),
 	),
 
-	//	Infrastructure. DATABASE_URL is composed from POSTGRES_* in .env; by the
-	//	time this runs dotenv-expand has already resolved it.
-	//
-	//	Note that src/prisma/init.ts and src/redis/init.ts deliberately read these
-	//	from process.env rather than through config(). They are connection
-	//	bootstraps that must work independently of a complete application
-	//	environment - the integration suite points them at testcontainers without
-	//	supplying any Discord configuration. They are validated here so `doctor`
-	//	still reports on them.
-	//	Assembled from POSTGRES_* by dotenv-expand, so the interesting failure is
-	//	a missing part rather than a missing value: expansion of an unset variable
-	//	yields `postgresql://:@localhost/?host=`, which is non-empty and a valid
-	//	URL, and used to pass. It resurfaced later as a connection error, which is
-	//	the deferred failure this module exists to end.
-	DATABASE_URL: z
-		.string()
-		.min(1)
-		.refine(isResolvedPostgresUrl, {
+	// Database validation is independent of Discord configuration and I/O.
+	DATABASE_URL: z.string().refine(
+		(value) => {
+			try {
+				resolveSqliteUrl(value);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		{
 			message:
-				'looks unresolved - check POSTGRES_USER, POSTGRES_PASSWORD, ' +
-				'POSTGRES_DB and DB_SOCKET_DIR are all set',
-		}),
+				'must be a local SQLite file URL, such as file:./data/tunnelquestbot.db; use POSTGRES_MIGRATION_URL to import PostgreSQL data',
+		},
+	),
 	REDIS_URL: z.string().optional(),
 	REDIS_SOCKET_DIR: z.string().optional(),
 

@@ -48,6 +48,11 @@ jobs:
           TEST_IMAGE: ${{ inputs.publish && format('{0}@{1}', env.IMAGE_NAME, steps.build.outputs.digest) || 'tunnelquestbot:smoke' }}
         run: sh scripts/ci-smoke.sh "$TEST_IMAGE"
 
+      - name: Verify the PostgreSQL to SQLite upgrade
+        env:
+          TEST_IMAGE: ${{ inputs.publish && format('{0}@{1}', env.IMAGE_NAME, steps.build.outputs.digest) || 'tunnelquestbot:smoke' }}
+        run: sh scripts/ci-postgres-import.sh "$TEST_IMAGE"
+
       # This step runs only after smoke succeeds, and tags the same manifest.
       - name: Promote the tested digest
         if: inputs.publish
