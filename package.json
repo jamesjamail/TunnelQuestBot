@@ -46,7 +46,7 @@
     "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "ahocorasick": "^1.0.2",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "chalk": "^5.6.2",
     "date-fns": "^4.4.0",
     "discord.js": "^14.27.0",
