@@ -4,6 +4,7 @@ import {
 	deleteWatchesOlderThanWatchdurationDays,
 } from '../../prisma/dbExecutors/watch';
 import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/removeMessagesFromCommandSpace';
+import { runMarketplaceMatchingSweep } from '../marketplace/marketplaceMatching';
 import { monitorLogFile } from './monitorLogs';
 import { state } from './state';
 import { Server } from '../../prisma/client';
@@ -47,4 +48,11 @@ export async function startLoggingAllServers() {
 	safeInterval(async () => {
 		await removeNoncommandMessagesFromPublicCommandSpace();
 	}, 10000);
+
+	// safety net for marketplace pairings formed by a change on one side
+	// after the other side's watch already existed (see checkForMarketplaceMatches
+	// for the event-triggered path that catches most matches immediately)
+	safeInterval(async () => {
+		await runMarketplaceMatchingSweep();
+	}, 300000);
 }

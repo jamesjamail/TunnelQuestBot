@@ -26,13 +26,22 @@ type CreateWatchInputArgs = {
 	watchType: WatchType;
 	priceRequirement?: number;
 	notes?: string;
+	// opt-in to marketplace matching; omitted on an update leaves the
+	// watch's existing setting untouched rather than resetting it
+	isPublicallyTradeable?: boolean;
 };
 
 export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	const { server, watchType, priceRequirement, notes } = watchData;
+	const {
+		server,
+		watchType,
+		priceRequirement,
+		notes,
+		isPublicallyTradeable,
+	} = watchData;
 	const itemName = normalizeStoredWatchItemName(watchData.itemName);
 
 	// allow users to erase previously set price requirements by inputting 0 or less
@@ -58,6 +67,9 @@ export async function upsertWatch(
 			created: new Date(),
 			snoozedUntil: null,
 			notes,
+			...(isPublicallyTradeable !== undefined && {
+				isPublicallyTradeable,
+			}),
 		},
 		create: {
 			discordUserId,
@@ -67,6 +79,7 @@ export async function upsertWatch(
 			snoozedUntil: null,
 			priceRequirement: updatedPriceRequirement,
 			notes,
+			isPublicallyTradeable: isPublicallyTradeable ?? false,
 		},
 	});
 }

@@ -24,6 +24,7 @@ import {
 	type HistoricalData,
 	getEmbedCharacterCount,
 	listCommandResponseBuilder,
+	marketplaceMatchBuilder,
 	packEmbedsForDiscord,
 	playerlinkCommandResponseBuilder,
 	watchCommandResponseBuilder,
@@ -259,6 +260,56 @@ describe('watchCommandResponseBuilder', () => {
 			}),
 		);
 		assertEmbedWithinDiscordLimits(embed);
+	});
+});
+
+describe('marketplaceMatchBuilder', () => {
+	it('mentions the counterpart trader, their price, and the item', () => {
+		const mine = makeWatchWithUser({
+			itemName: KNOWN_ITEM,
+			server: Server.GREEN,
+			watchType: WatchType.WTB,
+		});
+		const theirs = makeWatchWithUser(
+			{
+				discordUserId: '200',
+				watchType: WatchType.WTS,
+				priceRequirement: 500,
+			},
+			{ discordUserId: '200', discordUsername: 'Seller' },
+		);
+
+		const embed = marketplaceMatchBuilder(mine, theirs).toJSON();
+
+		expect(embed.title).toContain('Flowing Black Silk Sash');
+		const fieldValue = embed.fields?.[0]?.value ?? '';
+		expect(fieldValue).toContain('<@200>');
+		expect(fieldValue).toContain('Seller');
+		expect(fieldValue).toContain('WTS');
+		expect(fieldValue).toContain('500');
+		expect(embed.fields?.[0]?.name).toContain('Green Server');
+	});
+
+	it('falls back to a no-price message when the counterpart has none set', () => {
+		const mine = makeWatchWithUser();
+		const theirs = makeWatchWithUser({ priceRequirement: null });
+
+		const embed = marketplaceMatchBuilder(mine, theirs).toJSON();
+
+		expect(embed.fields?.[0]?.value ?? '').toContain(
+			'no price requirement set',
+		);
+	});
+
+	it('includes the counterpart notes when present', () => {
+		const mine = makeWatchWithUser();
+		const theirs = makeWatchWithUser({ notes: 'meet at bank' });
+
+		const embed = marketplaceMatchBuilder(mine, theirs).toJSON();
+
+		expect(
+			embed.fields?.some((f) => f.value.includes('meet at bank')),
+		).toBe(true);
 	});
 });
 

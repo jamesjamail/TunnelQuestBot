@@ -1,4 +1,5 @@
 import type {
+	SlashCommandBooleanOption,
 	SlashCommandNumberOption,
 	SlashCommandStringOption,
 } from 'discord.js';
@@ -93,6 +94,13 @@ export const watchNotesOptions = (option: SlashCommandStringOption) =>
 		.setName('notes')
 		.setDescription('notes about this watch - only visible to you')
 		.setMaxLength(1000);
+
+export const marketplaceOptions = (option: SlashCommandBooleanOption) =>
+	option
+		.setName('marketplace')
+		.setDescription(
+			'notify (and be notified by) traders with the matching WTB/WTS - off by default',
+		);
 
 export const blockFilterOptions = (option: SlashCommandStringOption) =>
 	option

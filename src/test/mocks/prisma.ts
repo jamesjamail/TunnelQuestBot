@@ -19,6 +19,7 @@ export const prisma = {
 	blockedPlayer: model(),
 	blockedPlayerByWatch: model(),
 	playerLink: model(),
+	marketplaceMatch: model(),
 	$connect: vi.fn(async () => undefined),
 };
 

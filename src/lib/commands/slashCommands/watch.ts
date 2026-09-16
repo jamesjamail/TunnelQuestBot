@@ -7,6 +7,7 @@ import {
 	priceCriteriaOptions,
 	autoCompleteItemNameOptions,
 	watchNotesOptions,
+	marketplaceOptions,
 } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
@@ -15,6 +16,7 @@ import {
 } from '../../content/buttons/buttonRowBuilder';
 import { autocompleteItems } from '../autocomplete/autocompleteItems';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
+import { checkForMarketplaceMatches } from '../../marketplace/marketplaceMatching';
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
 
@@ -26,7 +28,8 @@ const command: SlashCommand = {
 		.addStringOption(autoCompleteItemNameOptions)
 		.addStringOption(requiredsServerOptions)
 		.addNumberOption(priceCriteriaOptions)
-		.addStringOption(watchNotesOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
+		.addStringOption(watchNotesOptions)
+		.addBooleanOption(marketplaceOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	async autocomplete(interaction) {
 		await autocompleteItems(interaction);
 	},
@@ -35,7 +38,7 @@ const command: SlashCommand = {
 			const args = getInteractionArgs(
 				interaction,
 				['server', 'item', 'type'],
-				['price', 'notes'],
+				['price', 'notes', 'marketplace'],
 			);
 
 			if (!args.item.value) {
@@ -50,7 +53,10 @@ const command: SlashCommand = {
 				watchType: args.type.value as WatchType,
 				priceRequirement: args?.price?.value as number,
 				notes: args?.notes?.value as string,
+				isPublicallyTradeable: args?.marketplace?.value as boolean,
 			});
+
+			await checkForMarketplaceMatches(data);
 
 			const embeds = [watchCommandResponseBuilder(data)];
 			const components = buttonRowBuilder(

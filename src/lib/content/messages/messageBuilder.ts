@@ -31,6 +31,7 @@ import {
 } from '../../helpers/fetchHistoricalPricing';
 import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
+import type { WatchWithUser } from '../../../prisma/dbExecutors/marketplace';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { getCachedPlayerDiscordName } from '../../helpers/redis';
 
@@ -299,6 +300,61 @@ export async function watchNotificationBuilder(
 		.addFields(fields)
 		.setFooter({
 			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo ignore auctions from this player for this watch, click 🔕\nTo extend this watch, click ♻️',
+		});
+}
+
+// 	`mine` is the recipient's own watch (the one the notification is sent
+// 	for); `theirs` is the counterpart watch that matched it. The recipient
+// 	needs theirs.discordUserId to reach out and make the trade.
+export function marketplaceMatchBuilder(
+	mine: WatchWithUser,
+	theirs: WatchWithUser,
+) {
+	const imgUrl = getImageUrlForItem(mine.itemName);
+	const wikiUrl = getWikiUrlFromItem(mine.itemName);
+
+	const theirPrice = theirs.priceRequirement
+		? formatPriceNumberToReadableString(theirs.priceRequirement)
+		: 'no price requirement set';
+
+	const fields: APIEmbedField[] = [
+		{
+			name: `Project 1999 ${formatserverEnumToReadableString(mine.server)} Server`,
+			value: `<@${theirs.discordUserId}> (${theirs.user.discordUsername}) has a matching **${theirs.watchType}** watch for **${toTitleCase(mine.itemName)}**, ${theirPrice}.`,
+			inline: false,
+		},
+	];
+
+	if (theirs.notes) {
+		fields.push({
+			name: 'Their notes:',
+			value: truncateForField(theirs.notes),
+			inline: false,
+		});
+	}
+
+	const authorProperties: EmbedAuthorOptions = {
+		name: mine.itemName, //	itemName is intentionally left uppercase as a heading
+	};
+
+	if (imgUrl) {
+		authorProperties.iconURL = imgUrl;
+	}
+
+	if (wikiUrl) {
+		authorProperties.url = wikiUrl;
+	}
+
+	return new EmbedBuilder()
+		.setColor(getServerColorFromString(mine.server))
+		.setAuthor(authorProperties)
+		.setTitle(`Marketplace Match: ${toTitleCase(mine.itemName)}`)
+		.setDescription(
+			`Your **${mine.watchType}** watch for **${toTitleCase(mine.itemName)}** matches another trader's opposite listing. Reach out to make a deal!`,
+		)
+		.addFields(fields)
+		.setFooter({
+			text: 'To snooze this watch for 6 hours, click 💤\nTo end this watch, click ❌\nTo extend this watch, click ♻️',
 		});
 }
 

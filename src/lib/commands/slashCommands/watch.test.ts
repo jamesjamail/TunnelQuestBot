@@ -5,6 +5,9 @@ vi.mock('../../../redis/init', () => import('../../../test/mocks/redis'));
 vi.mock('../../../prisma/dbExecutors/watch', () => ({
 	upsertWatchSafely: vi.fn(),
 }));
+vi.mock('../../marketplace/marketplaceMatching', () => ({
+	checkForMarketplaceMatches: vi.fn(async () => undefined),
+}));
 vi.mock('../../helpers/errors', () => ({
 	gracefullyHandleError: vi.fn(async () => undefined),
 }));
@@ -14,6 +17,7 @@ import { MessageFlags } from 'discord.js';
 import { Server, WatchType } from '../../../prisma/client';
 import command from './watch';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
+import { checkForMarketplaceMatches } from '../../marketplace/marketplaceMatching';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { makeChatInteraction, makeWatch } from '../../../test/factories';
 
@@ -53,6 +57,39 @@ describe('watch command', () => {
 		expect(reply?.embeds).toHaveLength(1);
 		expect(reply?.components?.[0]?.components).toHaveLength(3);
 		expect(reply?.flags).toBe(MessageFlags.Ephemeral);
+	});
+
+	it('checks for marketplace matches after a successful upsert', async () => {
+		const watch = makeWatch({ id: 12 });
+		vi.mocked(upsertWatchSafely).mockResolvedValue(watch);
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction);
+
+		await command.execute(interaction);
+
+		expect(checkForMarketplaceMatches).toHaveBeenCalledWith(watch);
+	});
+
+	it('forwards the marketplace opt-in flag to upsertWatchSafely', async () => {
+		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch());
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction, { marketplace: { value: true } });
+
+		await command.execute(interaction);
+
+		expect(upsertWatchSafely).toHaveBeenCalledWith(
+			interaction,
+			expect.objectContaining({ isPublicallyTradeable: true }),
+		);
+	});
+
+	it('does not check for marketplace matches when the item name is missing', async () => {
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction, { item: { value: '' } });
+
+		await command.execute(interaction);
+
+		expect(checkForMarketplaceMatches).not.toHaveBeenCalled();
 	});
 
 	it('replies with instructional copy when item is empty', async () => {

@@ -44,14 +44,36 @@ model Watch {
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
   notes                 String?
-  // allow other discord users to contact regarding item
-  isPublicallyTradeable Boolean   @default(true)
+  // allow other discord users to contact regarding item; opt-in, off by default
+  isPublicallyTradeable Boolean   @default(false)
 
-  user           User                   @relation(fields: [discordUserId], references: [discordUserId])
-  blockedWatches BlockedPlayerByWatch[]
+  user             User                   @relation(fields: [discordUserId], references: [discordUserId])
+  blockedWatches   BlockedPlayerByWatch[]
+  marketplaceAsWtb MarketplaceMatch[]     @relation("MarketplaceMatchWtbWatch")
+  marketplaceAsWts MarketplaceMatch[]     @relation("MarketplaceMatchWtsWatch")
 
   @@unique([discordUserId, itemName, server, watchType])
   @@index([active])
+}
+
+// A standing pairing between an opted-in WTB watch and an opted-in WTS watch
+// for the same item/server, once both sides exist and their prices don't
+// conflict. Recorded once and notified to both sides at most once each.
+model MarketplaceMatch {
+  id            Int       @id @default(autoincrement())
+  wtbWatchId    Int
+  wtsWatchId    Int
+  server        Server
+  itemName      String
+  createdAt     DateTime  @default(now())
+  wtbNotifiedAt DateTime?
+  wtsNotifiedAt DateTime?
+
+  wtbWatch Watch @relation("MarketplaceMatchWtbWatch", fields: [wtbWatchId], references: [id], onDelete: Cascade)
+  wtsWatch Watch @relation("MarketplaceMatchWtsWatch", fields: [wtsWatchId], references: [id], onDelete: Cascade)
+
+  @@unique([wtbWatchId, wtsWatchId])
+  @@index([itemName, server])
 }
 
 model BlockedPlayerByWatch {
