@@ -200,6 +200,24 @@ export async function isWatchStillEligible(watchId: number): Promise<boolean> {
 	return true;
 }
 
+// 	A deactivated watch's matches must be cleared, not just left unnotified -
+// 	otherwise the unique constraint on [wtbWatchId, wtsWatchId] silently blocks
+// 	a fresh match (and notification) once the watch is reactivated, since the
+// 	stale row already has both sides marked notified.
+export async function deleteMarketplaceMatchesForWatchIds(
+	watchIds: number[],
+): Promise<void> {
+	if (watchIds.length === 0) return;
+	await prisma.marketplaceMatch.deleteMany({
+		where: {
+			OR: [
+				{ wtbWatchId: { in: watchIds } },
+				{ wtsWatchId: { in: watchIds } },
+			],
+		},
+	});
+}
+
 export type MarketplaceMatchSide = 'wtb' | 'wts';
 
 // 	Atomically claims one side's notification slot, mirroring the redis SET-NX

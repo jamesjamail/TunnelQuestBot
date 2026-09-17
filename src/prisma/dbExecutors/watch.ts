@@ -19,6 +19,7 @@ import {
 import { resolveCanonicalItemName } from '../../lib/gameData/consolidatedItems';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
+import { deleteMarketplaceMatchesForWatchIds } from './marketplace';
 
 type CreateWatchInputArgs = {
 	itemName: string;
@@ -209,7 +210,7 @@ export async function unsnoozeWatchByItemName(
 
 export async function unwatch(metadata: MetadataType) {
 	// Update the watch entry where the id matches metadata.id
-	return prisma.watch.update({
+	const watch = await prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -218,6 +219,8 @@ export async function unwatch(metadata: MetadataType) {
 			snoozedUntil: null, //	unwatching should remove any snooze
 		},
 	});
+	await deleteMarketplaceMatchesForWatchIds([watch.id]);
+	return watch;
 }
 
 export async function unwatchByWatchName(
@@ -233,7 +236,7 @@ export async function unwatchByWatchName(
 	});
 
 	// Update the watch entry found above to set active to false
-	return prisma.watch.update({
+	const updatedWatch = await prisma.watch.update({
 		where: {
 			id: watch.id,
 		},
@@ -241,14 +244,22 @@ export async function unwatchByWatchName(
 			active: false,
 		},
 	});
+	await deleteMarketplaceMatchesForWatchIds([updatedWatch.id]);
+	return updatedWatch;
 }
 
 export async function unwatchAllWatches(interaction: Interaction) {
 	const discordUserId = interaction.user.id;
-	return await prisma.watch.updateMany({
+	const watches = await prisma.watch.findMany({
+		where: { discordUserId },
+		select: { id: true },
+	});
+	const result = await prisma.watch.updateMany({
 		where: { discordUserId },
 		data: { active: false },
 	});
+	await deleteMarketplaceMatchesForWatchIds(watches.map((watch) => watch.id));
+	return result;
 }
 
 export async function extendWatch(metadata: MetadataType) {
