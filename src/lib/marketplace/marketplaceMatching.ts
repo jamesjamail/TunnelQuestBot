@@ -2,6 +2,7 @@ import type { Watch } from '../../prisma/client';
 import {
 	claimMarketplaceMatchNotification,
 	getUnnotifiedMarketplaceMatches,
+	isWatchStillEligible,
 	matchNewWatchToMarketplace,
 	releaseMarketplaceMatchNotificationClaim,
 	sweepMarketplaceMatches,
@@ -34,10 +35,17 @@ async function notifyMarketplaceMatchSide(
 		side === 'wtb' ? match.wtbNotifiedAt : match.wtsNotifiedAt;
 	if (alreadyNotified) return;
 
+	const { mine } = sideOf(match, side);
+
+	// 	the match row can be stale by up to one sweep interval - re-check the
+	// 	watch and its owner right before claiming so an ended or snoozed watch
+	// 	doesn't still get a DM
+	if (!(await isWatchStillEligible(mine.id))) return;
+
 	const claimed = await claimMarketplaceMatchNotification(match.id, side);
 	if (!claimed) return;
 
-	const { mine, theirs } = sideOf(match, side);
+	const { theirs } = sideOf(match, side);
 
 	try {
 		const embeds = [marketplaceMatchBuilder(mine, theirs)];

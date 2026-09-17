@@ -184,6 +184,22 @@ export async function getUnnotifiedMarketplaceMatches(): Promise<
 	});
 }
 
+// 	Matches can sit unnotified for up to one sweep interval, so the watch (or
+// 	its owner) may have been ended or snoozed after the match row was fetched
+// 	but before the DM goes out. Re-checked with a fresh read right before send,
+// 	mirroring shouldUserBeNotified's eligibility checks for the auction path.
+export async function isWatchStillEligible(watchId: number): Promise<boolean> {
+	const watch = await prisma.watch.findUnique({
+		where: { id: watchId },
+		include: { user: true },
+	});
+	if (!watch) return false;
+	if (!watch.active) return false;
+	if (isSnoozed(watch.snoozedUntil)) return false;
+	if (isSnoozed(watch.user.snoozedUntil)) return false;
+	return true;
+}
+
 export type MarketplaceMatchSide = 'wtb' | 'wts';
 
 // 	Atomically claims one side's notification slot, mirroring the redis SET-NX

@@ -56,7 +56,14 @@ const command: SlashCommand = {
 				isPublicallyTradeable: args?.marketplace?.value as boolean,
 			});
 
-			await checkForMarketplaceMatches(data);
+			try {
+				await checkForMarketplaceMatches(data);
+			} catch (error) {
+				await gracefullyHandleError(error, interaction, command, {
+					watchId: data.id,
+					phase: 'marketplaceMatching',
+				});
+			}
 
 			const embeds = [watchCommandResponseBuilder(data)];
 			const components = buttonRowBuilder(
