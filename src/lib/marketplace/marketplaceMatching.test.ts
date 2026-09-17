@@ -21,12 +21,14 @@ const {
 	getUnnotifiedMarketplaceMatches,
 	claimMarketplaceMatchNotification,
 	releaseMarketplaceMatchNotificationClaim,
+	isWatchStillEligible,
 } = vi.hoisted(() => ({
 	matchNewWatchToMarketplace: vi.fn(async () => []),
 	sweepMarketplaceMatches: vi.fn(async () => []),
 	getUnnotifiedMarketplaceMatches: vi.fn(async () => []),
 	claimMarketplaceMatchNotification: vi.fn(async () => true),
 	releaseMarketplaceMatchNotificationClaim: vi.fn(async () => undefined),
+	isWatchStillEligible: vi.fn(async () => true),
 }));
 vi.mock('../../prisma/dbExecutors/marketplace', () => ({
 	matchNewWatchToMarketplace,
@@ -34,6 +36,7 @@ vi.mock('../../prisma/dbExecutors/marketplace', () => ({
 	getUnnotifiedMarketplaceMatches,
 	claimMarketplaceMatchNotification,
 	releaseMarketplaceMatchNotificationClaim,
+	isWatchStillEligible,
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -56,6 +59,7 @@ describe('notifyMarketplaceMatches', () => {
 			.mockResolvedValue({} as never);
 		claimMarketplaceMatchNotification.mockReset().mockResolvedValue(true);
 		releaseMarketplaceMatchNotificationClaim.mockClear();
+		isWatchStillEligible.mockReset().mockResolvedValue(true);
 		vi.mocked(gracefullyHandleError).mockClear();
 	});
 
@@ -97,6 +101,26 @@ describe('notifyMarketplaceMatches', () => {
 		await notifyMarketplaceMatches([match]);
 
 		expect(client.users.send).not.toHaveBeenCalled();
+	});
+
+	it('does not claim or send when the watch is no longer eligible', async () => {
+		const match = makeMarketplaceMatchWithWatches();
+		isWatchStillEligible.mockImplementation(
+			async (watchId: number) => watchId !== match.wtbWatch.id,
+		);
+
+		await notifyMarketplaceMatches([match]);
+
+		expect(claimMarketplaceMatchNotification).toHaveBeenCalledTimes(1);
+		expect(claimMarketplaceMatchNotification).toHaveBeenCalledWith(
+			match.id,
+			'wts',
+		);
+		expect(client.users.send).toHaveBeenCalledTimes(1);
+		expect(client.users.send).toHaveBeenCalledWith(
+			match.wtsWatch.discordUserId,
+			expect.anything(),
+		);
 	});
 
 	it('releases the claim and reports the error on a non-closed-DM failure', async () => {
@@ -157,6 +181,7 @@ describe('checkForMarketplaceMatches', () => {
 			.mockReset()
 			.mockResolvedValue({} as never);
 		claimMarketplaceMatchNotification.mockReset().mockResolvedValue(true);
+		isWatchStillEligible.mockReset().mockResolvedValue(true);
 	});
 
 	it('notifies only the matches created for the given watch', async () => {
@@ -187,6 +212,7 @@ describe('runMarketplaceMatchingSweep', () => {
 			.mockReset()
 			.mockResolvedValue({} as never);
 		claimMarketplaceMatchNotification.mockReset().mockResolvedValue(true);
+		isWatchStillEligible.mockReset().mockResolvedValue(true);
 	});
 
 	it('sweeps for new pairings, then notifies every pending match', async () => {
