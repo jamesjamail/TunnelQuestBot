@@ -11,10 +11,21 @@ import { Server } from '../../prisma/client';
 import { gracefullyHandleError } from '../helpers/errors';
 
 // 	setInterval ignores the promise an async callback returns, so a rejected
-// 	housekeeping run would surface as an unhandled rejection and end the process
+// 	housekeeping run would surface as an unhandled rejection and end the process.
+// 	The running guard skips a tick instead of overlapping if a prior run of the
+// 	same task is still in flight (e.g. a marketplace sweep that outlasts its
+// 	own interval under load) - none of these tasks are meant to run concurrently
+// 	with themselves.
 function safeInterval(task: () => Promise<void>, intervalMs: number) {
+	let running = false;
 	return setInterval(() => {
-		void task().catch((error) => gracefullyHandleError(error));
+		if (running) return;
+		running = true;
+		void task()
+			.catch((error) => gracefullyHandleError(error))
+			.finally(() => {
+				running = false;
+			});
 	}, intervalMs);
 }
 

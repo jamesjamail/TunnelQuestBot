@@ -70,9 +70,11 @@ function isPrismaUniqueConstraintViolation(error: unknown): boolean {
 	);
 }
 
-// 	The unique constraint on [wtbWatchId, wtsWatchId] is the source of truth for
-// 	"already matched" - relying on it (rather than a pre-check query) means a
-// 	concurrent upsert and sweep can't both create the same pairing.
+// 	The unique constraint on [wtbWatchId, wtsWatchId] remains the ultimate
+// 	source of truth for "already matched" - a concurrent upsert and sweep can
+// 	still race here, and this catch is what keeps that race from erroring.
+// 	filterOutExistingMatches below is what keeps the *common* case (a pair
+// 	that matched in a previous sweep) from ever reaching this insert attempt.
 async function recordMarketplaceMatchIfNew(
 	wtbWatch: Watch,
 	wtsWatch: Watch,
@@ -95,20 +97,63 @@ async function recordMarketplaceMatchIfNew(
 	}
 }
 
-async function pairAndRecord(
+type WatchPair = { wtbWatch: WatchWithUser; wtsWatch: WatchWithUser };
+
+function buildCandidatePairs(
 	wtbWatches: WatchWithUser[],
 	wtsWatches: WatchWithUser[],
-): Promise<MarketplaceMatchWithWatches[]> {
-	const created: MarketplaceMatchWithWatches[] = [];
-
+): WatchPair[] {
+	const pairs: WatchPair[] = [];
 	for (const wtbWatch of wtbWatches) {
 		for (const wtsWatch of wtsWatches) {
 			if (wtbWatch.discordUserId === wtsWatch.discordUserId) continue;
 			if (!isPriceCompatible(wtbWatch, wtsWatch)) continue;
-
-			const match = await recordMarketplaceMatchIfNew(wtbWatch, wtsWatch);
-			if (match) created.push(match);
+			pairs.push({ wtbWatch, wtsWatch });
 		}
+	}
+	return pairs;
+}
+
+// 	A sweep re-checks every eligible watch against every eligible counterpart,
+// 	so without this filter it would re-attempt (and get a unique-constraint
+// 	rejection for) every pairing that already matched in a prior sweep - cost
+// 	that grows with accumulated matches rather than with what's actually new.
+// 	One IN/IN query narrows candidates to genuinely new pairs before any
+// 	insert is attempted.
+async function filterOutExistingMatches(
+	pairs: WatchPair[],
+): Promise<WatchPair[]> {
+	if (pairs.length === 0) return [];
+
+	const wtbWatchIds = [...new Set(pairs.map((pair) => pair.wtbWatch.id))];
+	const wtsWatchIds = [...new Set(pairs.map((pair) => pair.wtsWatch.id))];
+
+	const existing = await prisma.marketplaceMatch.findMany({
+		where: {
+			wtbWatchId: { in: wtbWatchIds },
+			wtsWatchId: { in: wtsWatchIds },
+		},
+		select: { wtbWatchId: true, wtsWatchId: true },
+	});
+
+	const existingKeys = new Set(
+		existing.map((match) => `${match.wtbWatchId}:${match.wtsWatchId}`),
+	);
+
+	return pairs.filter(
+		(pair) => !existingKeys.has(`${pair.wtbWatch.id}:${pair.wtsWatch.id}`),
+	);
+}
+
+async function pairAndRecord(
+	pairs: WatchPair[],
+): Promise<MarketplaceMatchWithWatches[]> {
+	const newPairs = await filterOutExistingMatches(pairs);
+
+	const created: MarketplaceMatchWithWatches[] = [];
+	for (const { wtbWatch, wtsWatch } of newPairs) {
+		const match = await recordMarketplaceMatchIfNew(wtbWatch, wtsWatch);
+		if (match) created.push(match);
 	}
 
 	return created;
@@ -134,9 +179,11 @@ export async function matchNewWatchToMarketplace(
 		{ server: watch.server, itemName: watch.itemName },
 	);
 
-	return watch.watchType === WatchType.WTB
-		? pairAndRecord([watchWithUser], candidates)
-		: pairAndRecord(candidates, [watchWithUser]);
+	const pairs =
+		watch.watchType === WatchType.WTB
+			? buildCandidatePairs([watchWithUser], candidates)
+			: buildCandidatePairs(candidates, [watchWithUser]);
+	return pairAndRecord(pairs);
 }
 
 // 	Safety net for pairings that can only be discovered after the fact - e.g.
@@ -161,16 +208,16 @@ export async function sweepMarketplaceMatches(): Promise<
 		}
 	}
 
-	const created: MarketplaceMatchWithWatches[] = [];
+	const pairs: WatchPair[] = [];
 	for (const wtbWatch of wtbWatches) {
 		const key = `${wtbWatch.server}:${wtbWatch.itemName}`;
 		const candidates = wtsByServerAndItem.get(key);
 		if (!candidates) continue;
 
-		created.push(...(await pairAndRecord([wtbWatch], candidates)));
+		pairs.push(...buildCandidatePairs([wtbWatch], candidates));
 	}
 
-	return created;
+	return pairAndRecord(pairs);
 }
 
 export async function getUnnotifiedMarketplaceMatches(): Promise<
