@@ -6,7 +6,9 @@ import { Server, WatchType } from '../client';
 import { prisma } from '../../test/mocks/prisma';
 import {
 	claimMarketplaceMatchNotification,
-	getUnnotifiedMarketplaceMatches,
+	getMarketplaceViewForWatch,
+	getMarketplaceViewsForUser,
+	getWatchIdsWithPendingMarketplaceMatches,
 	isPriceCompatible,
 	matchNewWatchToMarketplace,
 	releaseMarketplaceMatchNotificationClaim,
@@ -14,8 +16,10 @@ import {
 } from './marketplace';
 import {
 	makeMarketplaceMatch,
+	makeMarketplaceMatchWithWatches,
 	makeUser,
 	makeWatch,
+	makeWatchWithUser,
 } from '../../test/factories';
 
 describe('isPriceCompatible', () => {
@@ -75,14 +79,17 @@ describe('matchNewWatchToMarketplace', () => {
 		expect(prisma.user.findUnique).not.toHaveBeenCalled();
 	});
 
-	it('does nothing when the watch is snoozed', async () => {
+	it('still matches a snoozed watch, since snooze only holds back DMs', async () => {
+		vi.mocked(prisma.user.findUnique).mockResolvedValue(makeUser());
+		vi.mocked(prisma.watch.findMany).mockResolvedValue([]);
 		const watch = makeWatch({
 			isPublicallyTradeable: true,
 			snoozedUntil: new Date(Date.now() + 60 * 60 * 1000),
 		});
 
-		expect(await matchNewWatchToMarketplace(watch)).toEqual([]);
-		expect(prisma.user.findUnique).not.toHaveBeenCalled();
+		await matchNewWatchToMarketplace(watch);
+
+		expect(prisma.watch.findMany).toHaveBeenCalled();
 	});
 
 	it('does nothing when the owning user no longer exists', async () => {
@@ -93,14 +100,16 @@ describe('matchNewWatchToMarketplace', () => {
 		expect(prisma.watch.findMany).not.toHaveBeenCalled();
 	});
 
-	it('does nothing when the owning user is globally snoozed', async () => {
+	it('still matches a globally snoozed user, since snooze only holds back DMs', async () => {
 		vi.mocked(prisma.user.findUnique).mockResolvedValue(
 			makeUser({ snoozedUntil: new Date(Date.now() + 60 * 60 * 1000) }),
 		);
+		vi.mocked(prisma.watch.findMany).mockResolvedValue([]);
 		const watch = makeWatch({ isPublicallyTradeable: true });
 
-		expect(await matchNewWatchToMarketplace(watch)).toEqual([]);
-		expect(prisma.watch.findMany).not.toHaveBeenCalled();
+		await matchNewWatchToMarketplace(watch);
+
+		expect(prisma.watch.findMany).toHaveBeenCalled();
 	});
 
 	it('queries the opposite watch type for the same item and server', async () => {
@@ -126,6 +135,9 @@ describe('matchNewWatchToMarketplace', () => {
 				}),
 			}),
 		);
+		const where = vi.mocked(prisma.watch.findMany).mock.calls[0][0]?.where;
+		expect(where).not.toHaveProperty('snoozedUntil');
+		expect(where).not.toHaveProperty('user');
 	});
 
 	it('skips a candidate owned by the same discord user', async () => {
@@ -150,6 +162,90 @@ describe('matchNewWatchToMarketplace', () => {
 		await matchNewWatchToMarketplace(watch);
 
 		expect(prisma.marketplaceMatch.create).not.toHaveBeenCalled();
+	});
+
+	describe.each([
+		['the new watch owner blocked the counterpart', '100', '200'],
+		['the counterpart blocked the new watch owner', '200', '100'],
+	])('when %s', (_label, blocker, blocked) => {
+		it('does not record the match', async () => {
+			vi.mocked(prisma.user.findUnique).mockResolvedValue(makeUser());
+			vi.mocked(prisma.blockedTrader.findMany).mockResolvedValue([
+				{
+					id: 1,
+					discordUserId: blocker,
+					blockedDiscordUserId: blocked,
+					createdAt: new Date(),
+				},
+			]);
+			vi.mocked(prisma.watch.findMany).mockResolvedValue([
+				{
+					...makeWatch({
+						id: 2,
+						discordUserId: '200',
+						watchType: WatchType.WTS,
+					}),
+					user: makeUser({ discordUserId: '200' }),
+				},
+			]);
+			const watch = makeWatch({
+				id: 1,
+				discordUserId: '100',
+				watchType: WatchType.WTB,
+				isPublicallyTradeable: true,
+			});
+
+			expect(await matchNewWatchToMarketplace(watch)).toEqual([]);
+			expect(prisma.marketplaceMatch.create).not.toHaveBeenCalled();
+		});
+	});
+
+	it('still records a match with a third party the owner has not blocked', async () => {
+		vi.mocked(prisma.user.findUnique).mockResolvedValue(makeUser());
+		vi.mocked(prisma.blockedTrader.findMany).mockResolvedValue([
+			{
+				id: 1,
+				discordUserId: '100',
+				blockedDiscordUserId: '300',
+				createdAt: new Date(),
+			},
+		]);
+		vi.mocked(prisma.marketplaceMatch.create).mockResolvedValue(
+			makeMarketplaceMatch() as never,
+		);
+		vi.mocked(prisma.watch.findMany).mockResolvedValue([
+			{
+				...makeWatch({
+					id: 2,
+					discordUserId: '200',
+					watchType: WatchType.WTS,
+				}),
+				user: makeUser({ discordUserId: '200' }),
+			},
+			{
+				...makeWatch({
+					id: 3,
+					discordUserId: '300',
+					watchType: WatchType.WTS,
+				}),
+				user: makeUser({ discordUserId: '300' }),
+			},
+		]);
+		const watch = makeWatch({
+			id: 1,
+			discordUserId: '100',
+			watchType: WatchType.WTB,
+			isPublicallyTradeable: true,
+		});
+
+		await matchNewWatchToMarketplace(watch);
+
+		expect(prisma.marketplaceMatch.create).toHaveBeenCalledTimes(1);
+		expect(prisma.marketplaceMatch.create).toHaveBeenCalledWith(
+			expect.objectContaining({
+				data: expect.objectContaining({ wtsWatchId: 2 }),
+			}),
+		);
 	});
 
 	it('skips a price-incompatible candidate', async () => {
@@ -278,6 +374,40 @@ describe('sweepMarketplaceMatches', () => {
 	beforeEach(() => {
 		vi.mocked(prisma.watch.findMany).mockReset();
 		vi.mocked(prisma.marketplaceMatch.create).mockReset();
+		vi.mocked(prisma.blockedTrader.findMany).mockReset();
+	});
+
+	it('does not pair traders where one has blocked the other', async () => {
+		const wtbWatch = {
+			...makeWatch({
+				id: 1,
+				discordUserId: '100',
+				watchType: WatchType.WTB,
+			}),
+			user: makeUser({ discordUserId: '100' }),
+		};
+		const wtsWatch = {
+			...makeWatch({
+				id: 2,
+				discordUserId: '200',
+				watchType: WatchType.WTS,
+			}),
+			user: makeUser({ discordUserId: '200' }),
+		};
+		vi.mocked(prisma.watch.findMany)
+			.mockResolvedValueOnce([wtbWatch])
+			.mockResolvedValueOnce([wtsWatch]);
+		vi.mocked(prisma.blockedTrader.findMany).mockResolvedValue([
+			{
+				id: 1,
+				discordUserId: '200',
+				blockedDiscordUserId: '100',
+				createdAt: new Date(),
+			},
+		]);
+
+		expect(await sweepMarketplaceMatches()).toEqual([]);
+		expect(prisma.marketplaceMatch.create).not.toHaveBeenCalled();
 	});
 
 	it('pairs eligible WTB and WTS watches sharing a server and item', async () => {
@@ -350,11 +480,11 @@ describe('sweepMarketplaceMatches', () => {
 	});
 });
 
-describe('getUnnotifiedMarketplaceMatches', () => {
+describe('getWatchIdsWithPendingMarketplaceMatches', () => {
 	it('queries for matches missing either side notification', async () => {
 		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([]);
 
-		await getUnnotifiedMarketplaceMatches();
+		await getWatchIdsWithPendingMarketplaceMatches();
 
 		expect(prisma.marketplaceMatch.findMany).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -363,6 +493,30 @@ describe('getUnnotifiedMarketplaceMatches', () => {
 				},
 			}),
 		);
+	});
+
+	it('returns each watch once, and only for the side still pending', async () => {
+		const notified = new Date();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			// 	wtb side pending only
+			{
+				wtbWatchId: 1,
+				wtsWatchId: 2,
+				wtbNotifiedAt: null,
+				wtsNotifiedAt: notified,
+			},
+			// 	both pending, and watch 1 appears again
+			{
+				wtbWatchId: 1,
+				wtsWatchId: 3,
+				wtbNotifiedAt: null,
+				wtsNotifiedAt: null,
+			},
+		] as never);
+
+		expect(
+			(await getWatchIdsWithPendingMarketplaceMatches()).sort(),
+		).toEqual([1, 3]);
 	});
 });
 
@@ -413,5 +567,277 @@ describe('releaseMarketplaceMatchNotificationClaim', () => {
 			where: { id: 1 },
 			data: { wtsNotifiedAt: null },
 		});
+	});
+});
+
+// 	viewer is watch 1 (user 100, WTB); the counterpart is watch 2 (user 200, WTS)
+function matchWith(
+	overrides: {
+		wtb?: Parameters<typeof makeWatchWithUser>[0];
+		wts?: Parameters<typeof makeWatchWithUser>[0];
+		match?: Parameters<typeof makeMarketplaceMatchWithWatches>[0];
+	} = {},
+) {
+	const base = makeMarketplaceMatchWithWatches(overrides.match);
+	return {
+		...base,
+		wtbWatch: { ...base.wtbWatch, ...overrides.wtb },
+		wtsWatch: { ...base.wtsWatch, ...overrides.wts },
+	};
+}
+
+function mockViewerWatch(
+	overrides: Parameters<typeof makeWatchWithUser>[0] = {},
+) {
+	vi.mocked(prisma.watch.findUnique).mockResolvedValue(
+		makeWatchWithUser({
+			id: 1,
+			discordUserId: '100',
+			watchType: WatchType.WTB,
+			...overrides,
+		}) as never,
+	);
+}
+
+describe('getMarketplaceViewForWatch', () => {
+	beforeEach(() => {
+		vi.mocked(prisma.watch.findUnique).mockReset();
+		vi.mocked(prisma.marketplaceMatch.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+		vi.mocked(prisma.blockedTrader.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+		vi.mocked(prisma.hiddenTrader.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+	});
+
+	it('is null when the watch no longer exists', async () => {
+		vi.mocked(prisma.watch.findUnique).mockResolvedValue(null);
+
+		expect(await getMarketplaceViewForWatch(1)).toBeNull();
+	});
+
+	it('lists the counterpart on the other side of each match, newest match first', async () => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({ match: { id: 7 } }),
+		] as never);
+
+		const view = await getMarketplaceViewForWatch(1);
+
+		expect(prisma.marketplaceMatch.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({ orderBy: { id: 'desc' } }),
+		);
+		expect(view?.counterparts).toEqual([
+			expect.objectContaining({
+				matchId: 7,
+				side: 'wtb',
+				watch: expect.objectContaining({ id: 2, discordUserId: '200' }),
+			}),
+		]);
+	});
+
+	it('reports whether this side has already been told', async () => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({
+				match: {
+					id: 1,
+					wtbNotifiedAt: new Date(),
+					wtsNotifiedAt: null,
+				},
+			}),
+			matchWith({ match: { id: 2, wtbNotifiedAt: null } }),
+		] as never);
+
+		const view = await getMarketplaceViewForWatch(1);
+
+		expect(view?.counterparts.map((c) => c.notified)).toEqual([
+			true,
+			false,
+		]);
+	});
+
+	it('reads the wts side when the viewer is the seller', async () => {
+		mockViewerWatch({
+			id: 2,
+			discordUserId: '200',
+			watchType: WatchType.WTS,
+		});
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({ match: { id: 3, wtsNotifiedAt: new Date() } }),
+		] as never);
+
+		const view = await getMarketplaceViewForWatch(2);
+
+		expect(view?.counterparts).toEqual([
+			expect.objectContaining({
+				matchId: 3,
+				side: 'wts',
+				notified: true,
+				watch: expect.objectContaining({ id: 1, discordUserId: '100' }),
+			}),
+		]);
+	});
+
+	it.each([
+		['unlisted', { isPublicallyTradeable: false }],
+		['ended', { active: false }],
+	])(
+		'shows no counterparts, and reads no matches, for a watch that is %s',
+		async (_name, overrides) => {
+			mockViewerWatch(overrides);
+
+			const view = await getMarketplaceViewForWatch(1);
+
+			expect(view?.counterparts).toEqual([]);
+			expect(view?.watch.id).toBe(1);
+			expect(prisma.marketplaceMatch.findMany).not.toHaveBeenCalled();
+		},
+	);
+
+	it.each([
+		['unlisted', { isPublicallyTradeable: false }],
+		['ended', { active: false }],
+	])(
+		'drops a counterpart whose watch has become %s since the match',
+		async (_name, overrides) => {
+			mockViewerWatch();
+			vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+				matchWith({ wts: overrides }),
+			] as never);
+
+			expect((await getMarketplaceViewForWatch(1))?.counterparts).toEqual(
+				[],
+			);
+		},
+	);
+
+	it('keeps a snoozed counterpart and a snoozed viewer: snooze never hides anyone', async () => {
+		const snoozedUntil = new Date(Date.now() + 60 * 60 * 1000);
+		mockViewerWatch({ snoozedUntil });
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({
+				wts: {
+					snoozedUntil,
+					user: makeUser({ discordUserId: '200', snoozedUntil }),
+				},
+			}),
+		] as never);
+
+		expect(
+			(await getMarketplaceViewForWatch(1))?.counterparts,
+		).toHaveLength(1);
+	});
+
+	it.each([
+		[
+			'the viewer blocked the counterpart',
+			{ discordUserId: '100', blockedDiscordUserId: '200' },
+		],
+		[
+			'the counterpart blocked the viewer',
+			{ discordUserId: '200', blockedDiscordUserId: '100' },
+		],
+	])('drops the counterpart when %s', async (_name, block) => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith(),
+		] as never);
+		vi.mocked(prisma.blockedTrader.findMany).mockResolvedValue([
+			block,
+		] as never);
+
+		expect((await getMarketplaceViewForWatch(1))?.counterparts).toEqual([]);
+	});
+
+	it('drops a trader the viewer hid, but not one who merely hid the viewer', async () => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith(),
+		] as never);
+
+		vi.mocked(prisma.hiddenTrader.findMany).mockResolvedValue([
+			{ discordUserId: '100', hiddenDiscordUserId: '200' },
+		] as never);
+		expect((await getMarketplaceViewForWatch(1))?.counterparts).toEqual([]);
+
+		// 	a hide is one-way: the query only asks for the viewer's own hides, so
+		// 	a row the other way round is never returned - and were it, it must
+		// 	not apply to the viewer
+		vi.mocked(prisma.hiddenTrader.findMany).mockResolvedValue([
+			{ discordUserId: '200', hiddenDiscordUserId: '100' },
+		] as never);
+		expect(
+			(await getMarketplaceViewForWatch(1))?.counterparts,
+		).toHaveLength(1);
+		expect(prisma.hiddenTrader.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: {
+					discordUserId: { in: ['100'] },
+					hiddenDiscordUserId: { in: ['200'] },
+				},
+			}),
+		);
+	});
+});
+
+describe('getMarketplaceViewsForUser', () => {
+	beforeEach(() => {
+		vi.mocked(prisma.watch.findMany).mockReset();
+		vi.mocked(prisma.marketplaceMatch.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+		vi.mocked(prisma.blockedTrader.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+		vi.mocked(prisma.hiddenTrader.findMany)
+			.mockReset()
+			.mockResolvedValue([]);
+	});
+
+	it('returns a view per active watch, including unlisted ones without counterparts', async () => {
+		vi.mocked(prisma.watch.findMany).mockResolvedValue([
+			makeWatchWithUser({ id: 1, watchType: WatchType.WTB }),
+			makeWatchWithUser({ id: 5, isPublicallyTradeable: false }),
+		] as never);
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith(),
+		] as never);
+
+		const views = await getMarketplaceViewsForUser('100');
+
+		expect(prisma.watch.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: { discordUserId: '100', active: true },
+			}),
+		);
+		expect(views.map((v) => [v.watch.id, v.counterparts.length])).toEqual([
+			[1, 1],
+			[5, 0],
+		]);
+		// 	the unlisted watch is never even looked up in the ledger
+		expect(prisma.marketplaceMatch.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: {
+					OR: [
+						{ wtbWatchId: { in: [1] } },
+						{ wtsWatchId: { in: [1] } },
+					],
+				},
+			}),
+		);
+	});
+
+	it('makes no ledger query when the user has nothing listed', async () => {
+		vi.mocked(prisma.watch.findMany).mockResolvedValue([
+			makeWatchWithUser({ isPublicallyTradeable: false }),
+		] as never);
+
+		await getMarketplaceViewsForUser('100');
+
+		expect(prisma.marketplaceMatch.findMany).not.toHaveBeenCalled();
 	});
 });

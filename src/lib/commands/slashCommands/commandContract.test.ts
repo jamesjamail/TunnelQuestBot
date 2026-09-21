@@ -13,7 +13,10 @@ import link from './link';
 import unlink from './unlink';
 import block from './block';
 import unblock from './unblock';
+import blocktrader from './blocktrader';
+import unblocktrader from './unblocktrader';
 import list from './list';
+import marketplace from './marketplace';
 import blocks from './blocks';
 import links from './links';
 import watch from './watch';
@@ -30,7 +33,10 @@ const commands = [
 	{ module: unlink, name: 'unlink', autocomplete: false },
 	{ module: block, name: 'block', autocomplete: false },
 	{ module: unblock, name: 'unblock', autocomplete: true },
+	{ module: blocktrader, name: 'blocktrader', autocomplete: false },
+	{ module: unblocktrader, name: 'unblocktrader', autocomplete: false },
 	{ module: list, name: 'list', autocomplete: false },
+	{ module: marketplace, name: 'marketplace', autocomplete: true },
 	{ module: blocks, name: 'blocks', autocomplete: false },
 	{ module: links, name: 'links', autocomplete: false },
 	{ module: watch, name: 'watch', autocomplete: true },

@@ -19,6 +19,8 @@ model User {
   watches               Watch[]
   blockedPlayersByWatch BlockedPlayerByWatch[]
   blockedPlayers        BlockedPlayer[]
+  blockedTraders        BlockedTrader[]
+  hiddenTraders         HiddenTrader[]
   linkedPlayers         PlayerLink[]
 }
 
@@ -44,8 +46,10 @@ model Watch {
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
   notes                 String?
-  // allow other discord users to contact regarding item; opt-in, off by default
-  isPublicallyTradeable Boolean   @default(false)
+  // allow other discord users to contact regarding item; on by default for new
+  // watches, opt out with marketplace:false. Watches that predate marketplace
+  // matching were pinned to false by the migration and stay out until opted in
+  isPublicallyTradeable Boolean   @default(true)
 
   user             User                   @relation(fields: [discordUserId], references: [discordUserId])
   blockedWatches   BlockedPlayerByWatch[]
@@ -98,6 +102,38 @@ model BlockedPlayer {
   user User @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([discordUserId, server, player])
+}
+
+// Keyed on discord user, not in-game character: marketplace matching pairs
+// discord users, and most have no linked characters to bridge the two. The
+// blocked user needs no User row (they may never have made a watch), so
+// blockedDiscordUserId is a plain id rather than a relation. Matching treats
+// a block as mutual - see filterOutBlockedPairs.
+model BlockedTrader {
+  id                   Int      @id @default(autoincrement())
+  discordUserId        String
+  blockedDiscordUserId String
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [discordUserId], references: [discordUserId])
+
+  @@unique([discordUserId, blockedDiscordUserId])
+  @@index([blockedDiscordUserId])
+}
+
+// A one-way dismissal, unlike BlockedTrader: the hidden trader stays matched
+// and can still see and contact the user. It only filters what the user is
+// shown and DMed, and is applied when matches are read, never when they are
+// recorded.
+model HiddenTrader {
+  id                  Int      @id @default(autoincrement())
+  discordUserId       String
+  hiddenDiscordUserId String
+  createdAt           DateTime @default(now())
+
+  user User @relation(fields: [discordUserId], references: [discordUserId])
+
+  @@unique([discordUserId, hiddenDiscordUserId])
 }
 
 model PlayerLink {

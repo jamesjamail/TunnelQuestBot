@@ -13,7 +13,7 @@ vi.mock('../../helpers/errors', () => ({
 }));
 
 import { describe, it, expect } from 'vitest';
-import { MessageFlags } from 'discord.js';
+import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { Server, WatchType } from '../../../prisma/client';
 import command from './watch';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
@@ -53,10 +53,29 @@ describe('watch command', () => {
 				watchType: WatchType.WTS,
 			}),
 		);
-		const reply = vi.mocked(interaction.reply).mock.calls[0][0];
-		expect(reply?.embeds).toHaveLength(1);
-		expect(reply?.components?.[0]?.components).toHaveLength(3);
-		expect(reply?.flags).toBe(MessageFlags.Ephemeral);
+		expect(interaction.deferReply).toHaveBeenCalledWith({
+			flags: MessageFlags.Ephemeral,
+		});
+		const reply = vi.mocked(interaction.editReply).mock.calls[0][0];
+		expect(reply).toMatchObject({ embeds: [expect.anything()] });
+		expect(
+			(reply as { components: { components: unknown[] }[] }).components[0]
+				.components,
+		).toHaveLength(3);
+	});
+
+	it('defers before doing any marketplace work so the ack window is not at risk', async () => {
+		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch());
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction);
+
+		await command.execute(interaction);
+
+		expect(
+			vi.mocked(interaction.deferReply).mock.invocationCallOrder[0],
+		).toBeLessThan(
+			vi.mocked(checkForMarketplaceMatches).mock.invocationCallOrder[0],
+		);
 	});
 
 	it('checks for marketplace matches after a successful upsert', async () => {
@@ -68,6 +87,45 @@ describe('watch command', () => {
 		await command.execute(interaction);
 
 		expect(checkForMarketplaceMatches).toHaveBeenCalledWith(watch);
+	});
+
+	it('adds the marketplace matches to the reply as a second embed', async () => {
+		const marketplaceEmbed = new EmbedBuilder().setTitle('Marketplace');
+		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch({ id: 12 }));
+		vi.mocked(checkForMarketplaceMatches).mockResolvedValueOnce(
+			marketplaceEmbed,
+		);
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction);
+
+		await command.execute(interaction);
+
+		const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as {
+			embeds: EmbedBuilder[];
+		};
+		expect(reply.embeds).toHaveLength(2);
+		expect(reply.embeds[1]).toBe(marketplaceEmbed);
+	});
+
+	it('still confirms the watch, and reports the error, when matching fails', async () => {
+		const error = new Error('db down');
+		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch({ id: 12 }));
+		vi.mocked(checkForMarketplaceMatches).mockRejectedValueOnce(error);
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction);
+
+		await command.execute(interaction);
+
+		expect(gracefullyHandleError).toHaveBeenCalledWith(
+			error,
+			interaction,
+			command,
+			{ watchId: 12, phase: 'marketplaceMatching' },
+		);
+		const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as {
+			embeds: EmbedBuilder[];
+		};
+		expect(reply.embeds).toHaveLength(1);
 	});
 
 	it('forwards the marketplace opt-in flag to upsertWatchSafely', async () => {

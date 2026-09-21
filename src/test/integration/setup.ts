@@ -60,6 +60,8 @@ beforeEach(async () => {
 		prisma.marketplaceMatch.deleteMany(),
 		prisma.blockedPlayerByWatch.deleteMany(),
 		prisma.blockedPlayer.deleteMany(),
+		prisma.blockedTrader.deleteMany(),
+		prisma.hiddenTrader.deleteMany(),
 		prisma.playerLink.deleteMany(),
 		prisma.watch.deleteMany(),
 		prisma.user.deleteMany(),

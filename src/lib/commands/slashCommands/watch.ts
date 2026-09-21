@@ -1,4 +1,8 @@
-import { MessageFlags, SlashCommandBuilder } from 'discord.js';
+import {
+	type EmbedBuilder,
+	MessageFlags,
+	SlashCommandBuilder,
+} from 'discord.js';
 import type { SlashCommand } from '../../../types';
 import type { Server, WatchType } from '../../../prisma/client';
 import {
@@ -47,6 +51,10 @@ const command: SlashCommand = {
 				);
 			}
 
+			// 	matching does a DB write per new pair, which can outlast Discord's
+			// 	3s ack window on a popular item
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
 			const data = await upsertWatchSafely(interaction, {
 				server: args.server.value as Server,
 				itemName: args.item.value as string,
@@ -56,8 +64,10 @@ const command: SlashCommand = {
 				isPublicallyTradeable: args?.marketplace?.value as boolean,
 			});
 
+			// 	a failure here must not lose the confirmation for a watch that saved
+			let marketplaceEmbed: EmbedBuilder | undefined;
 			try {
-				await checkForMarketplaceMatches(data);
+				marketplaceEmbed = await checkForMarketplaceMatches(data);
 			} catch (error) {
 				await gracefullyHandleError(error, interaction, command, {
 					watchId: data.id,
@@ -66,17 +76,14 @@ const command: SlashCommand = {
 			}
 
 			const embeds = [watchCommandResponseBuilder(data)];
+			if (marketplaceEmbed) embeds.push(marketplaceEmbed);
 			const components = buttonRowBuilder(
 				MessageTypes.watch,
 				[false, false, false],
 				String(data.id),
 			);
 
-			return await interaction.reply({
-				embeds,
-				components,
-				flags: MessageFlags.Ephemeral,
-			});
+			return await interaction.editReply({ embeds, components });
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

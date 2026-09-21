@@ -2,6 +2,7 @@ import type {
 	SlashCommandBooleanOption,
 	SlashCommandNumberOption,
 	SlashCommandStringOption,
+	SlashCommandUserOption,
 } from 'discord.js';
 
 export const watchTypeOptions = (option: SlashCommandStringOption) =>
@@ -99,10 +100,37 @@ export const marketplaceOptions = (option: SlashCommandBooleanOption) =>
 	option
 		.setName('marketplace')
 		.setDescription(
-			'notify (and be notified by) traders with the matching WTB/WTS - off by default',
+			'notify (and be notified by) traders with the matching WTB/WTS - on by default, set false to opt out',
 		);
 
 export const blockFilterOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('filter')
 		.setDescription('optional string to filter blocks by');
+
+export const traderOptions = (option: SlashCommandUserOption) =>
+	option
+		.setName('user')
+		.setDescription('the discord user for marketplace matching')
+		.setRequired(true);
+
+export const hideTraderOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('hide')
+		.setDescription('stop seeing a trader - they can still contact you')
+		.setAutocomplete(true);
+
+export const unhideTraderOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('unhide')
+		.setDescription('show a trader you hid again')
+		.setAutocomplete(true);
+
+export const listWhatOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('what')
+		.setDescription('what to list - defaults to watches')
+		.addChoices(
+			{ name: 'watches', value: 'watches' },
+			{ name: 'blocked traders', value: 'blockedTraders' },
+		);

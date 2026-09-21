@@ -27,8 +27,8 @@ type CreateWatchInputArgs = {
 	watchType: WatchType;
 	priceRequirement?: number;
 	notes?: string;
-	// opt-in to marketplace matching; omitted on an update leaves the
-	// watch's existing setting untouched rather than resetting it
+	// marketplace matching visibility; omitted on create the column default
+	// (on) applies, omitted on an update leaves the existing setting untouched
 	isPublicallyTradeable?: boolean;
 };
 
@@ -68,9 +68,7 @@ export async function upsertWatch(
 			created: new Date(),
 			snoozedUntil: null,
 			notes,
-			...(isPublicallyTradeable !== undefined && {
-				isPublicallyTradeable,
-			}),
+			isPublicallyTradeable,
 		},
 		create: {
 			discordUserId,
@@ -80,7 +78,7 @@ export async function upsertWatch(
 			snoozedUntil: null,
 			priceRequirement: updatedPriceRequirement,
 			notes,
-			isPublicallyTradeable: isPublicallyTradeable ?? false,
+			isPublicallyTradeable,
 		},
 	});
 }
@@ -260,6 +258,16 @@ export async function unwatchAllWatches(interaction: Interaction) {
 	});
 	await deleteMarketplaceMatchesForWatchIds(watches.map((watch) => watch.id));
 	return result;
+}
+
+export async function setWatchListed(
+	id: number,
+	isPublicallyTradeable: boolean,
+) {
+	return prisma.watch.update({
+		where: { id },
+		data: { isPublicallyTradeable },
+	});
 }
 
 export async function extendWatch(metadata: MetadataType) {

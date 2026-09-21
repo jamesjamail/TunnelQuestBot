@@ -21,6 +21,7 @@ describe('buttonRowBuilder', () => {
 		[MessageTypes.link, 1],
 		[MessageTypes.unlink, 1],
 		[MessageTypes.watchNotification, 4],
+		[MessageTypes.marketplace, 4],
 	])('MessageTypes.%s produces %i buttons', (messageType, count) => {
 		expect(customIdsFor(messageType)).toHaveLength(count);
 	});
@@ -48,6 +49,21 @@ describe('buttonRowBuilder', () => {
 			'WatchSnoozeInactive:7',
 			'UnwatchInactive:7',
 			'WatchRefreshInactive:7',
+		]);
+	});
+
+	it('lays a marketplace digest out as snooze, end, extend, list - four of five slots', () => {
+		expect(
+			customIdsFor(
+				MessageTypes.marketplace,
+				[true, false, false, true],
+				'9',
+			),
+		).toEqual([
+			'MarketplaceSnoozeActive:9',
+			'MarketplaceUnwatchInactive:9',
+			'MarketplaceRefreshInactive:9',
+			'MarketplaceListedActive:9',
 		]);
 	});
 
