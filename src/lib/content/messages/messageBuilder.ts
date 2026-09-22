@@ -51,6 +51,8 @@ function truncateForDescription(text: string, reservedChars = 0): string {
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+const MAX_TITLE = 256;
+
 const MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000;
 const MAX_EMBEDS_PER_MESSAGE = 10;
 
@@ -398,12 +400,18 @@ export function marketplaceDigestBuilder(
 		authorProperties.url = wikiUrl;
 	}
 
+	const prefix = 'Marketplace: ';
+	const suffix = ` (${formatserverEnumToReadableString(watch.server)})`;
+	const maxItemLength = MAX_TITLE - prefix.length - suffix.length;
+	const truncatedItem =
+		item.length > maxItemLength
+			? `${item.slice(0, maxItemLength - 1)}…`
+			: item;
+
 	return new EmbedBuilder()
 		.setColor(getServerColorFromString(watch.server))
 		.setAuthor(authorProperties)
-		.setTitle(
-			`Marketplace: ${item} (${formatserverEnumToReadableString(watch.server)})`,
-		)
+		.setTitle(`${prefix}${truncatedItem}${suffix}`)
 		.setDescription(truncateForDescription(description))
 		.setFooter({ text: marketplaceDigestFooter(watch) });
 }
@@ -511,38 +519,55 @@ const MAX_FIELDS_PER_EMBED = 25;
 const MAX_MARKETPLACE_EMBED_CHARACTERS = 5000;
 const MAX_HIDDEN_TRADERS_SHOWN = 20;
 
-function marketplaceFieldFor(view: MarketplaceWatchView): EmbedField {
+// 	One or more fields for one watch: every visible counterpart must be
+// 	reachable here, since this is what the digest points to when it truncates
+// 	its own list - a chunk beyond the first becomes a continuation field
+// 	rather than an "…and N more" that has nowhere further to send the reader.
+function marketplaceFieldsFor(view: MarketplaceWatchView): EmbedField[] {
 	const { watch, counterparts } = view;
 	const marker = !watch.isPublicallyTradeable
 		? '🚫'
 		: isSnoozed(watch.snoozedUntil) || isSnoozed(watch.user.snoozedUntil)
 			? '💤🤝'
 			: '🤝';
-	const name = `\`${marker} ${toTitleCase(watch.itemName)}\` | \`${tradeRoleOf(watch).role}\``;
+	const item = toTitleCase(watch.itemName);
+	const name = `\`${marker} ${item}\` | \`${tradeRoleOf(watch).role}\``;
+	const truncatedName = name.length > 256 ? name.slice(0, 256) : name;
 
-	let value: string;
 	if (!watch.isPublicallyTradeable) {
-		value =
-			'Not listed: other traders cannot see this watch. Run /watch for this item again with marketplace set to true to list it.';
-	} else if (counterparts.length === 0) {
-		value = 'No matching traders yet.';
-	} else {
-		const shown = counterparts.slice(0, MARKETPLACE_FIELD_ROW_LIMIT);
-		const lines = shown.map(formatCounterpartRow);
-		const omitted = counterparts.length - shown.length;
-		if (omitted > 0) lines.push(`…and ${omitted} more`);
-		value = lines.join('\n');
+		return [
+			{
+				name: truncatedName,
+				value: 'Not listed: other traders cannot see this watch. Run /watch for this item again with marketplace set to true to list it.',
+				inline: false,
+			},
+		];
+	}
+	if (counterparts.length === 0) {
+		return [
+			{
+				name: truncatedName,
+				value: 'No matching traders yet.',
+				inline: false,
+			},
+		];
 	}
 
-	return {
-		name: name.length > 256 ? name.slice(0, 256) : name,
-		value: truncateForField(value),
+	const chunks: MarketplaceCounterpart[][] = [];
+	for (let i = 0; i < counterparts.length; i += MARKETPLACE_FIELD_ROW_LIMIT) {
+		chunks.push(counterparts.slice(i, i + MARKETPLACE_FIELD_ROW_LIMIT));
+	}
+
+	return chunks.map((chunk, index) => ({
+		name: index === 0 ? truncatedName : `↳ ${item} (cont.)`.slice(0, 256),
+		value: truncateForField(chunk.map(formatCounterpartRow).join('\n')),
 		inline: false,
-	};
+	}));
 }
 
-// 	One field per watch, grouped by server like /list. Chunked by size as well
-// 	as by field count, since a field here can be far larger than one in /list.
+// 	One or more fields per watch, grouped by server like /list. Chunked by
+// 	size as well as by field count, since a field here can be far larger than
+// 	one in /list, and one watch's counterparts can spill across several fields.
 export function marketplaceCommandResponseBuilder(
 	views: MarketplaceWatchView[],
 	user: User,
@@ -586,17 +611,18 @@ export function marketplaceCommandResponseBuilder(
 		};
 
 		for (const view of serverViews) {
-			const field = marketplaceFieldFor(view);
-			const fieldCharacters = field.name.length + field.value.length;
-			if (
-				chunk.length === MAX_FIELDS_PER_EMBED ||
-				chunkCharacters + fieldCharacters >
-					MAX_MARKETPLACE_EMBED_CHARACTERS
-			) {
-				flush();
+			for (const field of marketplaceFieldsFor(view)) {
+				const fieldCharacters = field.name.length + field.value.length;
+				if (
+					chunk.length === MAX_FIELDS_PER_EMBED ||
+					chunkCharacters + fieldCharacters >
+						MAX_MARKETPLACE_EMBED_CHARACTERS
+				) {
+					flush();
+				}
+				chunk.push(field);
+				chunkCharacters += fieldCharacters;
 			}
-			chunk.push(field);
-			chunkCharacters += fieldCharacters;
 		}
 		flush();
 	}

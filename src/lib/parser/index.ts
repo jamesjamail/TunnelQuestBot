@@ -61,7 +61,7 @@ export async function startLoggingAllServers() {
 	}, 10000);
 
 	// safety net for marketplace pairings formed by a change on one side
-	// after the other side's watch already existed (see checkForMarketplaceMatches
+	// after the other side's watch already existed (see buildMarketplacePreview
 	// for the event-triggered path that catches most matches immediately)
 	safeInterval(async () => {
 		await runMarketplaceMatchingSweep();

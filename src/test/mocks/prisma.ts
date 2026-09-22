@@ -22,6 +22,7 @@ export const prisma = {
 	hiddenTrader: model(),
 	playerLink: model(),
 	marketplaceMatch: model(),
+	marketplaceNotificationHistory: model(),
 	$connect: vi.fn(async () => undefined),
 };
 

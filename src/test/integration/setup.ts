@@ -58,6 +58,7 @@ beforeEach(async () => {
 	const { prisma } = await import('../../prisma/init');
 	await prisma.$transaction([
 		prisma.marketplaceMatch.deleteMany(),
+		prisma.marketplaceNotificationHistory.deleteMany(),
 		prisma.blockedPlayerByWatch.deleteMany(),
 		prisma.blockedPlayer.deleteMany(),
 		prisma.blockedTrader.deleteMany(),

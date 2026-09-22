@@ -464,6 +464,41 @@ describe('marketplace dbExecutor (integration)', () => {
 			).toBe(false);
 		});
 
+		it('drops a match whose price became incompatible, and shows it again once compatible', async () => {
+			const { upsertWatch } = await import('./watch');
+			const { wtbWatch, wtsWatch } = await seedMatch();
+			const prisma = await getPrisma();
+
+			await upsertWatch('100', {
+				itemName: 'SWORD',
+				server: Server.BLUE,
+				watchType: WatchType.WTB,
+				priceRequirement: 2000,
+			});
+			await upsertWatch('200', {
+				itemName: 'SWORD',
+				server: Server.BLUE,
+				watchType: WatchType.WTS,
+				priceRequirement: 1000,
+			});
+
+			expect(await counterpartIdsFor(wtbWatch.id)).toEqual([]);
+			expect(await counterpartIdsFor(wtsWatch.id)).toEqual([]);
+			// 	the ledger row itself is untouched - only the read is filtered
+			expect(await prisma.marketplaceMatch.count()).toBe(1);
+
+			await upsertWatch('100', {
+				itemName: 'SWORD',
+				server: Server.BLUE,
+				watchType: WatchType.WTB,
+				priceRequirement: 500,
+			});
+
+			expect(await counterpartIdsFor(wtbWatch.id)).toEqual(['200']);
+			expect(await counterpartIdsFor(wtsWatch.id)).toEqual(['100']);
+			expect(await prisma.marketplaceMatch.count()).toBe(1);
+		});
+
 		it("lists a user's unlisted watch with no counterparts, next to a listed one", async () => {
 			const { upsertWatch } = await import('./watch');
 			const { getMarketplaceViewsForUser } = await import(
@@ -489,6 +524,53 @@ describe('marketplace dbExecutor (integration)', () => {
 				['SHIELD', false, 0],
 				['SWORD', true, 1],
 			]);
+		});
+	});
+
+	describe('persistent notification throttle', () => {
+		it('holds back a fresh match created by ending and restoring the counterparty watch', async () => {
+			const {
+				filterOutRecentlyNotified,
+				getMarketplaceViewForWatch,
+				matchNewWatchToMarketplace,
+				recordMarketplaceNotifications,
+			} = await import('./marketplace');
+			const { unwatch, upsertWatch } = await import('./watch');
+			const { wtbWatch, wtsWatch } = await seedOpposingWatches();
+			await matchNewWatchToMarketplace(wtbWatch);
+			const firstView = await getMarketplaceViewForWatch(wtbWatch.id);
+			await recordMarketplaceNotifications(
+				'100',
+				'SWORD',
+				Server.BLUE,
+				firstView!.counterparts,
+			);
+
+			// 	the counterparty (200) ends and restores their own watch - this
+			// 	deletes and recreates the MarketplaceMatch row backing the pair
+			await unwatch(wtsWatch);
+			const restoredWts = await upsertWatch('200', {
+				itemName: 'SWORD',
+				server: Server.BLUE,
+				watchType: WatchType.WTS,
+				isPublicallyTradeable: true,
+			});
+			await matchNewWatchToMarketplace(restoredWts);
+
+			const secondView = await getMarketplaceViewForWatch(wtbWatch.id);
+			// 	matching itself still sees them - the throttle is a notification
+			// 	filter, not a match filter
+			expect(secondView?.counterparts).toHaveLength(1);
+			expect(secondView?.counterparts[0].notified).toBe(false);
+
+			expect(
+				await filterOutRecentlyNotified(
+					'100',
+					'SWORD',
+					Server.BLUE,
+					secondView!.counterparts,
+				),
+			).toEqual([]);
 		});
 	});
 

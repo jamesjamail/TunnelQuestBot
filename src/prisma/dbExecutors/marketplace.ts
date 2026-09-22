@@ -356,6 +356,11 @@ async function buildMarketplaceViews(
 	});
 
 	for (const match of matches) {
+		// 	a price edit on either side does not touch the match row, so this is
+		// 	re-checked on every read rather than once when the pair was recorded -
+		// 	the ledger itself is left alone, which is what lets compatibility (and
+		// 	the view) come back on its own if the price is edited again
+		if (!isPriceCompatible(match.wtbWatch, match.wtsWatch)) continue;
 		for (const side of MATCH_SIDES) {
 			const { mine, theirs } = sidesOfMatch(match, side);
 			const view = viewByWatchId.get(mine.id);
@@ -498,4 +503,84 @@ export async function releaseMarketplaceMatchNotificationClaim(
 		data:
 			side === 'wtb' ? { wtbNotifiedAt: null } : { wtsNotifiedAt: null },
 	});
+}
+
+export const MARKETPLACE_NOTIFICATION_THROTTLE_HOURS = 24;
+
+// 	Unlike a match claim, this survives the match row being deleted and
+// 	recreated (deleteMarketplaceMatchesForWatchIds runs on every unwatch) -
+// 	it is keyed on the two Discord users, the item/server and the recipient's
+// 	own side, never on a matchId. That is what stops a counterparty from
+// 	re-triggering a notification to the same recipient just by ending and
+// 	restoring their own watch: the fresh match row is unclaimed, but this
+// 	history still remembers they were told recently.
+export async function filterOutRecentlyNotified(
+	recipientDiscordUserId: string,
+	itemName: string,
+	server: Server,
+	counterparts: MarketplaceCounterpart[],
+): Promise<MarketplaceCounterpart[]> {
+	if (counterparts.length === 0) return [];
+
+	const counterpartIds = [
+		...new Set(counterparts.map((c) => c.watch.discordUserId)),
+	];
+	const since = new Date(
+		Date.now() - MARKETPLACE_NOTIFICATION_THROTTLE_HOURS * 60 * 60 * 1000,
+	);
+	const recent = await prisma.marketplaceNotificationHistory.findMany({
+		where: {
+			recipientDiscordUserId,
+			itemName,
+			server,
+			counterpartDiscordUserId: { in: counterpartIds },
+			notifiedAt: { gt: since },
+		},
+		select: { counterpartDiscordUserId: true, side: true },
+	});
+	if (recent.length === 0) return counterparts;
+
+	const throttled = new Set(
+		recent.map((row) => `${row.counterpartDiscordUserId}:${row.side}`),
+	);
+	return counterparts.filter(
+		(c) => !throttled.has(`${c.watch.discordUserId}:${c.side}`),
+	);
+}
+
+// 	Records that these counterparts were just notified, so a later match
+// 	between the same two users on this item/server/side is held back for
+// 	MARKETPLACE_NOTIFICATION_THROTTLE_HOURS even if the match row backing it
+// 	is deleted and recreated in the meantime. Call only after a successful
+// 	send - see sendMarketplaceDigest.
+export async function recordMarketplaceNotifications(
+	recipientDiscordUserId: string,
+	itemName: string,
+	server: Server,
+	counterparts: MarketplaceCounterpart[],
+): Promise<void> {
+	if (counterparts.length === 0) return;
+
+	for (const c of counterparts) {
+		await prisma.marketplaceNotificationHistory.upsert({
+			where: {
+				recipientDiscordUserId_counterpartDiscordUserId_itemName_server_side:
+					{
+						recipientDiscordUserId,
+						counterpartDiscordUserId: c.watch.discordUserId,
+						itemName,
+						server,
+						side: c.side,
+					},
+			},
+			create: {
+				recipientDiscordUserId,
+				counterpartDiscordUserId: c.watch.discordUserId,
+				itemName,
+				server,
+				side: c.side,
+			},
+			update: { notifiedAt: new Date() },
+		});
+	}
 }

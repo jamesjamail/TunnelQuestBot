@@ -6,7 +6,8 @@ vi.mock('../../../prisma/dbExecutors/watch', () => ({
 	upsertWatchSafely: vi.fn(),
 }));
 vi.mock('../../marketplace/marketplaceMatching', () => ({
-	checkForMarketplaceMatches: vi.fn(async () => undefined),
+	buildMarketplacePreview: vi.fn(async () => undefined),
+	commitMarketplacePreview: vi.fn(async () => undefined),
 }));
 vi.mock('../../helpers/errors', () => ({
 	gracefullyHandleError: vi.fn(async () => undefined),
@@ -17,7 +18,10 @@ import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { Server, WatchType } from '../../../prisma/client';
 import command from './watch';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
-import { checkForMarketplaceMatches } from '../../marketplace/marketplaceMatching';
+import {
+	buildMarketplacePreview,
+	commitMarketplacePreview,
+} from '../../marketplace/marketplaceMatching';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { makeChatInteraction, makeWatch } from '../../../test/factories';
 
@@ -74,11 +78,11 @@ describe('watch command', () => {
 		expect(
 			vi.mocked(interaction.deferReply).mock.invocationCallOrder[0],
 		).toBeLessThan(
-			vi.mocked(checkForMarketplaceMatches).mock.invocationCallOrder[0],
+			vi.mocked(buildMarketplacePreview).mock.invocationCallOrder[0],
 		);
 	});
 
-	it('checks for marketplace matches after a successful upsert', async () => {
+	it('builds the marketplace preview after a successful upsert', async () => {
 		const watch = makeWatch({ id: 12 });
 		vi.mocked(upsertWatchSafely).mockResolvedValue(watch);
 		const interaction = makeChatInteraction();
@@ -86,14 +90,17 @@ describe('watch command', () => {
 
 		await command.execute(interaction);
 
-		expect(checkForMarketplaceMatches).toHaveBeenCalledWith(watch);
+		expect(buildMarketplacePreview).toHaveBeenCalledWith(watch);
 	});
 
-	it('adds the marketplace matches to the reply as a second embed', async () => {
+	it('adds the marketplace preview to the reply as a second embed, with the listing toggle, and commits its claims after a successful reply', async () => {
 		const marketplaceEmbed = new EmbedBuilder().setTitle('Marketplace');
-		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch({ id: 12 }));
-		vi.mocked(checkForMarketplaceMatches).mockResolvedValueOnce(
-			marketplaceEmbed,
+		const preview = { embed: marketplaceEmbed, claimable: [] };
+		vi.mocked(upsertWatchSafely).mockResolvedValue(
+			makeWatch({ id: 12, isPublicallyTradeable: true }),
+		);
+		vi.mocked(buildMarketplacePreview).mockResolvedValueOnce(
+			preview as never,
 		);
 		const interaction = makeChatInteraction();
 		mockWatchOptions(interaction);
@@ -102,15 +109,19 @@ describe('watch command', () => {
 
 		const reply = vi.mocked(interaction.editReply).mock.calls[0][0] as {
 			embeds: EmbedBuilder[];
+			components: { components: unknown[] }[];
 		};
 		expect(reply.embeds).toHaveLength(2);
 		expect(reply.embeds[1]).toBe(marketplaceEmbed);
+		// 	four buttons: snooze, unwatch, refresh, and the 🤝 listing toggle
+		expect(reply.components[0].components).toHaveLength(4);
+		expect(commitMarketplacePreview).toHaveBeenCalledWith(preview);
 	});
 
 	it('still confirms the watch, and reports the error, when matching fails', async () => {
 		const error = new Error('db down');
 		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch({ id: 12 }));
-		vi.mocked(checkForMarketplaceMatches).mockRejectedValueOnce(error);
+		vi.mocked(buildMarketplacePreview).mockRejectedValueOnce(error);
 		const interaction = makeChatInteraction();
 		mockWatchOptions(interaction);
 
@@ -126,6 +137,32 @@ describe('watch command', () => {
 			embeds: EmbedBuilder[];
 		};
 		expect(reply.embeds).toHaveLength(1);
+		expect(commitMarketplacePreview).not.toHaveBeenCalled();
+	});
+
+	it('still returns the reply, and reports the error, when committing the claim fails', async () => {
+		const error = new Error('db down');
+		const preview = {
+			embed: new EmbedBuilder().setTitle('Marketplace'),
+			claimable: [],
+		};
+		vi.mocked(upsertWatchSafely).mockResolvedValue(makeWatch({ id: 12 }));
+		vi.mocked(buildMarketplacePreview).mockResolvedValueOnce(
+			preview as never,
+		);
+		vi.mocked(commitMarketplacePreview).mockRejectedValueOnce(error);
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction);
+
+		const result = await command.execute(interaction);
+
+		expect(result).toBeDefined();
+		expect(gracefullyHandleError).toHaveBeenCalledWith(
+			error,
+			interaction,
+			command,
+			{ watchId: 12, phase: 'marketplaceClaimCommit' },
+		);
 	});
 
 	it('forwards the marketplace opt-in flag to upsertWatchSafely', async () => {
@@ -147,7 +184,7 @@ describe('watch command', () => {
 
 		await command.execute(interaction);
 
-		expect(checkForMarketplaceMatches).not.toHaveBeenCalled();
+		expect(buildMarketplacePreview).not.toHaveBeenCalled();
 	});
 
 	it('replies with instructional copy when item is empty', async () => {

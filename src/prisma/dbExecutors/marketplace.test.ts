@@ -6,13 +6,16 @@ import { Server, WatchType } from '../client';
 import { prisma } from '../../test/mocks/prisma';
 import {
 	claimMarketplaceMatchNotification,
+	filterOutRecentlyNotified,
 	getMarketplaceViewForWatch,
 	getMarketplaceViewsForUser,
 	getWatchIdsWithPendingMarketplaceMatches,
 	isPriceCompatible,
 	matchNewWatchToMarketplace,
+	recordMarketplaceNotifications,
 	releaseMarketplaceMatchNotificationClaim,
 	sweepMarketplaceMatches,
+	type MarketplaceCounterpart,
 } from './marketplace';
 import {
 	makeMarketplaceMatch,
@@ -570,6 +573,138 @@ describe('releaseMarketplaceMatchNotificationClaim', () => {
 	});
 });
 
+function makeNotificationCounterpart(
+	matchId: number,
+	overrides: Parameters<typeof makeWatchWithUser>[0] = {},
+): MarketplaceCounterpart {
+	return {
+		matchId,
+		side: 'wtb',
+		notified: false,
+		watch: makeWatchWithUser({
+			discordUserId: '200',
+			...overrides,
+		}) as never,
+	};
+}
+
+describe('filterOutRecentlyNotified', () => {
+	it('returns everything unfiltered when nothing was recently notified', async () => {
+		vi.mocked(
+			prisma.marketplaceNotificationHistory.findMany,
+		).mockResolvedValue([]);
+		const counterparts = [makeNotificationCounterpart(1)];
+
+		expect(
+			await filterOutRecentlyNotified(
+				'100',
+				'SASH',
+				Server.GREEN,
+				counterparts,
+			),
+		).toEqual(counterparts);
+	});
+
+	it('drops a counterpart with a recent history row on the matching side', async () => {
+		vi.mocked(
+			prisma.marketplaceNotificationHistory.findMany,
+		).mockResolvedValue([
+			{ counterpartDiscordUserId: '200', side: 'wtb' },
+		] as never);
+
+		expect(
+			await filterOutRecentlyNotified('100', 'SASH', Server.GREEN, [
+				makeNotificationCounterpart(1, { discordUserId: '200' }),
+			]),
+		).toEqual([]);
+	});
+
+	it('keeps a counterpart whose recent history is on the other side', async () => {
+		vi.mocked(
+			prisma.marketplaceNotificationHistory.findMany,
+		).mockResolvedValue([
+			{ counterpartDiscordUserId: '200', side: 'wts' },
+		] as never);
+		const counterparts = [
+			makeNotificationCounterpart(1, { discordUserId: '200' }),
+		];
+
+		expect(
+			await filterOutRecentlyNotified(
+				'100',
+				'SASH',
+				Server.GREEN,
+				counterparts,
+			),
+		).toEqual(counterparts);
+	});
+
+	it('only queries within the throttle window', async () => {
+		vi.mocked(
+			prisma.marketplaceNotificationHistory.findMany,
+		).mockResolvedValue([]);
+
+		await filterOutRecentlyNotified('100', 'SASH', Server.GREEN, [
+			makeNotificationCounterpart(1),
+		]);
+
+		const call = vi.mocked(prisma.marketplaceNotificationHistory.findMany)
+			.mock.calls[0][0] as {
+			where: { notifiedAt: { gt: Date } };
+		};
+		expect(call.where.notifiedAt.gt.getTime()).toBeLessThan(Date.now());
+	});
+
+	it('does not query at all for an empty list', async () => {
+		expect(
+			await filterOutRecentlyNotified('100', 'SASH', Server.GREEN, []),
+		).toEqual([]);
+		expect(
+			prisma.marketplaceNotificationHistory.findMany,
+		).not.toHaveBeenCalled();
+	});
+});
+
+describe('recordMarketplaceNotifications', () => {
+	it('upserts one row per counterpart, keyed on recipient/counterpart/item/server/side', async () => {
+		await recordMarketplaceNotifications('100', 'SASH', Server.GREEN, [
+			makeNotificationCounterpart(1, { discordUserId: '200' }),
+			makeNotificationCounterpart(2, {
+				discordUserId: '300',
+				watchType: WatchType.WTS,
+			}),
+		]);
+
+		expect(
+			prisma.marketplaceNotificationHistory.upsert,
+		).toHaveBeenCalledTimes(2);
+		expect(
+			prisma.marketplaceNotificationHistory.upsert,
+		).toHaveBeenCalledWith(
+			expect.objectContaining({
+				where: {
+					recipientDiscordUserId_counterpartDiscordUserId_itemName_server_side:
+						{
+							recipientDiscordUserId: '100',
+							counterpartDiscordUserId: '200',
+							itemName: 'SASH',
+							server: Server.GREEN,
+							side: 'wtb',
+						},
+				},
+			}),
+		);
+	});
+
+	it('does nothing for an empty list', async () => {
+		await recordMarketplaceNotifications('100', 'SASH', Server.GREEN, []);
+
+		expect(
+			prisma.marketplaceNotificationHistory.upsert,
+		).not.toHaveBeenCalled();
+	});
+});
+
 // 	viewer is watch 1 (user 100, WTB); the counterpart is watch 2 (user 200, WTS)
 function matchWith(
 	overrides: {
@@ -751,6 +886,32 @@ describe('getMarketplaceViewForWatch', () => {
 		] as never);
 
 		expect((await getMarketplaceViewForWatch(1))?.counterparts).toEqual([]);
+	});
+
+	it('drops a counterpart whose price became incompatible after the match was recorded', async () => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({
+				wtb: { priceRequirement: 2000 },
+				wts: { priceRequirement: 1000 },
+			}),
+		] as never);
+
+		expect((await getMarketplaceViewForWatch(1))?.counterparts).toEqual([]);
+	});
+
+	it('shows a counterpart again once its price becomes compatible', async () => {
+		mockViewerWatch();
+		vi.mocked(prisma.marketplaceMatch.findMany).mockResolvedValue([
+			matchWith({
+				wtb: { priceRequirement: 500 },
+				wts: { priceRequirement: 1000 },
+			}),
+		] as never);
+
+		expect(
+			(await getMarketplaceViewForWatch(1))?.counterparts,
+		).toHaveLength(1);
 	});
 
 	it('drops a trader the viewer hid, but not one who merely hid the viewer', async () => {

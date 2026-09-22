@@ -318,6 +318,33 @@ describe('marketplaceDigestBuilder', () => {
 		);
 	});
 
+	it('truncates a maximum-length item name so the title stays within Discord limits', () => {
+		const longName = 'x'.repeat(255);
+		const embed = marketplaceDigestBuilder(
+			makeWatchWithUser({
+				itemName: longName,
+				server: Server.GREEN,
+				watchType: WatchType.WTS,
+			}),
+			[makeCounterpart(1)],
+			'x',
+		).toJSON();
+
+		expect(embed.title?.length).toBeLessThanOrEqual(256);
+		expect(embed.title).toMatch(/^Marketplace: Xx+… \(Green\)$/);
+		assertEmbedWithinDiscordLimits(
+			marketplaceDigestBuilder(
+				makeWatchWithUser({
+					itemName: longName,
+					server: Server.GREEN,
+					watchType: WatchType.WTS,
+				}),
+				[makeCounterpart(1)],
+				'x',
+			),
+		);
+	});
+
 	it("says what the viewer is doing, under the caller's heading", () => {
 		const embed = marketplaceDigestBuilder(
 			mine,
@@ -519,19 +546,62 @@ describe('marketplaceCommandResponseBuilder', () => {
 		expect(fields?.[2].value).toContain('Not listed');
 	});
 
-	it('caps the rows in a field and counts the rest', () => {
+	it('splits a watch with more counterparts than fit in one field into continuation fields', () => {
 		const counterparts = Array.from({ length: 12 }, (_, i) =>
 			makeCounterpart(i + 1),
 		);
 
-		const value = marketplaceCommandResponseBuilder(
+		const fields = marketplaceCommandResponseBuilder(
 			[makeView(1, counterparts)],
 			user,
 			[],
-		)[0].toJSON().fields?.[0].value;
+		)[0].toJSON().fields;
 
-		expect(value?.match(/<@\d+>/g)).toHaveLength(8);
-		expect(value).toContain('…and 4 more');
+		expect(fields).toHaveLength(2);
+		expect(fields?.[0].value.match(/<@\d+>/g)).toHaveLength(8);
+		expect(fields?.[1].name).toContain('cont.');
+		expect(fields?.[1].value.match(/<@\d+>/g)).toHaveLength(4);
+		// 	every counterpart is reachable somewhere, not merely counted
+		for (const counterpart of counterparts) {
+			expect(
+				fields?.some((field) =>
+					field.value.includes(
+						`<@${counterpart.watch.discordUserId}>`,
+					),
+				),
+			).toBe(true);
+		}
+	});
+
+	it('reaches every counterpart across multiple watches with large backlogs', () => {
+		const counterpartsA = Array.from({ length: 20 }, (_, i) =>
+			makeCounterpart(i + 1),
+		);
+		const counterpartsB = Array.from({ length: 20 }, (_, i) =>
+			makeCounterpart(i + 21),
+		);
+
+		const embeds = marketplaceCommandResponseBuilder(
+			[
+				makeView(1, counterpartsA),
+				makeView(2, counterpartsB, { server: Server.BLUE }),
+			],
+			user,
+			[],
+		);
+
+		for (const embed of embeds) {
+			assertEmbedWithinDiscordLimits(embed);
+		}
+		const allValues = embeds
+			.flatMap((embed) => embed.toJSON().fields ?? [])
+			.map((field) => field.value)
+			.join('\n');
+		for (const counterpart of [...counterpartsA, ...counterpartsB]) {
+			expect(allValues).toContain(
+				`<@${counterpart.watch.discordUserId}>`,
+			);
+		}
 	});
 
 	it('notes a global snooze without hiding the listings', () => {

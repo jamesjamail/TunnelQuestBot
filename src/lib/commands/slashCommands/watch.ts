@@ -1,8 +1,4 @@
-import {
-	type EmbedBuilder,
-	MessageFlags,
-	SlashCommandBuilder,
-} from 'discord.js';
+import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { SlashCommand } from '../../../types';
 import type { Server, WatchType } from '../../../prisma/client';
 import {
@@ -20,9 +16,14 @@ import {
 } from '../../content/buttons/buttonRowBuilder';
 import { autocompleteItems } from '../autocomplete/autocompleteItems';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
-import { checkForMarketplaceMatches } from '../../marketplace/marketplaceMatching';
+import {
+	buildMarketplacePreview,
+	commitMarketplacePreview,
+	type MarketplacePreview,
+} from '../../marketplace/marketplaceMatching';
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
+import { isSnoozed } from '../../helpers/watches';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -65,9 +66,9 @@ const command: SlashCommand = {
 			});
 
 			// 	a failure here must not lose the confirmation for a watch that saved
-			let marketplaceEmbed: EmbedBuilder | undefined;
+			let preview: MarketplacePreview | undefined;
 			try {
-				marketplaceEmbed = await checkForMarketplaceMatches(data);
+				preview = await buildMarketplacePreview(data);
 			} catch (error) {
 				await gracefullyHandleError(error, interaction, command, {
 					watchId: data.id,
@@ -76,14 +77,44 @@ const command: SlashCommand = {
 			}
 
 			const embeds = [watchCommandResponseBuilder(data)];
-			if (marketplaceEmbed) embeds.push(marketplaceEmbed);
-			const components = buttonRowBuilder(
-				MessageTypes.watch,
-				[false, false, false],
-				String(data.id),
-			);
+			// 	the marketplace embed's own footer is what states the watch's
+			// 	listing status, so it is shown even with no matches yet - and its
+			// 	button row is what carries the advertised 🤝 listing toggle
+			let components: ReturnType<typeof buttonRowBuilder>;
+			if (preview) {
+				embeds.push(preview.embed);
+				components = buttonRowBuilder(
+					MessageTypes.marketplace,
+					[
+						isSnoozed(data.snoozedUntil),
+						!data.active,
+						false,
+						data.isPublicallyTradeable,
+					],
+					String(data.id),
+				);
+			} else {
+				components = buttonRowBuilder(
+					MessageTypes.watch,
+					[false, false, false],
+					String(data.id),
+				);
+			}
 
-			return await interaction.editReply({ embeds, components });
+			const reply = await interaction.editReply({ embeds, components });
+
+			// 	only commit the claim once Discord confirms the preview was
+			// 	actually delivered - see commitMarketplacePreview
+			if (preview) {
+				await commitMarketplacePreview(preview).catch((error) =>
+					gracefullyHandleError(error, interaction, command, {
+						watchId: data.id,
+						phase: 'marketplaceClaimCommit',
+					}),
+				);
+			}
+
+			return reply;
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

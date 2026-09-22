@@ -24,6 +24,8 @@ const {
 	sweepMarketplaceMatches,
 	claimMarketplaceMatchNotification,
 	releaseMarketplaceMatchNotificationClaim,
+	filterOutRecentlyNotified,
+	recordMarketplaceNotifications,
 } = vi.hoisted(() => ({
 	getMarketplaceViewForWatch: vi.fn(),
 	getWatchIdsWithPendingMarketplaceMatches: vi.fn(async () => []),
@@ -31,6 +33,17 @@ const {
 	sweepMarketplaceMatches: vi.fn(async () => []),
 	claimMarketplaceMatchNotification: vi.fn(async () => true),
 	releaseMarketplaceMatchNotificationClaim: vi.fn(async () => undefined),
+	// 	a no-op pass-through by default, so tests unrelated to the throttle
+	// 	are unaffected
+	filterOutRecentlyNotified: vi.fn(
+		async (
+			_recipientDiscordUserId: string,
+			_itemName: string,
+			_server: string,
+			counterparts: unknown[],
+		) => counterparts,
+	),
+	recordMarketplaceNotifications: vi.fn(async () => undefined),
 }));
 vi.mock('../../prisma/dbExecutors/marketplace', () => ({
 	getMarketplaceViewForWatch,
@@ -39,6 +52,8 @@ vi.mock('../../prisma/dbExecutors/marketplace', () => ({
 	sweepMarketplaceMatches,
 	claimMarketplaceMatchNotification,
 	releaseMarketplaceMatchNotificationClaim,
+	filterOutRecentlyNotified,
+	recordMarketplaceNotifications,
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -47,7 +62,8 @@ import type {
 	MarketplaceWatchView,
 } from '../../prisma/dbExecutors/marketplace';
 import {
-	checkForMarketplaceMatches,
+	buildMarketplacePreview,
+	commitMarketplacePreview,
 	runMarketplaceMatchingSweep,
 } from './marketplaceMatching';
 import { buildMarketplaceDigestMessage } from './marketplaceDigestMessage';
@@ -55,7 +71,7 @@ import { marketplaceDigestBuilder } from '../content/messages/messageBuilder';
 import { client } from '../../test/mocks/discordClient';
 import { gracefullyHandleError } from '../helpers/errors';
 import { makeWatch, makeWatchWithUser } from '../../test/factories';
-import { WatchType } from '../../prisma/client';
+import { Server, WatchType } from '../../prisma/client';
 
 const inOneHour = () => new Date(Date.now() + 60 * 60 * 1000);
 
@@ -105,6 +121,10 @@ function resetMocks() {
 	releaseMarketplaceMatchNotificationClaim
 		.mockReset()
 		.mockResolvedValue(undefined);
+	filterOutRecentlyNotified
+		.mockReset()
+		.mockImplementation(async (_r, _i, _s, counterparts) => counterparts);
+	recordMarketplaceNotifications.mockReset().mockResolvedValue(undefined);
 	vi.mocked(gracefullyHandleError).mockClear();
 	vi.mocked(buildMarketplaceDigestMessage).mockClear();
 	vi.mocked(marketplaceDigestBuilder).mockClear();
@@ -375,9 +395,88 @@ describe('runMarketplaceMatchingSweep', () => {
 		expect(gracefullyHandleError).toHaveBeenCalledWith(expect.any(Error));
 		expect(client.users.send).toHaveBeenCalledTimes(1);
 	});
+
+	it('asks the throttle only about unnotified counterparts, keyed on the recipient watch', async () => {
+		const watch = makeView(
+			[makeCounterpart(1, { notified: true }), makeCounterpart(2)],
+			{ id: 1, itemName: 'SASH', server: Server.GREEN },
+			{ discordUserId: '100' },
+		);
+		getMarketplaceViewForWatch.mockResolvedValue(watch);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(filterOutRecentlyNotified).toHaveBeenCalledWith(
+			'100',
+			'SASH',
+			Server.GREEN,
+			[watch.counterparts[1]],
+		);
+	});
+
+	it('does not claim, or DM, a counterpart the throttle holds back', async () => {
+		filterOutRecentlyNotified.mockResolvedValue([]);
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView([makeCounterpart(1)]),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(claimMarketplaceMatchNotification).not.toHaveBeenCalled();
+		expect(client.users.send).not.toHaveBeenCalled();
+	});
+
+	it('records a notification history entry for every counterpart it actually sent', async () => {
+		const counterparts = [makeCounterpart(1), makeCounterpart(2)];
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView(counterparts, { itemName: 'SASH', server: Server.GREEN }),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(recordMarketplaceNotifications).toHaveBeenCalledWith(
+			'100',
+			'SASH',
+			Server.GREEN,
+			counterparts,
+		);
+	});
+
+	it('reports, but does not release claims for, a failure recording notification history after a successful send', async () => {
+		const recordError = new Error('db down');
+		recordMarketplaceNotifications.mockRejectedValue(recordError);
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView([makeCounterpart(1)]),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(client.users.send).toHaveBeenCalledTimes(1);
+		expect(releaseMarketplaceMatchNotificationClaim).not.toHaveBeenCalled();
+		expect(gracefullyHandleError).toHaveBeenCalledWith(
+			recordError,
+			undefined,
+			undefined,
+			expect.objectContaining({
+				watchId: 1,
+				phase: 'marketplaceNotificationHistory',
+			}),
+		);
+	});
+
+	it('does not record notification history when the send itself fails', async () => {
+		vi.mocked(client.users.send).mockRejectedValue(new Error('cannot DM'));
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView([makeCounterpart(1)]),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(recordMarketplaceNotifications).not.toHaveBeenCalled();
+	});
 });
 
-describe('checkForMarketplaceMatches', () => {
+describe('buildMarketplacePreview', () => {
 	beforeEach(resetMocks);
 
 	it('records pairings for the given watch, then reads what it can now see', async () => {
@@ -386,7 +485,7 @@ describe('checkForMarketplaceMatches', () => {
 			makeView([makeCounterpart(1)]),
 		);
 
-		await checkForMarketplaceMatches(watch);
+		await buildMarketplacePreview(watch);
 
 		expect(matchNewWatchToMarketplace).toHaveBeenCalledWith(watch);
 		expect(getMarketplaceViewForWatch).toHaveBeenCalledWith(1);
@@ -399,10 +498,10 @@ describe('checkForMarketplaceMatches', () => {
 		const counterparts = [1, 2, 3].map((id) => makeCounterpart(id));
 		getMarketplaceViewForWatch.mockResolvedValue(makeView(counterparts));
 
-		const embed = await checkForMarketplaceMatches(makeWatch({ id: 1 }));
+		const preview = await buildMarketplacePreview(makeWatch({ id: 1 }));
 
 		expect(client.users.send).not.toHaveBeenCalled();
-		expect(embed).toBeDefined();
+		expect(preview?.embed).toBeDefined();
 		expect(marketplaceDigestBuilder).toHaveBeenCalledWith(
 			expect.objectContaining({ id: 1 }),
 			counterparts,
@@ -410,28 +509,33 @@ describe('checkForMarketplaceMatches', () => {
 		);
 	});
 
-	it('claims what it shows so the next digest does not repeat it, but not what was already told', async () => {
+	it('does not claim anything by itself - only building the embed', async () => {
 		getMarketplaceViewForWatch.mockResolvedValue(
-			makeView([
-				makeCounterpart(1, { notified: true }),
-				makeCounterpart(2, { side: 'wts' }),
-			]),
+			makeView([makeCounterpart(1), makeCounterpart(2, { side: 'wts' })]),
 		);
 
-		await checkForMarketplaceMatches(makeWatch({ id: 1 }));
+		await buildMarketplacePreview(makeWatch({ id: 1 }));
 
-		expect(claimMarketplaceMatchNotification).toHaveBeenCalledTimes(1);
-		expect(claimMarketplaceMatchNotification).toHaveBeenCalledWith(
-			2,
-			'wts',
+		expect(claimMarketplaceMatchNotification).not.toHaveBeenCalled();
+	});
+
+	it('collects only the unnotified counterparts as claimable', async () => {
+		const notified = makeCounterpart(1, { notified: true });
+		const fresh = makeCounterpart(2, { side: 'wts' });
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView([notified, fresh]),
 		);
+
+		const preview = await buildMarketplacePreview(makeWatch({ id: 1 }));
+
+		expect(preview?.claimable).toEqual([fresh]);
 	});
 
 	it('shows already-notified matches too, since the reply is a full picture', async () => {
 		const seen = makeCounterpart(1, { notified: true });
 		getMarketplaceViewForWatch.mockResolvedValue(makeView([seen]));
 
-		await checkForMarketplaceMatches(makeWatch({ id: 1 }));
+		await buildMarketplacePreview(makeWatch({ id: 1 }));
 
 		expect(marketplaceDigestBuilder).toHaveBeenCalledWith(
 			expect.anything(),
@@ -440,24 +544,107 @@ describe('checkForMarketplaceMatches', () => {
 		);
 	});
 
-	it('returns nothing, and claims nothing, when there are no counterparts', async () => {
+	it('still builds a preview, with nothing claimable, when there are no counterparts', async () => {
 		getMarketplaceViewForWatch.mockResolvedValue(makeView([]));
 
-		expect(await checkForMarketplaceMatches(makeWatch())).toBeUndefined();
+		const preview = await buildMarketplacePreview(makeWatch());
+
+		expect(preview).toBeDefined();
+		expect(preview?.claimable).toEqual([]);
 		expect(claimMarketplaceMatchNotification).not.toHaveBeenCalled();
 	});
 
 	it('returns nothing when the watch is gone', async () => {
 		getMarketplaceViewForWatch.mockResolvedValue(null);
 
-		expect(await checkForMarketplaceMatches(makeWatch())).toBeUndefined();
+		expect(await buildMarketplacePreview(makeWatch())).toBeUndefined();
 	});
 
-	it('does not swallow a matching failure', async () => {
+	it('does not swallow a matching failure, and claims nothing', async () => {
 		matchNewWatchToMarketplace.mockRejectedValue(new Error('db down'));
 
-		await expect(checkForMarketplaceMatches(makeWatch())).rejects.toThrow(
+		await expect(buildMarketplacePreview(makeWatch())).rejects.toThrow(
 			'db down',
+		);
+		expect(claimMarketplaceMatchNotification).not.toHaveBeenCalled();
+	});
+
+	it('does not swallow a rendering failure, and claims nothing', async () => {
+		getMarketplaceViewForWatch.mockResolvedValue(
+			makeView([makeCounterpart(1)]),
+		);
+		vi.mocked(marketplaceDigestBuilder).mockImplementationOnce(() => {
+			throw new Error('title too long');
+		});
+
+		await expect(buildMarketplacePreview(makeWatch())).rejects.toThrow(
+			'title too long',
+		);
+		expect(claimMarketplaceMatchNotification).not.toHaveBeenCalled();
+	});
+});
+
+describe('commitMarketplacePreview', () => {
+	beforeEach(resetMocks);
+
+	it('claims every claimable counterpart, on its own side', async () => {
+		const preview = {
+			embed: {} as never,
+			claimable: [
+				makeCounterpart(1, { side: 'wtb' }),
+				makeCounterpart(2, { side: 'wts' }),
+			],
+		};
+
+		await commitMarketplacePreview(preview);
+
+		expect(claimMarketplaceMatchNotification).toHaveBeenCalledTimes(2);
+		expect(claimMarketplaceMatchNotification).toHaveBeenCalledWith(
+			1,
+			'wtb',
+		);
+		expect(claimMarketplaceMatchNotification).toHaveBeenCalledWith(
+			2,
+			'wts',
+		);
+	});
+
+	it('skips a counterpart a concurrent sweep already claimed, without releasing anything', async () => {
+		claimMarketplaceMatchNotification
+			.mockResolvedValueOnce(true)
+			.mockResolvedValueOnce(false);
+		const preview = {
+			embed: {} as never,
+			claimable: [makeCounterpart(1), makeCounterpart(2)],
+		};
+
+		await commitMarketplacePreview(preview);
+
+		expect(releaseMarketplaceMatchNotificationClaim).not.toHaveBeenCalled();
+	});
+
+	it('releases whatever it already claimed, then rethrows, if a later claim fails', async () => {
+		claimMarketplaceMatchNotification
+			.mockResolvedValueOnce(true)
+			.mockRejectedValueOnce(new Error('db down'));
+		const preview = {
+			embed: {} as never,
+			claimable: [
+				makeCounterpart(1, { side: 'wtb' }),
+				makeCounterpart(2, { side: 'wts' }),
+			],
+		};
+
+		await expect(commitMarketplacePreview(preview)).rejects.toThrow(
+			'db down',
+		);
+
+		expect(releaseMarketplaceMatchNotificationClaim).toHaveBeenCalledTimes(
+			1,
+		);
+		expect(releaseMarketplaceMatchNotificationClaim).toHaveBeenCalledWith(
+			1,
+			'wtb',
 		);
 	});
 });
