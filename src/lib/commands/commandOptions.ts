@@ -100,7 +100,7 @@ export const marketplaceOptions = (option: SlashCommandBooleanOption) =>
 	option
 		.setName('marketplace')
 		.setDescription(
-			'notify (and be notified by) traders with the matching WTB/WTS - on by default, set false to opt out',
+			'notify (and be notified by) traders with the matching WTB/WTS - off by default, set true to opt in',
 		);
 
 export const blockFilterOptions = (option: SlashCommandStringOption) =>

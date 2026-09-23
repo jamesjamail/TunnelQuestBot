@@ -47,7 +47,7 @@ describe('watch dbExecutor (integration)', () => {
 			expect(row?.active).toBe(true);
 		});
 
-		it('defaults isPublicallyTradeable to true, and lets it be opted out of on create', async () => {
+		it('defaults isPublicallyTradeable to false, and lets it be opted in to on create', async () => {
 			const { upsertWatch } = await import('./watch');
 			const prisma = await getPrisma();
 			await seedUser();
@@ -55,17 +55,17 @@ describe('watch dbExecutor (integration)', () => {
 			await upsertWatch('100', defaultWatchData);
 			expect(
 				(await prisma.watch.findFirst())?.isPublicallyTradeable,
-			).toBe(true);
+			).toBe(false);
 
 			await upsertWatch('100', {
 				...defaultWatchData,
 				itemName: 'SHIELD',
-				isPublicallyTradeable: false,
+				isPublicallyTradeable: true,
 			});
-			const optedOut = await prisma.watch.findFirst({
+			const optedIn = await prisma.watch.findFirst({
 				where: { itemName: 'SHIELD' },
 			});
-			expect(optedOut?.isPublicallyTradeable).toBe(false);
+			expect(optedIn?.isPublicallyTradeable).toBe(true);
 		});
 
 		it('omitting isPublicallyTradeable on an update preserves the existing setting', async () => {

@@ -28,7 +28,7 @@ type CreateWatchInputArgs = {
 	priceRequirement?: number;
 	notes?: string;
 	// marketplace matching visibility; omitted on create the column default
-	// (on) applies, omitted on an update leaves the existing setting untouched
+	// (off) applies, omitted on an update leaves the existing setting untouched
 	isPublicallyTradeable?: boolean;
 };
 
