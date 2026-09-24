@@ -35,4 +35,13 @@ jobs:
           jq -e '.services.tunnelquestbot.environment.SERVERS_BLUE_LOG_FILE_PATH == "/logfiles/legacy-blue.log"' /tmp/legacy.json
 
       - name: Build retention image
-        run: docker compose --env-file .env.example --profile p99-loggers build p99-log-retention
+        run: |
+          echo '{"user":"must-not-enter-build-context"}' > p99-logger/private-sentinel.json
+          docker build --no-cache -f - . <<'EOF'
+          FROM busybox:1.37.0
+          COPY . /context
+          RUN test -f /context/p99-logger/retention.Dockerfile \
+           && test -f /context/p99-logger/retention-entrypoint.sh \
+           && test ! -e /context/p99-logger/private-sentinel.json
+          EOF
+          docker compose --env-file .env.example --profile p99-loggers build p99-log-retention
