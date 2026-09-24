@@ -65,6 +65,13 @@ export const requiredsServerOptions = (option: SlashCommandStringOption) =>
 		)
 		.setRequired(true);
 
+export const autoCompleteServerOptions = (option: SlashCommandStringOption) =>
+	option
+		.setName('server')
+		.setDescription('select a monitored server')
+		.setAutocomplete(true)
+		.setRequired(true);
+
 export const priceCriteriaOptions = (option: SlashCommandNumberOption) =>
 	option.setName('price').setDescription('enter optional price criteria');
 
