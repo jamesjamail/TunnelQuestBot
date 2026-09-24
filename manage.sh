@@ -5,9 +5,20 @@ shopt -s extglob
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-COMPOSE=(docker compose --project-name tunnelquestbot --profile p99-loggers)
 BOT_IMAGE="ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest"
 BACKUP_DIR="${TQB_BACKUP_DIR:-$HOME/TunnelQuestBot-backups}"
+RUNTIME_ENV=".runtime.env"
+declare -a COMPOSE=()
+
+refresh_compose_command() {
+	COMPOSE=(docker compose --project-name tunnelquestbot --env-file .env)
+	if [[ -f "$RUNTIME_ENV" ]]; then
+		COMPOSE+=(--env-file "$RUNTIME_ENV")
+	fi
+	COMPOSE+=(--profile p99-loggers)
+}
+
+refresh_compose_command
 
 die() {
 	echo "ERROR: $*" >&2
@@ -37,8 +48,17 @@ env_value() {
 	printf '%s' "$value"
 }
 
+write_runtime_image() {
+	local image="$1" temporary="${RUNTIME_ENV}.tmp"
+	printf 'TUNNELQUESTBOT_IMAGE=%s\n' "$image" > "$temporary"
+	chmod 600 "$temporary"
+	mv -f "$temporary" "$RUNTIME_ENV"
+	refresh_compose_command
+}
+
 declare -a COLLECTORS=()
 declare -a START_SERVICES=()
+LAST_BACKUP=""
 
 discover_services() {
 	COLLECTORS=()
@@ -89,9 +109,15 @@ basic_checks() {
 }
 
 app_doctor() {
+	local image="${1:-}"
 	note "Checking application configuration"
-	"${COMPOSE[@]}" run --rm --no-deps -T \
-		--entrypoint node tunnelquestbot ./build/doctor.js
+	if [[ -n "$image" ]]; then
+		TUNNELQUESTBOT_IMAGE="$image" "${COMPOSE[@]}" run --rm --no-deps -T \
+			--entrypoint node tunnelquestbot ./build/doctor.js
+	else
+		"${COMPOSE[@]}" run --rm --no-deps -T \
+			--entrypoint node tunnelquestbot ./build/doctor.js
+	fi
 }
 
 cleanup_disabled_collectors() {
@@ -117,10 +143,12 @@ build_retention() {
 
 start_stack() {
 	cleanup_disabled_collectors
-	build_retention
+	build_retention || return 1
 	note "Starting TunnelQuestBot"
-	"${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
-		"${START_SERVICES[@]}"
+	if ! "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
+		"${START_SERVICES[@]}"; then
+		return 1
+	fi
 	"${COMPOSE[@]}" ps
 }
 
@@ -152,6 +180,7 @@ backup_database() {
 	chmod 700 "$BACKUP_DIR"
 	stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 	name="tunnelquestbot-$stamp.db"
+	LAST_BACKUP="$BACKUP_DIR/$name"
 
 	note "Creating verified SQLite backup"
 	"${COMPOSE[@]}" run --rm --no-deps -T \
@@ -184,26 +213,71 @@ const fs = require('fs');
   process.exit(1);
 });
 NODE
-	echo "Backup: $BACKUP_DIR/$name"
+	[[ -s "$LAST_BACKUP" ]] ||
+		die "Backup command completed without creating a nonempty file."
+	echo "Backup: $LAST_BACKUP"
+}
+
+restore_database() {
+	local backup="$1" directory filename
+	directory="$(cd "$(dirname "$backup")" && pwd)"
+	filename="$(basename "$backup")"
+	[[ -s "$backup" ]] || die "Rollback backup is missing: $backup"
+
+	note "Restoring the pre-update SQLite backup"
+	"${COMPOSE[@]}" stop tunnelquestbot >/dev/null 2>&1 || true
+	"${COMPOSE[@]}" run --rm --no-deps -T \
+		-v "$directory:/backup:ro" \
+		-e "BACKUP_FILE=$filename" \
+		--entrypoint sh tunnelquestbot -ec \
+		'rm -f /data/tunnelquestbot.db-wal /data/tunnelquestbot.db-shm
+		 cp "/backup/$BACKUP_FILE" /data/tunnelquestbot.db
+		 chmod 600 /data/tunnelquestbot.db'
 }
 
 update_stack() {
-	local before="" desired=""
+	local before="" desired="" desired_ref=""
 	before="$(docker inspect tunnelquestbot --format '{{.Image}}' 2>/dev/null || true)"
 
 	note "Pulling the newest promoted production image"
-	"${COMPOSE[@]}" pull tunnelquestbot
+	docker pull "$BOT_IMAGE"
 	desired="$(docker image inspect "$BOT_IMAGE" --format '{{.Id}}')"
-	app_doctor
+	desired_ref="$(
+		docker image inspect "$BOT_IMAGE" \
+			--format '{{range .RepoDigests}}{{println .}}{{end}}' |
+			grep '^ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@' |
+			head -n 1
+	)"
+	[[ -n "$desired_ref" ]] || die "Could not resolve the promoted image digest."
+	app_doctor "$desired_ref"
 
 	if [[ -n "$before" && "$before" == "$desired" ]]; then
+		write_runtime_image "$desired_ref"
 		echo "Already current; no application image change was needed."
 		show_status
 		return
 	fi
 
 	backup_database "$([[ -n "$before" ]] && echo true || echo false)"
-	start_stack
+	if [[ -n "$before" ]]; then
+		docker tag "$before" tunnelquestbot:pre-update-rollback
+	fi
+	write_runtime_image "$desired_ref"
+
+	if ! (set -e; start_stack); then
+		if [[ -z "$before" ]]; then
+			die "Initial startup failed. No previous deployment existed to restore."
+		fi
+
+		echo "Update failed; restoring the previous image and database." >&2
+		write_runtime_image "tunnelquestbot:pre-update-rollback"
+		restore_database "$LAST_BACKUP"
+		if ! (set -e; start_stack); then
+			die "Automatic rollback also failed. The verified backup is $LAST_BACKUP"
+		fi
+		die "Update failed and was rolled back. Production is running the previous image."
+	fi
+
 	echo "Update complete."
 }
 

@@ -27,7 +27,11 @@ if [[ "$*" == "inspect tunnelquestbot --format {{.Image}}" ]]; then
 	echo "sha256:current"
 fi
 if [[ "$*" == "image inspect "* ]]; then
-	echo "${TQB_DESIRED_IMAGE:-sha256:current}"
+	if [[ "$*" == *"RepoDigests"* ]]; then
+		echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted"
+	else
+		echo "${TQB_DESIRED_IMAGE:-sha256:current}"
+	fi
 fi
 if [[ "$*" == *"--entrypoint sh tunnelquestbot -ec if [ -s /data/tunnelquestbot.db"* ]]; then
 	echo "${TQB_DATABASE_STATE:-present}"
@@ -37,10 +41,14 @@ for argument in "$@"; do
 		BACKUP_NAME=*)
 			name="${argument#BACKUP_NAME=}"
 			mkdir -p "$TQB_BACKUP_DIR"
-			: > "$TQB_BACKUP_DIR/$name"
+			printf 'sqlite-backup' > "$TQB_BACKUP_DIR/$name"
 			;;
 	esac
 done
+if [[ -n "${TQB_FAIL_UP_MARKER:-}" && "$*" == *" up -d "* && ! -e "$TQB_FAIL_UP_MARKER" ]]; then
+	: > "$TQB_FAIL_UP_MARKER"
+	exit 1
+fi
 EOF
 chmod +x "$TEST_ROOT/bin/docker"
 
@@ -53,7 +61,7 @@ export TQB_BACKUP_DIR="$TEST_ROOT/backups"
 	./manage.sh start >/dev/null
 )
 
-start_command="$(grep 'compose --project-name tunnelquestbot --profile p99-loggers up -d' "$TQB_DOCKER_TRACE")"
+start_command="$(grep ' up -d ' "$TQB_DOCKER_TRACE")"
 [[ "$start_command" == *"p99-green-logger"* ]]
 [[ "$start_command" == *"p99-log-retention"* ]]
 [[ "$start_command" == *"tunnelquestbot"* ]]
@@ -67,6 +75,7 @@ update_output="$(
 [[ "$update_output" == *"Already current"* ]]
 ! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
 ! compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
+grep -q '^TUNNELQUESTBOT_IMAGE=.*@sha256:promoted$' "$TEST_ROOT/deploy/.runtime.env"
 
 : > "$TQB_DOCKER_TRACE"
 export TQB_DESIRED_IMAGE="sha256:new"
@@ -89,7 +98,26 @@ if (
 fi
 grep -q 'No SQLite database exists to back up' "$TEST_ROOT/backup-error.log"
 ! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
-unset TQB_DATABASE_STATE TQB_DESIRED_IMAGE
+
+unset TQB_DATABASE_STATE
+rm -f "$TQB_BACKUP_DIR"/*.db
+: > "$TQB_DOCKER_TRACE"
+export TQB_DESIRED_IMAGE="sha256:newer"
+export TQB_FAIL_UP_MARKER="$TEST_ROOT/fail-up-once"
+if (
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update >"$TEST_ROOT/rollback.log" 2>&1
+); then
+	echo "failed update unexpectedly reported success" >&2
+	exit 1
+fi
+if ! grep -q 'was rolled back' "$TEST_ROOT/rollback.log"; then
+	cat "$TEST_ROOT/rollback.log" >&2
+	exit 1
+fi
+grep -q '^TUNNELQUESTBOT_IMAGE=tunnelquestbot:pre-update-rollback$' "$TEST_ROOT/deploy/.runtime.env"
+[[ "$(grep -c ' up -d ' "$TQB_DOCKER_TRACE")" -eq 2 ]]
+unset TQB_DESIRED_IMAGE TQB_FAIL_UP_MARKER
 
 rm "$TEST_ROOT/deploy/p99-logger/green.json"
 if (

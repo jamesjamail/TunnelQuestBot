@@ -129,7 +129,7 @@ services:
     restart: unless-stopped
 
   tunnelquestbot:
-    image: ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
+    image: "${TUNNELQUESTBOT_IMAGE:-ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest}"
     container_name: tunnelquestbot
     logging: *default-logging
     depends_on:

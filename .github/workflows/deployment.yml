@@ -1,0 +1,29 @@
+name: Validate deployment bundle
+
+on:
+  pull_request:
+    branches: [run]
+  push:
+    branches: [run]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check shell scripts
+        run: |
+          shellcheck manage.sh p99-logger/retention-entrypoint.sh tests/manage.Tests.sh
+          bash tests/manage.Tests.sh
+
+      - name: Validate Compose topology
+        run: |
+          docker compose --env-file .env.example --profile p99-loggers config --quiet
+          docker compose --env-file .env.example --profile p99-loggers config --format json > /tmp/compose.json
+          jq -e '.name == "tunnelquestbot"' /tmp/compose.json
+          jq -e '.services.tunnelquestbot.ports == null' /tmp/compose.json
+          jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket","sqlite-data"]' /tmp/compose.json
+
+      - name: Build retention image
+        run: docker compose --env-file .env.example --profile p99-loggers build p99-log-retention

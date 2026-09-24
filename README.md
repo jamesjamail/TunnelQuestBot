@@ -67,14 +67,19 @@ git pull --ff-only origin run
 
 `update` pulls `prod/tunnelquestbot:latest` and validates it against the current
 `.env`. If that exact image is already running, it reports that production is
-current without backing up, rebuilding, or reconciling other services. When the
-image changed, it requires a verified SQLite backup before reconciling the stack.
-Database migrations are idempotent and run in the image entrypoint.
+current without backing up, rebuilding, or reconciling other services. It records
+the immutable promoted digest in private `.runtime.env`, so ordinary starts can
+never drift when the registry tag moves.
 
-The first update from the hand-built Linux deployment may recreate the bot once
-because its image reference changes from an immutable digest to `prod:latest`.
-It reuses the same service names and `tunnelquestbot_*` volumes; no data import
-or configuration conversion occurs. The old untracked
+When the image changed, `update` requires a verified SQLite backup before
+reconciling the stack. If startup or health checks fail, it automatically restores
+that backup and the previous image. Database migrations are idempotent and run in
+the image entrypoint.
+
+The first update from the hand-built Linux deployment recognizes the already
+running promoted image, records its immutable digest, and otherwise no-ops. It
+reuses the same service names and `tunnelquestbot_*` volumes; no data import or
+configuration conversion occurs. The old untracked
 `docker-compose.production.yml` is not used by `manage.sh` and can be removed
 after this update succeeds.
 
