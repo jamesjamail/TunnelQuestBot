@@ -72,9 +72,11 @@ the immutable promoted digest in private `.runtime.env`, so ordinary starts can
 never drift when the registry tag moves.
 
 When the image changed, `update` requires a verified SQLite backup before
-reconciling the stack. If startup or health checks fail, it automatically restores
-that backup and the previous image. Database migrations are idempotent and run in
-the image entrypoint.
+reconciling the stack. It validates collectors before activating the bot and
+waits for the bot's runtime-ready log marker. If activation fails, it restores
+the previous image automatically and reports the verified backup path. It never
+automatically overwrites a database after a bot may have accepted writes.
+Database migrations are idempotent and run in the image entrypoint.
 
 The first update from the hand-built Linux deployment recognizes the already
 running promoted image, records its immutable digest, and otherwise no-ops. It

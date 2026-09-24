@@ -24,7 +24,20 @@ cat > "$TEST_ROOT/bin/docker" <<'EOF'
 set -eu
 printf '%s\n' "$*" >> "$TQB_DOCKER_TRACE"
 if [[ "$*" == "inspect tunnelquestbot --format {{.Image}}" ]]; then
-	echo "sha256:current"
+	if [[ -f "$TQB_RUNNING_IMAGE_FILE" ]]; then
+		cat "$TQB_RUNNING_IMAGE_FILE"
+	else
+		echo "sha256:current"
+	fi
+fi
+if [[ "$*" == "inspect tunnelquestbot --format {{.State.Status}}" ]]; then
+	echo "running"
+fi
+if [[ "$*" == "logs tunnelquestbot" ]]; then
+	echo "Starting log monitoring for server GREEN: /data/green/chat.jsonl"
+fi
+if [[ "${1:-}" == "tag" && "${3:-}" == "tunnelquestbot:pre-update-rollback" ]]; then
+	echo "$2" > "$TQB_ROLLBACK_IMAGE_FILE"
 fi
 if [[ "$*" == "image inspect "* ]]; then
 	if [[ "$*" == *"RepoDigests"* ]]; then
@@ -45,9 +58,18 @@ for argument in "$@"; do
 			;;
 	esac
 done
-if [[ -n "${TQB_FAIL_UP_MARKER:-}" && "$*" == *" up -d "* && ! -e "$TQB_FAIL_UP_MARKER" ]]; then
+if [[ -n "${TQB_FAIL_UP_MARKER:-}" &&
+	"$*" == *"up -d --no-build --wait --wait-timeout 180 tunnelquestbot" &&
+	! -e "$TQB_FAIL_UP_MARKER" ]]; then
 	: > "$TQB_FAIL_UP_MARKER"
 	exit 1
+fi
+if [[ "$*" == *"up -d --no-build --wait --wait-timeout 180 tunnelquestbot" ]]; then
+	if grep -q 'TUNNELQUESTBOT_IMAGE=tunnelquestbot:pre-update-rollback' .runtime.env 2>/dev/null; then
+		cat "$TQB_ROLLBACK_IMAGE_FILE" > "$TQB_RUNNING_IMAGE_FILE"
+	else
+		echo "${TQB_DESIRED_IMAGE:-sha256:current}" > "$TQB_RUNNING_IMAGE_FILE"
+	fi
 fi
 EOF
 chmod +x "$TEST_ROOT/bin/docker"
@@ -55,6 +77,8 @@ chmod +x "$TEST_ROOT/bin/docker"
 export PATH="$TEST_ROOT/bin:$PATH"
 export TQB_DOCKER_TRACE="$TEST_ROOT/docker.trace"
 export TQB_BACKUP_DIR="$TEST_ROOT/backups"
+export TQB_RUNNING_IMAGE_FILE="$TEST_ROOT/running-image"
+export TQB_ROLLBACK_IMAGE_FILE="$TEST_ROOT/rollback-image"
 
 (
 	cd "$TEST_ROOT/deploy"
@@ -94,6 +118,7 @@ compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
 
 rm -f "$TQB_BACKUP_DIR"/*.db
 : > "$TQB_DOCKER_TRACE"
+export TQB_DESIRED_IMAGE="sha256:newer"
 export TQB_DATABASE_STATE="absent"
 if (
 	cd "$TEST_ROOT/deploy"
@@ -111,7 +136,7 @@ fi
 unset TQB_DATABASE_STATE
 rm -f "$TQB_BACKUP_DIR"/*.db
 : > "$TQB_DOCKER_TRACE"
-export TQB_DESIRED_IMAGE="sha256:newer"
+export TQB_DESIRED_IMAGE="sha256:newest"
 export TQB_FAIL_UP_MARKER="$TEST_ROOT/fail-up-once"
 if (
 	cd "$TEST_ROOT/deploy"
@@ -125,7 +150,7 @@ if ! grep -q 'was rolled back' "$TEST_ROOT/rollback.log"; then
 	exit 1
 fi
 grep -q '^TUNNELQUESTBOT_IMAGE=tunnelquestbot:pre-update-rollback$' "$TEST_ROOT/deploy/.runtime.env"
-[[ "$(grep -c ' up -d ' "$TQB_DOCKER_TRACE")" -eq 2 ]]
+[[ "$(grep -c 'up -d --no-build --wait --wait-timeout 180 tunnelquestbot' "$TQB_DOCKER_TRACE")" -eq 2 ]]
 unset TQB_DESIRED_IMAGE TQB_FAIL_UP_MARKER
 
 rm "$TEST_ROOT/deploy/p99-logger/green.json"

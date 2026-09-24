@@ -141,12 +141,48 @@ build_retention() {
 	fi
 }
 
-start_stack() {
+start_dependencies() {
 	cleanup_disabled_collectors
 	build_retention || return 1
+	local dependencies=(redis p99-logger-init "${COLLECTORS[@]}")
+	if ((${#COLLECTORS[@]} > 0)); then
+		dependencies+=("p99-log-retention")
+	fi
+	note "Checking dependencies and collectors"
+	if ! "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
+		"${dependencies[@]}"; then
+		return 1
+	fi
+}
+
+wait_for_bot() {
+	local expected_image="${1:-}" deadline=$((SECONDS + 120))
+	while ((SECONDS < deadline)); do
+		local state image logs
+		state="$(docker inspect tunnelquestbot --format '{{.State.Status}}' 2>/dev/null || true)"
+		image="$(docker inspect tunnelquestbot --format '{{.Image}}' 2>/dev/null || true)"
+		logs="$(docker logs tunnelquestbot 2>&1 || true)"
+		if [[ "$state" == "running" ]] &&
+			[[ -z "$expected_image" || "$image" == "$expected_image" ]] &&
+			grep -q 'Starting log monitoring for server' <<<"$logs"; then
+			return 0
+		fi
+		sleep 2
+	done
+	docker logs --tail 100 tunnelquestbot >&2 || true
+	return 1
+}
+
+start_stack() {
+	local expected_image="${1:-}"
+	start_dependencies || return 1
 	note "Starting TunnelQuestBot"
 	if ! "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
-		"${START_SERVICES[@]}"; then
+		tunnelquestbot; then
+		return 1
+	fi
+	if ! wait_for_bot "$expected_image"; then
+		echo "TunnelQuestBot did not become ready within two minutes." >&2
 		return 1
 	fi
 	"${COMPOSE[@]}" ps
@@ -218,25 +254,6 @@ NODE
 	echo "Backup: $LAST_BACKUP"
 }
 
-restore_database() {
-	local backup="$1" directory filename
-	directory="$(cd "$(dirname "$backup")" && pwd)"
-	filename="$(basename "$backup")"
-	[[ -s "$backup" ]] || die "Rollback backup is missing: $backup"
-
-	note "Restoring the pre-update SQLite backup"
-	"${COMPOSE[@]}" stop tunnelquestbot >/dev/null 2>&1 || true
-	# Expanded inside the container, not by this host shell.
-	# shellcheck disable=SC2016
-	"${COMPOSE[@]}" run --rm --no-deps -T \
-		-v "$directory:/backup:ro" \
-		-e "BACKUP_FILE=$filename" \
-		--entrypoint sh tunnelquestbot -ec \
-		'rm -f /data/tunnelquestbot.db-wal /data/tunnelquestbot.db-shm
-		 cp "/backup/$BACKUP_FILE" /data/tunnelquestbot.db
-		 chmod 600 /data/tunnelquestbot.db'
-}
-
 update_stack() {
 	local before="" desired="" desired_ref=""
 	before="$(docker inspect tunnelquestbot --format '{{.Image}}' 2>/dev/null || true)"
@@ -266,18 +283,17 @@ update_stack() {
 	fi
 	write_runtime_image "$desired_ref"
 
-	if ! (set -e; start_stack); then
+	if ! (set -e; start_stack "$desired"); then
 		if [[ -z "$before" ]]; then
 			die "Initial startup failed. No previous deployment existed to restore."
 		fi
 
-		echo "Update failed; restoring the previous image and database." >&2
+		echo "Update failed; restoring the previous image." >&2
 		write_runtime_image "tunnelquestbot:pre-update-rollback"
-		restore_database "$LAST_BACKUP"
-		if ! (set -e; start_stack); then
-			die "Automatic rollback also failed. The verified backup is $LAST_BACKUP"
+		if ! (set -e; start_stack "$before"); then
+			die "Automatic image rollback also failed. The verified database backup is $LAST_BACKUP"
 		fi
-		die "Update failed and was rolled back. Production is running the previous image."
+		die "Update failed and the image was rolled back. The database was preserved; verified backup: $LAST_BACKUP"
 	fi
 
 	echo "Update complete."
