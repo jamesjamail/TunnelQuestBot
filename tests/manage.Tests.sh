@@ -26,6 +26,12 @@ printf '%s\n' "$*" >> "$TQB_DOCKER_TRACE"
 if [[ "$*" == "inspect tunnelquestbot --format {{.Image}}" ]]; then
 	echo "sha256:current"
 fi
+if [[ "$*" == "image inspect "* ]]; then
+	echo "${TQB_DESIRED_IMAGE:-sha256:current}"
+fi
+if [[ "$*" == *"--entrypoint sh tunnelquestbot -ec if [ -s /data/tunnelquestbot.db"* ]]; then
+	echo "${TQB_DATABASE_STATE:-present}"
+fi
 for argument in "$@"; do
 	case "$argument" in
 		BACKUP_NAME=*)
@@ -47,18 +53,43 @@ export TQB_BACKUP_DIR="$TEST_ROOT/backups"
 	./manage.sh start >/dev/null
 )
 
-start_command="$(grep 'compose --profile p99-loggers up -d' "$TQB_DOCKER_TRACE")"
+start_command="$(grep 'compose --project-name tunnelquestbot --profile p99-loggers up -d' "$TQB_DOCKER_TRACE")"
 [[ "$start_command" == *"p99-green-logger"* ]]
 [[ "$start_command" == *"p99-log-retention"* ]]
 [[ "$start_command" == *"tunnelquestbot"* ]]
 [[ "$start_command" != *"p99-blue-logger"* ]]
 
+: > "$TQB_DOCKER_TRACE"
 update_output="$(
 	cd "$TEST_ROOT/deploy"
 	./manage.sh update
 )"
 [[ "$update_output" == *"Already current"* ]]
+! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
+! compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
+
+: > "$TQB_DOCKER_TRACE"
+export TQB_DESIRED_IMAGE="sha256:new"
+(
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update >/dev/null
+)
+grep -q ' up -d ' "$TQB_DOCKER_TRACE"
 compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
+
+rm -f "$TQB_BACKUP_DIR"/*.db
+: > "$TQB_DOCKER_TRACE"
+export TQB_DATABASE_STATE="absent"
+if (
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update >"$TEST_ROOT/backup-error.log" 2>&1
+); then
+	echo "update unexpectedly continued without an established database" >&2
+	exit 1
+fi
+grep -q 'No SQLite database exists to back up' "$TEST_ROOT/backup-error.log"
+! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
+unset TQB_DATABASE_STATE TQB_DESIRED_IMAGE
 
 rm "$TEST_ROOT/deploy/p99-logger/green.json"
 if (

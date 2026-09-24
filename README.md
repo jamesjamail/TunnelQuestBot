@@ -65,11 +65,11 @@ git pull --ff-only origin run
 ./manage.sh update
 ```
 
-`update` pulls `prod/tunnelquestbot:latest`, validates the new image against the
-current `.env`, creates a verified SQLite backup when a database exists, and
-then reconciles the stack. If the promoted image is already running, Compose
-leaves the application container unchanged. Database migrations are idempotent
-and run in the image entrypoint.
+`update` pulls `prod/tunnelquestbot:latest` and validates it against the current
+`.env`. If that exact image is already running, it reports that production is
+current without backing up, rebuilding, or reconciling other services. When the
+image changed, it requires a verified SQLite backup before reconciling the stack.
+Database migrations are idempotent and run in the image entrypoint.
 
 The first update from the hand-built Linux deployment may recreate the bot once
 because its image reference changes from an immutable digest to `prod:latest`.

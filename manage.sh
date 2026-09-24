@@ -5,7 +5,7 @@ shopt -s extglob
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-COMPOSE=(docker compose --profile p99-loggers)
+COMPOSE=(docker compose --project-name tunnelquestbot --profile p99-loggers)
 BOT_IMAGE="ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest"
 BACKUP_DIR="${TQB_BACKUP_DIR:-$HOME/TunnelQuestBot-backups}"
 
@@ -125,9 +125,19 @@ start_stack() {
 }
 
 database_exists() {
-	"${COMPOSE[@]}" run --rm --no-deps -T \
-		--entrypoint sh tunnelquestbot -ec \
-		'test -s /data/tunnelquestbot.db' >/dev/null 2>&1
+	local result
+	if ! result="$(
+		"${COMPOSE[@]}" run --rm --no-deps -T \
+			--entrypoint sh tunnelquestbot -ec \
+			'if [ -s /data/tunnelquestbot.db ]; then echo present; else echo absent; fi'
+	)"; then
+		die "Could not inspect the SQLite database; update aborted before changing services."
+	fi
+	case "$result" in
+		*present*) return 0 ;;
+		*absent*) return 1 ;;
+		*) die "Unexpected database probe result; update aborted." ;;
+	esac
 }
 
 backup_database() {
@@ -178,21 +188,23 @@ NODE
 }
 
 update_stack() {
-	local before="" after=""
+	local before="" desired=""
 	before="$(docker inspect tunnelquestbot --format '{{.Image}}' 2>/dev/null || true)"
 
 	note "Pulling the newest promoted production image"
-	"${COMPOSE[@]}" pull redis p99-logger-init tunnelquestbot "${COLLECTORS[@]}"
+	"${COMPOSE[@]}" pull tunnelquestbot
+	desired="$(docker image inspect "$BOT_IMAGE" --format '{{.Id}}')"
 	app_doctor
-	backup_database false
-	start_stack
 
-	after="$(docker inspect tunnelquestbot --format '{{.Image}}')"
-	if [[ -n "$before" && "$before" == "$after" ]]; then
+	if [[ -n "$before" && "$before" == "$desired" ]]; then
 		echo "Already current; no application image change was needed."
-	else
-		echo "Update complete."
+		show_status
+		return
 	fi
+
+	backup_database "$([[ -n "$before" ]] && echo true || echo false)"
+	start_stack
+	echo "Update complete."
 }
 
 show_status() {
