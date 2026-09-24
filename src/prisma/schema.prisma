@@ -19,6 +19,8 @@ model User {
   watches               Watch[]
   blockedPlayersByWatch BlockedPlayerByWatch[]
   blockedPlayers        BlockedPlayer[]
+  blockedTraders        BlockedTrader[]
+  hiddenTraders         HiddenTrader[]
   linkedPlayers         PlayerLink[]
 }
 
@@ -44,14 +46,57 @@ model Watch {
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
   notes                 String?
-  // allow other discord users to contact regarding item
-  isPublicallyTradeable Boolean   @default(true)
+  // allow other discord users to contact regarding item; opt-in, off by
+  // default for new watches - opt in with marketplace:true. Watches that
+  // predate marketplace matching were pinned to false by the migration and
+  // stay out until opted in, same as any other watch
+  isPublicallyTradeable Boolean   @default(false)
 
-  user           User                   @relation(fields: [discordUserId], references: [discordUserId])
-  blockedWatches BlockedPlayerByWatch[]
+  user             User                   @relation(fields: [discordUserId], references: [discordUserId])
+  blockedWatches   BlockedPlayerByWatch[]
+  marketplaceAsWtb MarketplaceMatch[]     @relation("MarketplaceMatchWtbWatch")
+  marketplaceAsWts MarketplaceMatch[]     @relation("MarketplaceMatchWtsWatch")
 
   @@unique([discordUserId, itemName, server, watchType])
   @@index([active])
+}
+
+// A standing pairing between an opted-in WTB watch and an opted-in WTS watch
+// for the same item/server, once both sides exist and their prices don't
+// conflict. Recorded once and notified to both sides at most once each.
+model MarketplaceMatch {
+  id            Int       @id @default(autoincrement())
+  wtbWatchId    Int
+  wtsWatchId    Int
+  server        Server
+  itemName      String
+  createdAt     DateTime  @default(now())
+  wtbNotifiedAt DateTime?
+  wtsNotifiedAt DateTime?
+
+  wtbWatch Watch @relation("MarketplaceMatchWtbWatch", fields: [wtbWatchId], references: [id], onDelete: Cascade)
+  wtsWatch Watch @relation("MarketplaceMatchWtsWatch", fields: [wtsWatchId], references: [id], onDelete: Cascade)
+
+  @@unique([wtbWatchId, wtsWatchId])
+  @@index([itemName, server])
+}
+
+// A per-recipient/counterparty notification record, independent of any
+// MarketplaceMatch row and never touched by unwatch or deleteMarketplaceMatchesForWatchIds -
+// unlike the match ledger, which a counterparty can reset just by ending and
+// restoring their own watch. This is what throttles repeat notifications to
+// the same recipient about the same counterparty/item/side even after the
+// underlying match row is deleted and a new one takes its place.
+model MarketplaceNotificationHistory {
+  id                       Int      @id @default(autoincrement())
+  recipientDiscordUserId   String
+  counterpartDiscordUserId String
+  itemName                 String
+  server                   Server
+  side                     String
+  notifiedAt               DateTime @default(now())
+
+  @@unique([recipientDiscordUserId, counterpartDiscordUserId, itemName, server, side])
 }
 
 model BlockedPlayerByWatch {
@@ -76,6 +121,38 @@ model BlockedPlayer {
   user User @relation(fields: [discordUserId], references: [discordUserId])
 
   @@unique([discordUserId, server, player])
+}
+
+// Keyed on discord user, not in-game character: marketplace matching pairs
+// discord users, and most have no linked characters to bridge the two. The
+// blocked user needs no User row (they may never have made a watch), so
+// blockedDiscordUserId is a plain id rather than a relation. Matching treats
+// a block as mutual - see filterOutBlockedPairs.
+model BlockedTrader {
+  id                   Int      @id @default(autoincrement())
+  discordUserId        String
+  blockedDiscordUserId String
+  createdAt            DateTime @default(now())
+
+  user User @relation(fields: [discordUserId], references: [discordUserId])
+
+  @@unique([discordUserId, blockedDiscordUserId])
+  @@index([blockedDiscordUserId])
+}
+
+// A one-way dismissal, unlike BlockedTrader: the hidden trader stays matched
+// and can still see and contact the user. It only filters what the user is
+// shown and DMed, and is applied when matches are read, never when they are
+// recorded.
+model HiddenTrader {
+  id                  Int      @id @default(autoincrement())
+  discordUserId       String
+  hiddenDiscordUserId String
+  createdAt           DateTime @default(now())
+
+  user User @relation(fields: [discordUserId], references: [discordUserId])
+
+  @@unique([discordUserId, hiddenDiscordUserId])
 }
 
 model PlayerLink {

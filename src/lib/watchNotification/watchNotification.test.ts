@@ -6,7 +6,8 @@ vi.mock('../helpers/fetchHistoricalPricing', () => ({
 	fetchHistoricalPricingForItem: vi.fn(async () => null),
 	fetchHistoricalPricingForItems: vi.fn(async () => ({})),
 }));
-vi.mock('../helpers/errors', () => ({
+vi.mock('../helpers/errors', async (importOriginal) => ({
+	...(await importOriginal<typeof import('../helpers/errors')>()),
 	gracefullyHandleError: vi.fn(async () => undefined),
 }));
 vi.mock('../content/messages/messageBuilder', () => ({

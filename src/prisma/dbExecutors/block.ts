@@ -129,3 +129,92 @@ export async function removeWatchBlockByPlayerName(
 		},
 	});
 }
+
+// 	Keyed on discord user rather than character name - see BlockedTrader in
+// 	schema.prisma. The upsert swallows a repeat block instead of erroring.
+export async function addTraderBlock(
+	discordUserId: string,
+	blockedDiscordUserId: string,
+) {
+	return prisma.blockedTrader.upsert({
+		where: {
+			discordUserId_blockedDiscordUserId: {
+				discordUserId,
+				blockedDiscordUserId,
+			},
+		},
+		update: {},
+		create: { discordUserId, blockedDiscordUserId },
+	});
+}
+
+// 	Returns the number of blocks removed so the caller can tell "unblocked"
+// 	from "there was no block".
+export async function removeTraderBlock(
+	discordUserId: string,
+	blockedDiscordUserId: string,
+): Promise<number> {
+	const result = await prisma.blockedTrader.deleteMany({
+		where: { discordUserId, blockedDiscordUserId },
+	});
+	return result.count;
+}
+
+export async function getTraderBlocks(discordUserId: string) {
+	return prisma.blockedTrader.findMany({
+		where: { discordUserId },
+		orderBy: { createdAt: 'asc' },
+	});
+}
+
+// 	A hide is one-way and only filters what the user is shown - see
+// 	HiddenTrader in schema.prisma.
+export async function hideTrader(
+	discordUserId: string,
+	hiddenDiscordUserId: string,
+) {
+	return prisma.hiddenTrader.upsert({
+		where: {
+			discordUserId_hiddenDiscordUserId: {
+				discordUserId,
+				hiddenDiscordUserId,
+			},
+		},
+		update: {},
+		create: { discordUserId, hiddenDiscordUserId },
+	});
+}
+
+// 	Returns the number of hides removed so the caller can tell "unhidden"
+// 	from "was not hidden".
+export async function unhideTrader(
+	discordUserId: string,
+	hiddenDiscordUserId: string,
+): Promise<number> {
+	const result = await prisma.hiddenTrader.deleteMany({
+		where: { discordUserId, hiddenDiscordUserId },
+	});
+	return result.count;
+}
+
+// 	The username is only known when the hidden trader has a User row of their
+// 	own (they have made a watch); autocomplete falls back to the id otherwise.
+export async function getHiddenTraders(discordUserId: string) {
+	const hidden = await prisma.hiddenTrader.findMany({
+		where: { discordUserId },
+		orderBy: { createdAt: 'asc' },
+	});
+	const users = await prisma.user.findMany({
+		where: {
+			discordUserId: { in: hidden.map((h) => h.hiddenDiscordUserId) },
+		},
+		select: { discordUserId: true, discordUsername: true },
+	});
+	const usernames = new Map(
+		users.map((u) => [u.discordUserId, u.discordUsername]),
+	);
+	return hidden.map((h) => ({
+		hiddenDiscordUserId: h.hiddenDiscordUserId,
+		discordUsername: usernames.get(h.hiddenDiscordUserId),
+	}));
+}

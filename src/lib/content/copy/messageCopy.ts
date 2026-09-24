@@ -15,6 +15,8 @@ const commandChannel = () => config().COMMAND_CHANNEL;
 const feedbackAndIdeasChannel = () => config().FEEDBACK_AND_IDEAS_CHANNEL;
 const watchDuration = () => config().WATCH_DURATION_IN_DAYS;
 
+const MAX_BLOCKED_TRADERS_SHOWN = 50;
+
 export const messageCopy = {
 	get helpMsg() {
 		return (
@@ -27,22 +29,28 @@ export const messageCopy = {
 			'__***COMMANDS***__\n' +
 			'**/help**\n' +
 			'> Displays available commands.\n\n' +
-			'**/watch `type` `item` `server` `price criteria` `notes`**\n' +
-			'> Receive a notification when an in-game item is auctioned meeting your criteria\n\n' +
+			'**/watch `type` `item` `server` `price criteria` `notes` `marketplace`**\n' +
+			'> Receive a notification when an in-game item is auctioned meeting your criteria.  New watches are also listed in the marketplace, so matching traders can contact you; set `marketplace` to false to opt out.\n\n' +
 			'**/get watch `watch`**\n' +
 			'> Get information about an existing watch\n\n' +
 			'**/unwatch `watch` **\n' +
 			'> Ends a currently running watch.\n\n' +
 			'**/watches `search filter`**\n' +
 			'> Returns watches as an individual messages. An optional search filter can be specified.  For example: `/watches belt of` returns all watches containing "belt of".\n\n' +
-			'**/list**\n' +
-			'> Lists details for all watches in a concise message.\n\n' +
+			'**/list `what`**\n' +
+			'> Lists details for all watches in a concise message. Choose `blocked traders` to list the discord users you have blocked from marketplace matching.\n\n' +
 			'**/block `seller` `server`**\n' +
 			'>  Blocks a seller from triggering any watch notifications.\n\n' +
 			'**/blocks `search filter`**\n' +
 			'> Returns every block as an individual message. An optional search filter can be specified for the player name.\n\n' +
 			'**/unblock `blocked player`**\n' +
 			'> Unblocks a player for all watch notifications.\n\n' +
+			'**/blocktrader `user`**\n' +
+			'> Blocks a discord user from marketplace matching, in both directions. You will not be matched with them and they will not be matched with you. Character blocks from `/block` do not apply to marketplace matches.\n\n' +
+			'**/unblocktrader `user`**\n' +
+			'> Lets a discord user be matched with you in the marketplace again.\n\n' +
+			'**/marketplace `hide` `unhide`**\n' +
+			'> Shows the traders matching your watches, and which watches are listed. `hide` a trader to stop seeing them (`unhide` undoes it); they can still contact you unless you `/blocktrader` them.\n\n' +
 			'**/snooze `watch` `hours`**\n' +
 			'> Pauses notifications on a specific watch.  `hours` is optional; if omitted, watch is snoozed for 6 hours.  Use `All Watches` option to Snooze all watches.\n\n' +
 			'**/unsnooze `watch`**\n' +
@@ -86,6 +94,15 @@ export const messageCopy = {
 		`Your watch has been snoozed for ${hours} hours.`,
 
 	yourWatchHasBeenUnsnoozed: 'Your watch has been unsnoozed.',
+
+	yourWatchIsNowListed:
+		'Your watch is now listed: traders with a matching watch can see and contact you.',
+
+	yourWatchIsNoLongerListed:
+		'Your watch is no longer listed: other traders cannot see it or contact you about it.',
+
+	thisItemNoLongerExists:
+		'This item no longer exists. It may have been deleted or expired.',
 
 	yourWatchHasBeenUnwatched: (name: string, server: Server) => {
 		return `Your watch for \`${name}\` on \`${server}\` has been removed.`;
@@ -166,6 +183,52 @@ export const messageCopy = {
 
 	soAndSoHasBeenBlockedForThisWatch: (block: BlockedPlayerByWatch) => {
 		return `You will no longer receive Watch Notifications for auctions from \`${block.player}\` for this watch.`;
+	},
+
+	traderHasBeenBlocked: (discordUserId: string) => {
+		return `<@${discordUserId}> has been blocked from marketplace matching. You will no longer be matched with each other, and neither of you will be sent the other's handle.`;
+	},
+
+	traderHasBeenUnblocked: (discordUserId: string) => {
+		return `<@${discordUserId}> has been unblocked from marketplace matching.`;
+	},
+
+	youDontHaveAnyBlockedTraders:
+		"You haven't blocked any traders.  Add some with ``/blocktrader``",
+
+	// 	one mention per line keeps the reply well under Discord's 2000
+	// 	character limit up to the cap; the remainder is summarised
+	heresYourBlockedTraders: (discordUserIds: string[]) => {
+		const shown = discordUserIds.slice(0, MAX_BLOCKED_TRADERS_SHOWN);
+		const lines = shown.map((id) => `• <@${id}>`);
+		const omitted = discordUserIds.length - shown.length;
+		if (omitted > 0) lines.push(`…and ${omitted} more`);
+		return `Traders you've blocked from marketplace matching:\n${lines.join('\n')}`;
+	},
+
+	youCantBlockYourself: "You can't block yourself.",
+
+	traderHasBeenHidden: (discordUserId: string) => {
+		return `<@${discordUserId}> is now hidden from your marketplace. You will not be shown or messaged about them. They can still see and contact you - use \`/blocktrader\` to prevent that.`;
+	},
+
+	traderHasBeenUnhidden: (discordUserId: string) => {
+		return `<@${discordUserId}> is no longer hidden from your marketplace.`;
+	},
+
+	traderWasNotHidden: (discordUserId: string) => {
+		return `You haven't hidden <@${discordUserId}> from your marketplace.`;
+	},
+
+	youCantHideYourself: "You can't hide yourself.",
+
+	pickATraderFromTheSuggestions:
+		'Pick a trader from the suggestions, rather than typing a name.',
+
+	hideOrUnhideNotBoth: 'Use `hide` or `unhide`, not both at once.',
+
+	traderWasNotBlocked: (discordUserId: string) => {
+		return `You haven't blocked <@${discordUserId}> from marketplace matching.`;
 	},
 
 	soAndSoHasBeenUnblockedForThisWatch: (block: BlockedPlayerByWatch) => {

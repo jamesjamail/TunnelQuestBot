@@ -47,6 +47,46 @@ describe('watch dbExecutor (integration)', () => {
 			expect(row?.active).toBe(true);
 		});
 
+		it('defaults isPublicallyTradeable to false, and lets it be opted in to on create', async () => {
+			const { upsertWatch } = await import('./watch');
+			const prisma = await getPrisma();
+			await seedUser();
+
+			await upsertWatch('100', defaultWatchData);
+			expect(
+				(await prisma.watch.findFirst())?.isPublicallyTradeable,
+			).toBe(false);
+
+			await upsertWatch('100', {
+				...defaultWatchData,
+				itemName: 'SHIELD',
+				isPublicallyTradeable: true,
+			});
+			const optedIn = await prisma.watch.findFirst({
+				where: { itemName: 'SHIELD' },
+			});
+			expect(optedIn?.isPublicallyTradeable).toBe(true);
+		});
+
+		it('omitting isPublicallyTradeable on an update preserves the existing setting', async () => {
+			const { upsertWatch } = await import('./watch');
+			const prisma = await getPrisma();
+			await seedUser();
+
+			await upsertWatch('100', {
+				...defaultWatchData,
+				isPublicallyTradeable: true,
+			});
+			await upsertWatch('100', {
+				...defaultWatchData,
+				priceRequirement: 500,
+			});
+
+			expect(
+				(await prisma.watch.findFirst())?.isPublicallyTradeable,
+			).toBe(true);
+		});
+
 		it('changing discordUserId yields a second row', async () => {
 			const { upsertWatch } = await import('./watch');
 			const prisma = await getPrisma();

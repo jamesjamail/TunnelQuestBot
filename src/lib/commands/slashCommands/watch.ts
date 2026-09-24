@@ -7,6 +7,7 @@ import {
 	priceCriteriaOptions,
 	autoCompleteItemNameOptions,
 	watchNotesOptions,
+	marketplaceOptions,
 } from '../commandOptions';
 import { watchCommandResponseBuilder } from '../../content/messages/messageBuilder';
 import {
@@ -15,8 +16,14 @@ import {
 } from '../../content/buttons/buttonRowBuilder';
 import { autocompleteItems } from '../autocomplete/autocompleteItems';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
+import {
+	buildMarketplacePreview,
+	commitMarketplacePreview,
+	type MarketplacePreview,
+} from '../../marketplace/marketplaceMatching';
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
+import { isSnoozed } from '../../helpers/watches';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -26,7 +33,8 @@ const command: SlashCommand = {
 		.addStringOption(autoCompleteItemNameOptions)
 		.addStringOption(requiredsServerOptions)
 		.addNumberOption(priceCriteriaOptions)
-		.addStringOption(watchNotesOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
+		.addStringOption(watchNotesOptions)
+		.addBooleanOption(marketplaceOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	async autocomplete(interaction) {
 		await autocompleteItems(interaction);
 	},
@@ -35,7 +43,7 @@ const command: SlashCommand = {
 			const args = getInteractionArgs(
 				interaction,
 				['server', 'item', 'type'],
-				['price', 'notes'],
+				['price', 'notes', 'marketplace'],
 			);
 
 			if (!args.item.value) {
@@ -44,26 +52,69 @@ const command: SlashCommand = {
 				);
 			}
 
+			// 	matching does a DB write per new pair, which can outlast Discord's
+			// 	3s ack window on a popular item
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
 			const data = await upsertWatchSafely(interaction, {
 				server: args.server.value as Server,
 				itemName: args.item.value as string,
 				watchType: args.type.value as WatchType,
 				priceRequirement: args?.price?.value as number,
 				notes: args?.notes?.value as string,
+				isPublicallyTradeable: args?.marketplace?.value as boolean,
 			});
+
+			// 	a failure here must not lose the confirmation for a watch that saved
+			let preview: MarketplacePreview | undefined;
+			try {
+				preview = await buildMarketplacePreview(data);
+			} catch (error) {
+				await gracefullyHandleError(error, interaction, command, {
+					watchId: data.id,
+					phase: 'marketplaceMatching',
+				});
+			}
 
 			const embeds = [watchCommandResponseBuilder(data)];
-			const components = buttonRowBuilder(
-				MessageTypes.watch,
-				[false, false, false],
-				String(data.id),
-			);
+			// 	the marketplace embed's own footer is what states the watch's
+			// 	listing status, so it is shown even with no matches yet - and its
+			// 	button row is what carries the advertised 🤝 listing toggle
+			let components: ReturnType<typeof buttonRowBuilder>;
+			if (preview) {
+				embeds.push(preview.embed);
+				components = buttonRowBuilder(
+					MessageTypes.marketplace,
+					[
+						isSnoozed(data.snoozedUntil),
+						!data.active,
+						false,
+						data.isPublicallyTradeable,
+					],
+					String(data.id),
+				);
+			} else {
+				components = buttonRowBuilder(
+					MessageTypes.watch,
+					[false, false, false],
+					String(data.id),
+				);
+			}
 
-			return await interaction.reply({
-				embeds,
-				components,
-				flags: MessageFlags.Ephemeral,
-			});
+			const reply = await interaction.editReply({ embeds, components });
+
+			// 	only commit the claim once Discord confirms the preview was
+			// 	actually delivered - see commitMarketplacePreview
+			if (preview) {
+				await commitMarketplacePreview(preview).catch((error) =>
+					gracefullyHandleError(error, interaction, command, {
+						watchId: data.id,
+						phase: 'marketplaceClaimCommit',
+					}),
+				);
+			}
+
+			return reply;
 		} catch (error) {
 			await gracefullyHandleError(error, interaction, command);
 		}

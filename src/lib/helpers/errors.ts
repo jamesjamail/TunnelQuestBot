@@ -82,6 +82,19 @@ function beginDiscordReport(error: Error, now: number): string | undefined {
 	return key;
 }
 
+// 	Discord's "Cannot send messages to this user" error - the recipient has
+// 	DMs closed or has blocked the bot. Shared by any code that DMs users
+// 	(watch notifications, marketplace matches) to decide whether a failed
+// 	send is worth retrying.
+export function isClosedDmError(error: unknown): boolean {
+	return (
+		typeof error === 'object' &&
+		error !== null &&
+		'code' in error &&
+		(error as { code?: number }).code === 50007
+	);
+}
+
 // 	catch blocks and rejected promises can carry anything, not just Errors
 export function normalizeError(error: unknown): Error {
 	if (error instanceof Error) {

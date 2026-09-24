@@ -31,6 +31,11 @@ import {
 } from '../../helpers/fetchHistoricalPricing';
 import { toTitleCase } from '../../helpers/titleCase';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
+import type {
+	MarketplaceCounterpart,
+	MarketplaceWatchView,
+	WatchWithUser,
+} from '../../../prisma/dbExecutors/marketplace';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { getCachedPlayerDiscordName } from '../../helpers/redis';
 
@@ -45,6 +50,8 @@ function truncateForDescription(text: string, reservedChars = 0): string {
 	const max = MAX_DESCRIPTION - reservedChars;
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
+
+const MAX_TITLE = 256;
 
 const MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000;
 const MAX_EMBEDS_PER_MESSAGE = 10;
@@ -302,6 +309,113 @@ export async function watchNotificationBuilder(
 		});
 }
 
+// 	A WTB watch's price is a minimum offer (its owner is the seller); a WTS
+// 	watch's price is a budget cap (its owner is the buyer) - the same convention
+// 	watchNotification uses. The raw watch type is never shown, because read
+// 	literally it names the opposite of what the person is doing.
+function tradeRoleOf(watch: Watch) {
+	return watch.watchType === WatchType.WTB
+		? { role: 'selling', pricePhrase: 'asking' }
+		: { role: 'buying', pricePhrase: 'offering up to' };
+}
+
+// 	The item is already the title of whatever this row sits in, so a row is
+// 	just who they are and what they want.
+function formatCounterpartRow(counterpart: MarketplaceCounterpart): string {
+	const { watch } = counterpart;
+	const { role, pricePhrase } = tradeRoleOf(watch);
+	const price = watch.priceRequirement
+		? `${pricePhrase} ${formatPriceNumberToReadableString(watch.priceRequirement)}`
+		: 'no price set';
+	return `• <@${watch.discordUserId}> (${watch.user.discordUsername}) — ${role}, ${price}`;
+}
+
+export const MARKETPLACE_DIGEST_ROW_LIMIT = 15;
+
+// 	Listing is what stands between a user and DMs from strangers, so every
+// 	message spells out its current state rather than leaving it to a button icon.
+function marketplaceDigestFooter(watch: Watch): string {
+	if (!watch.active) {
+		return 'This watch has ended. To restore it, click ❌';
+	}
+
+	const lines = [
+		watch.isPublicallyTradeable
+			? '🤝 Listed: traders with a matching watch can see and contact you. Click 🤝 to unlist this watch.'
+			: '🤝 Not listed: other traders cannot see this watch. Click 🤝 to list it.',
+		isSnoozed(watch.snoozedUntil)
+			? '💤 Snoozed: you stay listed, but will not be messaged about matches. Click 💤 to unsnooze.'
+			: '💤 To snooze this watch for 6 hours, click 💤 (you stay listed, but will not be messaged).',
+		'❌ To end this watch, click ❌',
+		'♻️ To extend this watch, click ♻️',
+		'To stop seeing a trader, use /marketplace hide',
+	];
+	return lines.join('\n');
+}
+
+// 	The counterparts passed in are already filtered for what `watch`'s owner may
+// 	see; this only decides how many fit and how the watch's own state reads.
+export function marketplaceDigestBuilder(
+	watch: WatchWithUser,
+	counterparts: MarketplaceCounterpart[],
+	heading: string,
+) {
+	const imgUrl = getImageUrlForItem(watch.itemName);
+	const wikiUrl = getWikiUrlFromItem(watch.itemName);
+	const item = toTitleCase(watch.itemName);
+
+	let description: string;
+	if (!watch.active) {
+		description =
+			'This watch has ended, so it is no longer in the marketplace.';
+	} else if (!watch.isPublicallyTradeable) {
+		description =
+			'This watch is not listed: other traders cannot see it, and you will not be matched with anyone for it.';
+	} else if (counterparts.length === 0) {
+		description = 'No traders match this watch right now.';
+	} else {
+		const shown = counterparts.slice(0, MARKETPLACE_DIGEST_ROW_LIMIT);
+		const omitted = counterparts.length - shown.length;
+		const lines = [
+			`${heading} (you're ${tradeRoleOf(watch).role}):`,
+			...shown.map(formatCounterpartRow),
+		];
+		if (omitted > 0) {
+			lines.push(
+				`…and ${omitted} more. Use /marketplace to see them all.`,
+			);
+		}
+		description = lines.join('\n');
+	}
+
+	const authorProperties: EmbedAuthorOptions = {
+		name: watch.itemName, //	itemName is intentionally left uppercase as a heading
+	};
+
+	if (imgUrl) {
+		authorProperties.iconURL = imgUrl;
+	}
+
+	if (wikiUrl) {
+		authorProperties.url = wikiUrl;
+	}
+
+	const prefix = 'Marketplace: ';
+	const suffix = ` (${formatserverEnumToReadableString(watch.server)})`;
+	const maxItemLength = MAX_TITLE - prefix.length - suffix.length;
+	const truncatedItem =
+		item.length > maxItemLength
+			? `${item.slice(0, maxItemLength - 1)}…`
+			: item;
+
+	return new EmbedBuilder()
+		.setColor(getServerColorFromString(watch.server))
+		.setAuthor(authorProperties)
+		.setTitle(`${prefix}${truncatedItem}${suffix}`)
+		.setDescription(truncateForDescription(description))
+		.setFooter({ text: marketplaceDigestFooter(watch) });
+}
+
 export function playerlinkCommandResponseBuilder(linkData: PlayerLink) {
 	if (linkData.server != null) {
 		return new EmbedBuilder()
@@ -396,6 +510,143 @@ export function listCommandResponseBuilder(
 	}
 
 	return [...fittedEmbeds, omissionNotice];
+}
+
+const MARKETPLACE_FIELD_ROW_LIMIT = 8;
+const MAX_FIELDS_PER_EMBED = 25;
+// 	leaves headroom under Discord's 6000 per message for the author line and a
+// 	field of the maximum size, so packEmbedsForDiscord can always place an embed
+const MAX_MARKETPLACE_EMBED_CHARACTERS = 5000;
+const MAX_HIDDEN_TRADERS_SHOWN = 20;
+
+// 	One or more fields for one watch: every visible counterpart must be
+// 	reachable here, since this is what the digest points to when it truncates
+// 	its own list - a chunk beyond the first becomes a continuation field
+// 	rather than an "…and N more" that has nowhere further to send the reader.
+function marketplaceFieldsFor(view: MarketplaceWatchView): EmbedField[] {
+	const { watch, counterparts } = view;
+	const marker = !watch.isPublicallyTradeable
+		? '🚫'
+		: isSnoozed(watch.snoozedUntil) || isSnoozed(watch.user.snoozedUntil)
+			? '💤🤝'
+			: '🤝';
+	const item = toTitleCase(watch.itemName);
+	const name = `\`${marker} ${item}\` | \`${tradeRoleOf(watch).role}\``;
+	const truncatedName = name.length > 256 ? name.slice(0, 256) : name;
+
+	if (!watch.isPublicallyTradeable) {
+		return [
+			{
+				name: truncatedName,
+				value: 'Not listed: other traders cannot see this watch. Run /watch for this item again with marketplace set to true to list it.',
+				inline: false,
+			},
+		];
+	}
+	if (counterparts.length === 0) {
+		return [
+			{
+				name: truncatedName,
+				value: 'No matching traders yet.',
+				inline: false,
+			},
+		];
+	}
+
+	const chunks: MarketplaceCounterpart[][] = [];
+	for (let i = 0; i < counterparts.length; i += MARKETPLACE_FIELD_ROW_LIMIT) {
+		chunks.push(counterparts.slice(i, i + MARKETPLACE_FIELD_ROW_LIMIT));
+	}
+
+	return chunks.map((chunk, index) => ({
+		name: index === 0 ? truncatedName : `↳ ${item} (cont.)`.slice(0, 256),
+		value: truncateForField(chunk.map(formatCounterpartRow).join('\n')),
+		inline: false,
+	}));
+}
+
+// 	One or more fields per watch, grouped by server like /list. Chunked by
+// 	size as well as by field count, since a field here can be far larger than
+// 	one in /list, and one watch's counterparts can spill across several fields.
+export function marketplaceCommandResponseBuilder(
+	views: MarketplaceWatchView[],
+	user: User,
+	hiddenTraderIds: string[],
+): EmbedBuilder[] {
+	const embeds: EmbedBuilder[] = [];
+
+	if (isSnoozed(user.snoozedUntil)) {
+		embeds.push(
+			createSnoozeEmbed(
+				'Global snooze is active. You will not be messaged about marketplace matches, but you stay listed and traders can still contact you.',
+			),
+		);
+	}
+
+	const viewsByServer = new Map<Server, MarketplaceWatchView[]>();
+	for (const view of views) {
+		const bucket = viewsByServer.get(view.watch.server);
+		if (bucket) {
+			bucket.push(view);
+		} else {
+			viewsByServer.set(view.watch.server, [view]);
+		}
+	}
+
+	for (const [server, serverViews] of viewsByServer) {
+		let chunk: EmbedField[] = [];
+		let chunkCharacters = 0;
+		const flush = () => {
+			if (chunk.length === 0) return;
+			embeds.push(
+				new EmbedBuilder()
+					.setAuthor({
+						name: `Project 1999 ${formatCapitalCase(server)} Server`,
+					})
+					.setColor(getServerColorFromString(server))
+					.addFields(chunk),
+			);
+			chunk = [];
+			chunkCharacters = 0;
+		};
+
+		for (const view of serverViews) {
+			for (const field of marketplaceFieldsFor(view)) {
+				const fieldCharacters = field.name.length + field.value.length;
+				if (
+					chunk.length === MAX_FIELDS_PER_EMBED ||
+					chunkCharacters + fieldCharacters >
+						MAX_MARKETPLACE_EMBED_CHARACTERS
+				) {
+					flush();
+				}
+				chunk.push(field);
+				chunkCharacters += fieldCharacters;
+			}
+		}
+		flush();
+	}
+
+	if (hiddenTraderIds.length > 0) {
+		const shown = hiddenTraderIds.slice(0, MAX_HIDDEN_TRADERS_SHOWN);
+		const lines = shown.map((id) => `• <@${id}>`);
+		const omitted = hiddenTraderIds.length - shown.length;
+		if (omitted > 0) lines.push(`…and ${omitted} more`);
+		lines.push('Use /marketplace unhide to show a trader again.');
+		embeds.push(
+			new EmbedBuilder().setColor('#808080').addFields({
+				name: 'Hidden traders',
+				value: truncateForField(lines.join('\n')),
+				inline: false,
+			}),
+		);
+	}
+
+	embeds[embeds.length - 1]?.setFooter({
+		text: 'To stop seeing a trader, use /marketplace hide',
+	});
+
+	return embeds;
 }
 
 function createInfoEmbed(content: string): EmbedBuilder {
