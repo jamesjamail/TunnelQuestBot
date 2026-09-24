@@ -81,6 +81,11 @@ Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
 `LOG_SOURCE_PATH` defaults to `./logs`; point it at your EverQuest log directory
 when reading client logs.
 
+Servers are independent. Configure both stream channel IDs and a log path for
+each server the bot should monitor, and leave every setting for an unused server
+blank. A partially configured server is rejected at startup with the missing
+keys listed.
+
 ## Headless P99 log collectors
 
 The optional `p99-loggers` Compose profile runs one
@@ -104,11 +109,11 @@ The credential files are ignored by Git and excluded from Docker build
 contexts. Both accounts and characters must already exist. The pinned logger
 image includes the current P99 asset checksum inventory, so users do not need
 an EverQuest installation or separate asset configuration. In `.env`, set
-`FAKE_LOGS=false` and uncomment the three `SERVERS_*_LOG_FILE_PATH` values under
-the headless collector section. Set `P99_UID` and `P99_GID` to the owner of the
-two private configuration files; on Linux these are normally the output of
-`id -u` and `id -g`. The Red path points to an empty initialized log because
-there is no Red collector.
+`FAKE_LOGS=false` and uncomment the `SERVERS_*_LOG_FILE_PATH` values only for
+the collectors in use. Set `P99_UID` and `P99_GID` to the owner of the private
+configuration files; on Linux these are normally the output of
+`id -u` and `id -g`. There is no headless Red collector; leave Red disabled
+unless supplying a separate text log.
 
 Leave `LOG_SOURCE_PATH=./logs` for headless collection; Compose creates this
 unused directory automatically. Log-file initialization runs before the bot in

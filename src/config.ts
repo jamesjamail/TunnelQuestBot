@@ -12,9 +12,9 @@ import { resolveSqliteUrl } from './prisma/sqlite-url';
 //	every variable that is missing or malformed rather than only the first.
 
 //	`SERVERS_<NAME>_...` variables are keyed off the Prisma Server enum, so
-//	adding a server to the schema adds its required variables automatically
-//	rather than failing at runtime the first time that server sees an auction.
-const SERVER_NAMES = Object.keys(Server) as (keyof typeof Server)[];
+//	adding a server to the schema adds its optional configuration group
+//	automatically. A complete group enables that server.
+export const SERVER_NAMES = Object.keys(Server) as (keyof typeof Server)[];
 
 //	Generic and `as const` so the results are literal key types rather than
 //	`string`. That is what lets callers index Config without an index signature,
@@ -32,6 +32,10 @@ export const serverEnvKeys = <S extends keyof typeof Server>(server: S) =>
 //	the setup mistake (pasting a channel *name*) without coupling the schema to
 //	fixture shapes.
 const channelId = z.string().min(1);
+const optionalNonemptyString = z.preprocess(
+	(value) => (value === '' ? undefined : value),
+	z.string().min(1).optional(),
+);
 
 export const SNOWFLAKE_PATTERN = /^\d{17,20}$/;
 
@@ -104,9 +108,9 @@ function buildSchema() {
 
 	for (const server of SERVER_NAMES) {
 		const keys = serverEnvKeys(server);
-		shape[keys.logFile] = z.string().optional();
-		shape[keys.classicChannel] = channelId;
-		shape[keys.embeddedChannel] = channelId;
+		shape[keys.logFile] = optionalNonemptyString;
+		shape[keys.classicChannel] = optionalNonemptyString;
+		shape[keys.embeddedChannel] = optionalNonemptyString;
 	}
 
 	return z.object(shape);
@@ -126,7 +130,7 @@ type ServerConfig = {
 } & {
 	[K in
 		| `SERVERS_${ServerName}_STREAM_CHANNEL_CLASSIC_ID`
-		| `SERVERS_${ServerName}_STREAM_CHANNEL_EMBEDDED_ID`]: string;
+		| `SERVERS_${ServerName}_STREAM_CHANNEL_EMBEDDED_ID`]?: string;
 };
 
 export type Config = z.infer<z.ZodObject<typeof baseSchema>> & ServerConfig;
@@ -160,6 +164,17 @@ export class ConfigError extends Error {
 	}
 }
 
+export function enabledServers(parsed: Config = config()): Server[] {
+	return SERVER_NAMES.filter((server) => {
+		const keys = serverEnvKeys(server);
+		return Boolean(
+			parsed[keys.classicChannel] &&
+				parsed[keys.embeddedChannel] &&
+				(parsed.FAKE_LOGS || parsed[keys.logFile]),
+		);
+	}) as Server[];
+}
+
 export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
 	const result = buildSchema().safeParse(env);
 
@@ -179,27 +194,41 @@ export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
 	const parsed = result.data as Config;
 
-	//	Checked after parsing rather than as a schema refinement so the message
-	//	can name the specific servers, and so it does not fire while FAKE_LOGS
-	//	is on.
-	if (!parsed.FAKE_LOGS) {
-		const missing = SERVER_NAMES.filter(
-			(server) => !parsed[serverEnvKeys(server).logFile],
+	//	A server is disabled when both of its Discord channel ids are absent.
+	//	Compose may still derive a legacy log path for every enum value, so a path
+	//	alone is not evidence that the operator intended to enable that server.
+	//	Once either channel is present, require the complete section so a typo
+	//	does not silently disable an intended server. Fake logs supply paths.
+	const serverProblems: string[] = [];
+	for (const server of SERVER_NAMES) {
+		const keys = serverEnvKeys(server);
+		const provided = Boolean(
+			parsed[keys.classicChannel] || parsed[keys.embeddedChannel],
 		);
+		if (!provided) continue;
 
-		if (missing.length > 0) {
-			throw new ConfigError(
-				missing.map(
-					(server) =>
-						`${serverEnvKeys(server).logFile} is not set (required unless FAKE_LOGS=true)`,
-				),
-				//	These are normally absent from .env on purpose: compose derives
-				//	them from LOG_SOURCE_PATH and injects them into the container.
-				//	Seeing them on the host usually means doctor was run against a
-				//	container-shaped .env, not that anything is broken.
-				'docker-compose sets these from LOG_SOURCE_PATH, so they are absent\nfrom .env by design. For development on your host use FAKE_LOGS=true,\nwhich `npm run dev` does for you.',
-			);
+		const required = [
+			...(parsed.FAKE_LOGS ? [] : [keys.logFile]),
+			keys.classicChannel,
+			keys.embeddedChannel,
+		];
+		for (const key of required) {
+			if (!parsed[key]) {
+				serverProblems.push(
+					`${key} is not set (${server} is partially configured)`,
+				);
+			}
 		}
+	}
+
+	if (serverProblems.length > 0) {
+		throw new ConfigError(serverProblems.sort());
+	}
+
+	if (enabledServers(parsed).length === 0) {
+		throw new ConfigError([
+			'No auction servers are configured; configure at least one complete SERVERS_<NAME> section',
+		]);
 	}
 
 	return parsed;

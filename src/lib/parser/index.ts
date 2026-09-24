@@ -6,8 +6,8 @@ import {
 import { removeNoncommandMessagesFromPublicCommandSpace } from '../helpers/removeMessagesFromCommandSpace';
 import { monitorLogFile } from './monitorLogs';
 import { state } from './state';
-import { Server } from '../../prisma/client';
 import { gracefullyHandleError } from '../helpers/errors';
+import { enabledServers } from '../../config';
 
 // 	setInterval ignores the promise an async callback returns, so a rejected
 // 	housekeeping run would surface as an unhandled rejection and end the process
@@ -23,8 +23,8 @@ export async function startLoggingAllServers() {
 	state.watchedItems = allWatchedItems;
 
 	// Initialize log parsing for each server
-	for (const server of Object.keys(Server)) {
-		monitorLogFile(server as Server);
+	for (const server of enabledServers()) {
+		monitorLogFile(server);
 	}
 
 	// Update watchedItems every 60 seconds

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { ConfigError, parseConfig, serverEnvKeys } from './config';
+import {
+	ConfigError,
+	enabledServers,
+	parseConfig,
+	serverEnvKeys,
+} from './config';
 
 //	A complete, valid environment. Individual cases start from this and remove or
 //	corrupt one thing, so a failure names exactly what was changed.
@@ -170,7 +175,7 @@ describe('parseConfig', () => {
 
 	describe('per-server keys', () => {
 		it('are derived from the Prisma Server enum', () => {
-			//	adding a server to schema.prisma should add its required variables
+			//	adding a server to schema.prisma should add its configuration keys
 			//	automatically, rather than failing the first time that server sees
 			//	an auction
 			expect(serverEnvKeys('BLUE')).toEqual({
@@ -180,14 +185,70 @@ describe('parseConfig', () => {
 			});
 		});
 
-		it('are all required', () => {
+		it('disables a server when its whole section is absent', () => {
+			const parsed = parseConfig(
+				validEnv({
+					// Compose may still derive this legacy path; channel ids are
+					// the signal that the server is intentionally enabled.
+					SERVERS_RED_LOG_FILE_PATH: '/logs/unused-red.log',
+					SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID: undefined,
+					SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID: undefined,
+				}),
+			);
+
+			expect(enabledServers(parsed)).toEqual(['BLUE', 'GREEN']);
+		});
+
+		it('treats blank values as absent when disabling a server', () => {
+			const parsed = parseConfig(
+				validEnv({
+					SERVERS_RED_LOG_FILE_PATH: '',
+					SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID: '',
+					SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID: '',
+				}),
+			);
+
+			expect(enabledServers(parsed)).toEqual(['BLUE', 'GREEN']);
+		});
+
+		it('rejects a partially configured server', () => {
 			expect(() =>
 				parseConfig(
 					validEnv({
 						SERVERS_GREEN_STREAM_CHANNEL_EMBEDDED_ID: undefined,
 					}),
 				),
-			).toThrow(/SERVERS_GREEN_STREAM_CHANNEL_EMBEDDED_ID is not set/);
+			).toThrow(
+				/SERVERS_GREEN_STREAM_CHANNEL_EMBEDDED_ID is not set \(GREEN is partially configured\)/,
+			);
+		});
+
+		it('allows a disabled server while tailing real logs', () => {
+			expect(() =>
+				parseConfig(
+					validEnv({
+						FAKE_LOGS: 'false',
+						SERVERS_BLUE_LOG_FILE_PATH: '/logs/blue.log',
+						SERVERS_GREEN_LOG_FILE_PATH: '/logs/green.log',
+						SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID: undefined,
+						SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID: undefined,
+					}),
+				),
+			).not.toThrow();
+		});
+
+		it('requires at least one complete server', () => {
+			const overrides: Record<string, undefined> = {};
+			for (const server of ['BLUE', 'GREEN', 'RED']) {
+				overrides[`SERVERS_${server}_STREAM_CHANNEL_CLASSIC_ID`] =
+					undefined;
+				overrides[`SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID`] =
+					undefined;
+			}
+
+			expect(() => parseConfig(validEnv(overrides))).toThrow(
+				/No auction servers are configured/,
+			);
 		});
 	});
 
