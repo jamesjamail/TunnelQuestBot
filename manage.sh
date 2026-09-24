@@ -226,6 +226,8 @@ restore_database() {
 
 	note "Restoring the pre-update SQLite backup"
 	"${COMPOSE[@]}" stop tunnelquestbot >/dev/null 2>&1 || true
+	# Expanded inside the container, not by this host shell.
+	# shellcheck disable=SC2016
 	"${COMPOSE[@]}" run --rm --no-deps -T \
 		-v "$directory:/backup:ro" \
 		-e "BACKUP_FILE=$filename" \
@@ -299,6 +301,8 @@ restart_stack() {
 
 clear_cache() {
 	note "Clearing parsed-auction cache"
+	# Expanded inside the Redis container, not by this host shell.
+	# shellcheck disable=SC2016
 	"${COMPOSE[@]}" exec -T redis sh -ec \
 		'redis-cli --scan --pattern "auctionLog*" | while IFS= read -r key; do redis-cli DEL "$key" >/dev/null; done'
 	echo "Parsed-auction cache cleared."

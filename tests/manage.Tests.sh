@@ -73,8 +73,14 @@ update_output="$(
 	./manage.sh update
 )"
 [[ "$update_output" == *"Already current"* ]]
-! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
-! compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
+if grep -q ' up -d ' "$TQB_DOCKER_TRACE"; then
+	echo "already-current update reconciled the stack" >&2
+	exit 1
+fi
+if compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null; then
+	echo "already-current update created a backup" >&2
+	exit 1
+fi
 grep -q '^TUNNELQUESTBOT_IMAGE=.*@sha256:promoted$' "$TEST_ROOT/deploy/.runtime.env"
 
 : > "$TQB_DOCKER_TRACE"
@@ -97,7 +103,10 @@ if (
 	exit 1
 fi
 grep -q 'No SQLite database exists to back up' "$TEST_ROOT/backup-error.log"
-! grep -q ' up -d ' "$TQB_DOCKER_TRACE"
+if grep -q ' up -d ' "$TQB_DOCKER_TRACE"; then
+	echo "update continued after a missing established database" >&2
+	exit 1
+fi
 
 unset TQB_DATABASE_STATE
 rm -f "$TQB_BACKUP_DIR"/*.db
