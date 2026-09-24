@@ -200,6 +200,7 @@ export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
 	//	Once either channel is present, require the complete section so a typo
 	//	does not silently disable an intended server. Fake logs supply paths.
 	const serverProblems: string[] = [];
+	const missingLogPathProblems: string[] = [];
 	for (const server of SERVER_NAMES) {
 		const keys = serverEnvKeys(server);
 		const provided = Boolean(
@@ -214,15 +215,29 @@ export function parseConfig(env: NodeJS.ProcessEnv = process.env): Config {
 		];
 		for (const key of required) {
 			if (!parsed[key]) {
-				serverProblems.push(
-					`${key} is not set (${server} is partially configured)`,
-				);
+				const problem = `${key} is not set (${server} is partially configured)`;
+				serverProblems.push(problem);
+				if (key === keys.logFile) {
+					missingLogPathProblems.push(problem);
+				}
 			}
 		}
 	}
 
 	if (serverProblems.length > 0) {
-		throw new ConfigError(serverProblems.sort());
+		const onlyLogPathsAreMissing =
+			serverProblems.length === missingLogPathProblems.length;
+		throw new ConfigError(
+			serverProblems.sort(),
+			onlyLogPathsAreMissing
+				? [
+						'Docker Compose normally supplies these paths from',
+						'LOG_SOURCE_PATH and SERVERS_*_LOG_FILE; they may be absent',
+						'from a container-oriented .env on purpose. When running on',
+						'the host without EverQuest logs, set FAKE_LOGS=true.',
+					].join('\n')
+				: undefined,
+		);
 	}
 
 	if (enabledServers(parsed).length === 0) {

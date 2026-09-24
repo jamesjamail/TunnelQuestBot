@@ -158,6 +158,13 @@ describe('parseConfig', () => {
 					`SERVERS_${server}_LOG_FILE_PATH`,
 				);
 			}
+			expect(error?.message).toContain(
+				'Docker Compose normally supplies these paths',
+			);
+			expect(error?.message).toContain('FAKE_LOGS=true');
+			expect(error?.message).not.toContain(
+				'Copy .env.example to .env and fill in the missing values.',
+			);
 		});
 
 		it('pass once every server has one', () => {
