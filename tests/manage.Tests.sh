@@ -17,6 +17,7 @@ SERVERS_GREEN_STREAM_CHANNEL_EMBEDDED_ID=222
 SERVERS_GREEN_LOG_FILE_PATH=/p99-logger/green/chat.jsonl
 P99_GREEN_CONFIG_FILE=./p99-logger/green.json
 EOF
+printf 'P99_UID=%s\nP99_GID=%s\n' "$(id -u)" "$(id -g)" >> "$TEST_ROOT/deploy/.env"
 echo '{}' > "$TEST_ROOT/deploy/p99-logger/green.json"
 
 cat > "$TEST_ROOT/bin/docker" <<'EOF'
@@ -59,12 +60,12 @@ for argument in "$@"; do
 	esac
 done
 if [[ -n "${TQB_FAIL_UP_MARKER:-}" &&
-	"$*" == *"up -d --no-build --wait --wait-timeout 180 tunnelquestbot" &&
+	"$*" == *"up -d --no-build --pull never --wait --wait-timeout 180 tunnelquestbot" &&
 	! -e "$TQB_FAIL_UP_MARKER" ]]; then
 	: > "$TQB_FAIL_UP_MARKER"
 	exit 1
 fi
-if [[ "$*" == *"up -d --no-build --wait --wait-timeout 180 tunnelquestbot" ]]; then
+if [[ "$*" == *"up -d --no-build --pull never --wait --wait-timeout 180 tunnelquestbot" ]]; then
 	if grep -q 'TUNNELQUESTBOT_IMAGE=tunnelquestbot:pre-update-rollback' .runtime.env 2>/dev/null; then
 		cat "$TQB_ROLLBACK_IMAGE_FILE" > "$TQB_RUNNING_IMAGE_FILE"
 	else
@@ -73,6 +74,17 @@ if [[ "$*" == *"up -d --no-build --wait --wait-timeout 180 tunnelquestbot" ]]; t
 fi
 EOF
 chmod +x "$TEST_ROOT/bin/docker"
+
+cat > "$TEST_ROOT/bin/git" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+if [[ "$*" == "rev-parse HEAD" ]]; then
+	echo "test-deployment-revision"
+	exit 0
+fi
+exec /usr/bin/git "$@"
+EOF
+chmod +x "$TEST_ROOT/bin/git"
 
 export PATH="$TEST_ROOT/bin:$PATH"
 export TQB_DOCKER_TRACE="$TEST_ROOT/docker.trace"
@@ -96,6 +108,20 @@ update_output="$(
 	cd "$TEST_ROOT/deploy"
 	./manage.sh update
 )"
+[[ "$update_output" == *"deployment configuration was reconciled"* ]]
+grep -q ' up -d ' "$TQB_DOCKER_TRACE"
+if compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null; then
+	echo "same-image deployment reconciliation created a backup" >&2
+	exit 1
+fi
+grep -q '^TUNNELQUESTBOT_IMAGE=.*@sha256:promoted$' "$TEST_ROOT/deploy/.runtime.env"
+grep -q '^TQB_DEPLOYMENT_REVISION=test-deployment-revision$' "$TEST_ROOT/deploy/.runtime.env"
+
+: > "$TQB_DOCKER_TRACE"
+update_output="$(
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update
+)"
 [[ "$update_output" == *"Already current"* ]]
 if grep -q ' up -d ' "$TQB_DOCKER_TRACE"; then
 	echo "already-current update reconciled the stack" >&2
@@ -105,7 +131,6 @@ if compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null; then
 	echo "already-current update created a backup" >&2
 	exit 1
 fi
-grep -q '^TUNNELQUESTBOT_IMAGE=.*@sha256:promoted$' "$TEST_ROOT/deploy/.runtime.env"
 
 : > "$TQB_DOCKER_TRACE"
 export TQB_DESIRED_IMAGE="sha256:new"
@@ -150,8 +175,19 @@ if ! grep -q 'was rolled back' "$TEST_ROOT/rollback.log"; then
 	exit 1
 fi
 grep -q '^TUNNELQUESTBOT_IMAGE=tunnelquestbot:pre-update-rollback$' "$TEST_ROOT/deploy/.runtime.env"
-[[ "$(grep -c 'up -d --no-build --wait --wait-timeout 180 tunnelquestbot' "$TQB_DOCKER_TRACE")" -eq 2 ]]
+[[ "$(grep -c 'up -d --no-build --pull never --wait --wait-timeout 180 tunnelquestbot' "$TQB_DOCKER_TRACE")" -eq 2 ]]
 unset TQB_DESIRED_IMAGE TQB_FAIL_UP_MARKER
+
+: > "$TQB_DOCKER_TRACE"
+(
+	cd "$TEST_ROOT/deploy"
+	./manage.sh doctor >/dev/null
+)
+if grep -q ' pull ' "$TQB_DOCKER_TRACE"; then
+	echo "doctor pulled an image" >&2
+	exit 1
+fi
+grep -q 'run --pull never' "$TQB_DOCKER_TRACE"
 
 rm "$TEST_ROOT/deploy/p99-logger/green.json"
 if (
@@ -162,5 +198,16 @@ if (
 	exit 1
 fi
 grep -q 'headless collector.*missing' "$TEST_ROOT/error.log"
+
+echo '{}' > "$TEST_ROOT/deploy/p99-logger/green.json"
+sed -i 's/^P99_UID=.*/P99_UID=999999/' "$TEST_ROOT/deploy/.env"
+if (
+	cd "$TEST_ROOT/deploy"
+	./manage.sh doctor >"$TEST_ROOT/owner-error.log" 2>&1
+); then
+	echo "doctor unexpectedly accepted unreadable collector credentials" >&2
+	exit 1
+fi
+grep -q 'owned by uid.*P99_UID is 999999' "$TEST_ROOT/owner-error.log"
 
 echo "manage.sh tests passed"

@@ -49,11 +49,23 @@ env_value() {
 }
 
 write_runtime_image() {
-	local image="$1" temporary="${RUNTIME_ENV}.tmp"
-	printf 'TUNNELQUESTBOT_IMAGE=%s\n' "$image" > "$temporary"
+	local image="$1" revision="$2" temporary="${RUNTIME_ENV}.tmp"
+	printf 'TUNNELQUESTBOT_IMAGE=%s\nTQB_DEPLOYMENT_REVISION=%s\n' \
+		"$image" "$revision" > "$temporary"
 	chmod 600 "$temporary"
 	mv -f "$temporary" "$RUNTIME_ENV"
 	refresh_compose_command
+}
+
+runtime_revision() {
+	[[ -f "$RUNTIME_ENV" ]] || return 0
+	local line value=""
+	while IFS= read -r line || [[ -n "$line" ]]; do
+		if [[ "$line" =~ ^TQB_DEPLOYMENT_REVISION=(.*)$ ]]; then
+			value="${BASH_REMATCH[1]}"
+		fi
+	done < "$RUNTIME_ENV"
+	printf '%s' "$value"
 }
 
 declare -a COLLECTORS=()
@@ -63,7 +75,8 @@ LAST_BACKUP=""
 discover_services() {
 	COLLECTORS=()
 	local server lower classic embedded log_path config_key config_file service
-	for server in GREEN BLUE; do
+	local p99_uid p99_gid owner_uid
+	for server in GREEN BLUE RED; do
 		lower="${server,,}"
 		classic="$(env_value "SERVERS_${server}_STREAM_CHANNEL_CLASSIC_ID")"
 		embedded="$(env_value "SERVERS_${server}_STREAM_CHANNEL_EMBEDDED_ID")"
@@ -81,6 +94,13 @@ discover_services() {
 			[[ -n "$config_file" ]] || config_file="./p99-logger/${lower}.json"
 			[[ -f "$config_file" ]] ||
 				die "$server uses the headless collector, but $config_file is missing."
+			p99_uid="$(env_value P99_UID)"
+			p99_gid="$(env_value P99_GID)"
+			[[ "$p99_uid" =~ ^[0-9]+$ && "$p99_gid" =~ ^[0-9]+$ ]] ||
+				die "Set P99_UID=$(id -u) and P99_GID=$(id -g) in .env so collectors can read their private config."
+			owner_uid="$(stat -c '%u' "$config_file")"
+			[[ "$owner_uid" == "$p99_uid" ]] ||
+				die "$config_file is owned by uid $owner_uid, but P99_UID is $p99_uid."
 			service="p99-${lower}-logger"
 			COLLECTORS+=("$service")
 		fi
@@ -112,17 +132,17 @@ app_doctor() {
 	local image="${1:-}"
 	note "Checking application configuration"
 	if [[ -n "$image" ]]; then
-		TUNNELQUESTBOT_IMAGE="$image" "${COMPOSE[@]}" run --rm --no-deps -T \
+		TUNNELQUESTBOT_IMAGE="$image" "${COMPOSE[@]}" run --pull never --rm --no-deps -T \
 			--entrypoint node tunnelquestbot ./build/doctor.js
 	else
-		"${COMPOSE[@]}" run --rm --no-deps -T \
+		"${COMPOSE[@]}" run --pull never --rm --no-deps -T \
 			--entrypoint node tunnelquestbot ./build/doctor.js
 	fi
 }
 
 cleanup_disabled_collectors() {
 	local service enabled
-	for service in p99-green-logger p99-blue-logger; do
+	for service in p99-green-logger p99-blue-logger p99-red-logger; do
 		enabled=false
 		for configured in "${COLLECTORS[@]}"; do
 			[[ "$configured" == "$service" ]] && enabled=true
@@ -149,7 +169,7 @@ start_dependencies() {
 		dependencies+=("p99-log-retention")
 	fi
 	note "Checking dependencies and collectors"
-	if ! "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
+	if ! "${COMPOSE[@]}" up -d --no-build --pull never --wait --wait-timeout 180 \
 		"${dependencies[@]}"; then
 		return 1
 	fi
@@ -177,7 +197,7 @@ start_stack() {
 	local expected_image="${1:-}"
 	start_dependencies || return 1
 	note "Starting TunnelQuestBot"
-	if ! "${COMPOSE[@]}" up -d --no-build --wait --wait-timeout 180 \
+	if ! "${COMPOSE[@]}" up -d --no-build --pull never --wait --wait-timeout 180 \
 		tunnelquestbot; then
 		return 1
 	fi
@@ -255,8 +275,10 @@ NODE
 }
 
 update_stack() {
-	local before="" desired="" desired_ref=""
+	local before="" desired="" desired_ref="" deployed_revision="" current_revision=""
 	before="$(docker inspect tunnelquestbot --format '{{.Image}}' 2>/dev/null || true)"
+	deployed_revision="$(runtime_revision)"
+	current_revision="$(git rev-parse HEAD)"
 
 	note "Pulling the newest promoted production image"
 	docker pull "$BOT_IMAGE"
@@ -271,17 +293,31 @@ update_stack() {
 	app_doctor "$desired_ref"
 
 	if [[ -n "$before" && "$before" == "$desired" ]]; then
-		write_runtime_image "$desired_ref"
-		echo "Already current; no application image change was needed."
+		if [[ "$deployed_revision" == "$current_revision" ]]; then
+			echo "Already current; no image or deployment change was needed."
+			show_status
+			return
+		fi
+
+		if ! (set -e; start_stack "$desired"); then
+			die "The application image is current, but deployment reconciliation failed."
+		fi
+		write_runtime_image "$desired_ref" "$current_revision"
+		echo "Application image was current; deployment configuration was reconciled."
 		show_status
 		return
 	fi
 
+	if [[ -z "$before" ]]; then
+		"${COMPOSE[@]}" pull redis p99-logger-init "${COLLECTORS[@]}"
+	else
+		"${COMPOSE[@]}" pull p99-logger-init "${COLLECTORS[@]}"
+	fi
 	backup_database "$([[ -n "$before" ]] && echo true || echo false)"
 	if [[ -n "$before" ]]; then
 		docker tag "$before" tunnelquestbot:pre-update-rollback
 	fi
-	write_runtime_image "$desired_ref"
+	write_runtime_image "$desired_ref" "$current_revision"
 
 	if ! (set -e; start_stack "$desired"); then
 		if [[ -z "$before" ]]; then
@@ -289,7 +325,7 @@ update_stack() {
 		fi
 
 		echo "Update failed; restoring the previous image." >&2
-		write_runtime_image "tunnelquestbot:pre-update-rollback"
+		write_runtime_image "tunnelquestbot:pre-update-rollback" "${deployed_revision:-legacy}"
 		if ! (set -e; start_stack "$before"); then
 			die "Automatic image rollback also failed. The verified database backup is $LAST_BACKUP"
 		fi
@@ -305,7 +341,7 @@ show_status() {
 
 show_logs() {
 	"${COMPOSE[@]}" logs --tail 100 -f \
-		tunnelquestbot p99-green-logger p99-blue-logger
+		tunnelquestbot p99-green-logger p99-blue-logger p99-red-logger
 }
 
 restart_stack() {
@@ -376,7 +412,6 @@ case "$command_name" in
 		;;
 	doctor)
 		basic_checks
-		"${COMPOSE[@]}" pull tunnelquestbot
 		app_doctor
 		echo "Configuration OK."
 		;;

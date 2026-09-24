@@ -16,26 +16,31 @@ Requirements: Linux, Git, Docker Engine, and Docker Compose v2.
 cp .env.example .env
 cp p99-logger/green.example.json p99-logger/green.json
 cp p99-logger/blue.example.json p99-logger/blue.json
+cp p99-logger/red.example.json p99-logger/red.json
 chmod 700 p99-logger
-chmod 600 .env p99-logger/green.json p99-logger/blue.json
+chmod 600 .env p99-logger/green.json p99-logger/blue.json p99-logger/red.json
 chmod +x manage.sh
+id -u
+id -g
 ```
 
 Fill in `.env` and the collector files. A server is enabled only when both of
 its Discord stream channel IDs are set. Leave both IDs blank to disable that
 server. If an enabled server points at a headless JSONL path, its private
 collector file must exist. Partial server configuration fails with a message
-naming the missing setting.
+naming the missing setting. Set `P99_UID` and `P99_GID` to the numbers printed
+by `id -u` and `id -g`; the manager verifies that collector credentials are
+owned by that UID before starting them.
 
-Validate and start:
+Pull the promoted image, validate, back up when applicable, and start:
 
 ```sh
-./manage.sh doctor
-./manage.sh start
+./manage.sh update
 ```
 
-`doctor` checks Compose and the application configuration without starting the
-bot. `start` waits for Redis and configured collectors to become healthy.
+After the first update, `doctor` checks the locally pinned image and configuration
+without downloading or starting anything. `start` never pulls images and waits
+for Redis and configured collectors to become healthy.
 
 ## Routine commands
 
@@ -66,10 +71,11 @@ git pull --ff-only origin run
 ```
 
 `update` pulls `prod/tunnelquestbot:latest` and validates it against the current
-`.env`. If that exact image is already running, it reports that production is
-current without backing up, rebuilding, or reconciling other services. It records
-the immutable promoted digest in private `.runtime.env`, so ordinary starts can
-never drift when the registry tag moves.
+`.env`. It records the immutable promoted digest and deployment revision in
+private `.runtime.env`, so ordinary starts can never drift when the registry tag
+moves. If both are already current, it exits without backing up, rebuilding, or
+reconciling services. A changed `run` revision is reconciled even when the
+application image did not change.
 
 When the image changed, `update` requires a verified SQLite backup before
 reconciling the stack. It validates collectors before activating the bot and
@@ -79,9 +85,9 @@ automatically overwrites a database after a bot may have accepted writes.
 Database migrations are idempotent and run in the image entrypoint.
 
 The first update from the hand-built Linux deployment recognizes the already
-running promoted image, records its immutable digest, and otherwise no-ops. It
-reuses the same service names and `tunnelquestbot_*` volumes; no data import or
-configuration conversion occurs. The old untracked
+running promoted image and reconciles the new collector/retention definitions.
+Compose reuses the same service names and `tunnelquestbot_*` volumes; no data
+import or configuration conversion occurs. The old untracked
 `docker-compose.production.yml` is not used by `manage.sh` and can be removed
 after this update succeeds.
 

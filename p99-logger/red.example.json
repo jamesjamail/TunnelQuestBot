@@ -1,0 +1,9 @@
+{
+  "user": "EXAMPLE_RED_LOGIN_ACCOUNT",
+  "pass": "EXAMPLE_RED_PASSWORD",
+  "server": "Project 1999: Red (Kunark, PvP)",
+  "character": "ExampleRedCharacter",
+  "channels": ["auc", "ooc"],
+  "output": "/data/red/chat.jsonl",
+  "health": "/data/red/health.json"
+}

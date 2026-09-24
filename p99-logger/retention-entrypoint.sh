@@ -20,7 +20,7 @@ case "$interval" in
 esac
 
 cat > /tmp/logrotate.conf <<EOF
-/data/green/chat.jsonl /data/blue/chat.jsonl {
+/data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.jsonl {
 	size $max_size
 	rotate $rotate_count
 	missingok
