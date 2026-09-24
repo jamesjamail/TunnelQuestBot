@@ -1,0 +1,4 @@
+**
+!p99-logger/
+!p99-logger/retention.Dockerfile
+!p99-logger/retention-entrypoint.sh

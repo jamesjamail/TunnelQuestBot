@@ -3,8 +3,15 @@
 
 # But not these files...
 !.gitignore
-!*.bat
-!*.ps1
+!.gitattributes
+!.dockerignore
+!.env.example
+!*.sh
 !*.yml
 !README.md
 !/tests/
+!/tests/*.sh
+!/p99-logger/
+!/p99-logger/*.example.json
+!/p99-logger/*.Dockerfile
+!/p99-logger/*.sh

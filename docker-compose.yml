@@ -26,6 +26,108 @@ services:
       retries: 12
       start_period: 20s
 
+  p99-logger-init:
+    image: busybox:1.37.0
+    logging: *default-logging
+    environment:
+      P99_UID: "${P99_UID:-65534}"
+      P99_GID: "${P99_GID:-65534}"
+    command:
+      - sh
+      - -ec
+      - |
+        mkdir -p /data/green /data/blue /data/red
+        touch /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.log
+        chown -R "$$P99_UID:$$P99_GID" /data/green /data/blue /data/red
+        chmod 750 /data/green /data/blue /data/red
+        chmod 640 /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.log
+    volumes:
+      - p99-logger-data:/data
+    restart: "no"
+
+  p99-green-logger:
+    image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}"
+    profiles: ["p99-loggers"]
+    logging: *default-logging
+    user: "${P99_UID:-65534}:${P99_GID:-65534}"
+    command: ["/config/config.json"]
+    depends_on:
+      p99-logger-init:
+        condition: service_completed_successfully
+      p99-log-retention:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: "${P99_GREEN_CONFIG_FILE:-./p99-logger/green.json}"
+        target: /config/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - p99-logger-data:/data
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/p99-logger-client", "health", "/data/green/health.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  p99-blue-logger:
+    image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}"
+    profiles: ["p99-loggers"]
+    logging: *default-logging
+    user: "${P99_UID:-65534}:${P99_GID:-65534}"
+    command: ["/config/config.json"]
+    depends_on:
+      p99-logger-init:
+        condition: service_completed_successfully
+      p99-log-retention:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: "${P99_BLUE_CONFIG_FILE:-./p99-logger/blue.json}"
+        target: /config/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - p99-logger-data:/data
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/p99-logger-client", "health", "/data/blue/health.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  p99-log-retention:
+    build:
+      context: .
+      dockerfile: p99-logger/retention.Dockerfile
+    profiles: ["p99-loggers"]
+    logging: *default-logging
+    user: "${P99_UID:-65534}:${P99_GID:-65534}"
+    environment:
+      P99_JSONL_MAX_SIZE: "${P99_JSONL_MAX_SIZE:-100M}"
+      P99_JSONL_ROTATE_COUNT: "${P99_JSONL_ROTATE_COUNT:-5}"
+      P99_JSONL_ROTATE_INTERVAL_SECONDS: "${P99_JSONL_ROTATE_INTERVAL_SECONDS:-300}"
+    depends_on:
+      p99-logger-init:
+        condition: service_completed_successfully
+    volumes:
+      - p99-logger-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=1m
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
   tunnelquestbot:
     image: ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot:latest
     container_name: tunnelquestbot
@@ -33,27 +135,35 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      p99-logger-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: "${SQLITE_DATABASE_URL:-file:/data/tunnelquestbot.db}"
       POSTGRES_MIGRATION_URL: "${POSTGRES_MIGRATION_URL:-}"
-      SERVERS_BLUE_LOG_FILE_PATH: "/logfiles/${SERVERS_BLUE_LOG_FILE}"
-      SERVERS_GREEN_LOG_FILE_PATH: "/logfiles/${SERVERS_GREEN_LOG_FILE}"
-      SERVERS_RED_LOG_FILE_PATH: "/logfiles/${SERVERS_RED_LOG_FILE}"
-      REDIS_SOCKET_DIR: "${REDIS_SOCKET_DIR}"
+      SERVERS_BLUE_LOG_FILE_PATH: "${SERVERS_BLUE_LOG_FILE_PATH:-}"
+      SERVERS_GREEN_LOG_FILE_PATH: "${SERVERS_GREEN_LOG_FILE_PATH:-}"
+      SERVERS_RED_LOG_FILE_PATH: "${SERVERS_RED_LOG_FILE_PATH:-}"
+      REDIS_SOCKET_DIR: "${REDIS_SOCKET_DIR:-/redis_socket}"
       FAKE_LOGS: "${FAKE_LOGS:-false}"
       DEBUG_MODE: "${DEBUG_MODE:-false}"
     volumes:
       - type: bind
-        source: "${LOG_SOURCE_PATH}"
+        source: "${LOG_SOURCE_PATH:-./logs}"
         target: /logfiles
+      - type: volume
+        source: p99-logger-data
+        target: /p99-logger
+        read_only: true
       - type: bind
         source: ".env"
         target: /app/.env
+        read_only: true
       - sqlite-data:/data
-      - "redis-socket:${REDIS_SOCKET_DIR}"
+      - "redis-socket:${REDIS_SOCKET_DIR:-/redis_socket}"
     restart: always
 
 volumes:
   sqlite-data:
   redis-socket:
   redis-data:
+  p99-logger-data:
