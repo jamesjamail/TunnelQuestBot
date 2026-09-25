@@ -24,6 +24,7 @@ jobs:
           jq -e '.name == "tunnelquestbot"' /tmp/compose.json
           jq -e '.services.tunnelquestbot.ports == null' /tmp/compose.json
           jq -e '.services["p99-red-logger"] != null' /tmp/compose.json
+          jq -e '.services["p99-red-logger"].image | test("p99-logger-client")' /tmp/compose.json
           jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket","sqlite-data"]' /tmp/compose.json
 
       - name: Preserve legacy logfile settings

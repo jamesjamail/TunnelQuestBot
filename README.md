@@ -30,7 +30,9 @@ server. If an enabled server points at a headless JSONL path, its private
 collector file must exist. Partial server configuration fails with a message
 naming the missing setting. Set `P99_UID` and `P99_GID` to the numbers printed
 by `id -u` and `id -g`; the manager verifies that collector credentials are
-owned by that UID before starting them.
+owned by that UID, and are mode 600, before starting them. Leave
+`P99_*_LOGGER_IMAGE` blank unless a server needs a different collector image
+than `P99_LOGGER_IMAGE`.
 
 Pull the promoted image, validate, back up when applicable, and start:
 
@@ -39,8 +41,9 @@ Pull the promoted image, validate, back up when applicable, and start:
 ```
 
 After the first update, `doctor` checks the locally pinned image and configuration
-without downloading or starting anything. `start` never pulls images and waits
-for Redis and configured collectors to become healthy.
+without downloading or starting anything. `start` never pulls images, recreates
+the bot so `.env` changes apply, and builds the retention image only if it is
+missing. After enabling a server or editing `.env`, run `update` or `start`.
 
 ## Routine commands
 
@@ -70,19 +73,24 @@ git pull --ff-only origin run
 ./manage.sh update
 ```
 
-`update` pulls `prod/tunnelquestbot:latest` and validates it against the current
-`.env`. It records the immutable promoted digest and deployment revision in
-private `.runtime.env`, so ordinary starts can never drift when the registry tag
-moves. If both are already current, it exits without backing up, rebuilding, or
-reconciling services. A changed `run` revision is reconciled even when the
-application image did not change.
+`update` pulls `prod/tunnelquestbot:latest` and the current Redis, busybox init,
+and collector images, then validates the bot image against the current `.env`.
+It records the immutable promoted digest, deployment revision, and `.env`
+fingerprint in private `.runtime.env`, so ordinary starts can never drift when
+the registry tag moves. If the image, `run` revision, and `.env` are already
+current, it exits without backing up, rebuilding, or reconciling services. A
+changed `run` revision or `.env` is reconciled even when the application image
+did not change, and that first same-image pass downloads any missing collector
+or busybox images.
 
 When the image changed, `update` requires a verified SQLite backup before
 reconciling the stack. It validates collectors before activating the bot and
-waits for the bot's runtime-ready log marker. If activation fails, it restores
-the previous image automatically and reports the verified backup path. It never
-automatically overwrites a database after a bot may have accepted writes.
-Database migrations are idempotent and run in the image entrypoint.
+waits for a fresh runtime-ready log marker. If a collector fails before the bot
+is replaced, the previous image keeps running. If the new bot fails after
+replacement, `update` restores the previous digest automatically and reports
+the verified backup path. It never automatically overwrites a database after a
+bot may have accepted writes. Database migrations are idempotent and run in
+the image entrypoint.
 
 The first update from the hand-built Linux deployment recognizes the already
 running promoted image and reconciles the new collector/retention definitions.

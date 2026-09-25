@@ -46,7 +46,7 @@ services:
     restart: "no"
 
   p99-green-logger:
-    image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}"
+    image: "${P99_GREEN_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}}"
     profiles: ["p99-loggers"]
     logging: *default-logging
     user: "${P99_UID:-65534}:${P99_GID:-65534}"
@@ -76,7 +76,7 @@ services:
       start_period: 60s
 
   p99-blue-logger:
-    image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}"
+    image: "${P99_BLUE_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}}"
     profiles: ["p99-loggers"]
     logging: *default-logging
     user: "${P99_UID:-65534}:${P99_GID:-65534}"
@@ -106,7 +106,7 @@ services:
       start_period: 60s
 
   p99-red-logger:
-    image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}"
+    image: "${P99_RED_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-e47b297}}"
     profiles: ["p99-loggers"]
     logging: *default-logging
     user: "${P99_UID:-65534}:${P99_GID:-65534}"
