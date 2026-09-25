@@ -31,7 +31,7 @@ if ! is_positive_integer "$interval"; then
 fi
 
 cat > /tmp/logrotate.conf <<EOF
-/data/green/chat.jsonl /data/blue/chat.jsonl {
+/data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.jsonl {
 	size $max_size
 	rotate $rotate_count
 	missingok
