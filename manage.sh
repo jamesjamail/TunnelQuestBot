@@ -480,77 +480,6 @@ clear_cache() {
 	echo "Parsed-auction cache cleared."
 }
 
-declare -a ANALYTICS_COMPOSE=()
-
-refresh_analytics_compose() {
-	ANALYTICS_COMPOSE=(
-		docker compose
-		--project-name tunnelquestbot-analytics
-		--env-file .env
-	)
-	if [[ -f "$RUNTIME_ENV" ]]; then
-		ANALYTICS_COMPOSE+=(--env-file "$RUNTIME_ENV")
-	fi
-	ANALYTICS_COMPOSE+=(-f docker-compose.metabase.yml)
-}
-
-analytics_checks() {
-	docker_checks
-	[[ -f .env ]] || die "Missing .env. Copy .env.example to .env and fill it in."
-	[[ -f docker-compose.metabase.yml ]] ||
-		die "Missing docker-compose.metabase.yml."
-	[[ -f metabase/snapshot-entrypoint.sh ]] ||
-		die "Missing metabase/snapshot-entrypoint.sh."
-	refresh_analytics_compose
-	local image
-	image="$(ensure_offline_bot_image)"
-	export TUNNELQUESTBOT_IMAGE="$image"
-	docker volume inspect tunnelquestbot_sqlite-data >/dev/null 2>&1 ||
-		die "Production volume tunnelquestbot_sqlite-data was not found. Start the bot stack before analytics."
-	"${ANALYTICS_COMPOSE[@]}" config --quiet ||
-		die "Analytics Compose configuration is invalid. Review the error above."
-}
-
-analytics_start() {
-	analytics_checks
-	note "Starting optional Metabase companion"
-	"${ANALYTICS_COMPOSE[@]}" pull
-	# Recreate so compose mount/permission changes always apply.
-	"${ANALYTICS_COMPOSE[@]}" up -d --force-recreate --pull never
-	# First Metabase boot can take a minute while it initializes its app DB.
-	sleep 5
-	"${ANALYTICS_COMPOSE[@]}" ps
-	local bind port
-	bind="$(env_value METABASE_BIND)"
-	[[ -n "$bind" ]] || bind="127.0.0.1"
-	port="$(env_value METABASE_PORT)"
-	[[ -n "$port" ]] || port="3000"
-	echo
-	echo "Metabase is optional and is not managed by start/update."
-	echo "Open http://${bind}:${port} (SSH tunnel if bind is localhost)."
-	echo "Add a SQLite database with filename /snapshots/tunnelquestbot.db"
-}
-
-analytics_stop() {
-	docker_checks
-	refresh_analytics_compose
-	note "Stopping optional Metabase companion"
-	"${ANALYTICS_COMPOSE[@]}" stop
-	"${ANALYTICS_COMPOSE[@]}" ps -a
-}
-
-analytics_status() {
-	docker_checks
-	refresh_analytics_compose
-	"${ANALYTICS_COMPOSE[@]}" ps -a
-}
-
-analytics_logs() {
-	docker_checks
-	refresh_analytics_compose
-	"${ANALYTICS_COMPOSE[@]}" logs --tail 100 -f metabase metabase-snapshot
-}
-
 usage() {
 	cat <<'EOF'
 Usage: ./manage.sh <command>
@@ -565,11 +494,6 @@ Usage: ./manage.sh <command>
   backup       Create and verify an online SQLite backup
   doctor       Validate configuration without starting the bot
   clear-cache  Clear cached parsed auctions
-
-  analytics start   Start optional Metabase (not part of start/update)
-  analytics stop    Stop Metabase without deleting its data volume
-  analytics status  Show Metabase companion status
-  analytics logs    Follow Metabase and snapshot logs
 
   --image <ref>  With update only: pull and apply a candidate image (for example
                  the development tag) before promoting it to production.
@@ -646,21 +570,6 @@ case "$command_name" in
 	clear-cache)
 		basic_checks
 		clear_cache
-		;;
-	analytics)
-		case "${1:-}" in
-			start) analytics_start ;;
-			stop) analytics_stop ;;
-			status) analytics_status ;;
-			logs) analytics_logs ;;
-			''|help|-h|--help)
-				usage
-				;;
-			*)
-				usage >&2
-				die "Unknown analytics command: ${1:-}"
-				;;
-		esac
 		;;
 	help|-h|--help|'')
 		usage

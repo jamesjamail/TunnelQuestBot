@@ -15,8 +15,6 @@
 !/p99-logger/*.example.json
 !/p99-logger/*.Dockerfile
 !/p99-logger/*.sh
-!/metabase/
-!/metabase/*.sh
 !/.github/
 !/.github/workflows/
 !/.github/workflows/deployment.yml

@@ -62,46 +62,11 @@ image only if it is missing. After enabling a server or editing `.env`, run
 ./manage.sh backup       Create and verify an online SQLite backup
 ./manage.sh doctor       Validate configuration
 ./manage.sh clear-cache  Clear parsed-auction cache
-./manage.sh analytics start   Start optional Metabase companion
-./manage.sh analytics stop    Stop Metabase (keeps its data)
-./manage.sh analytics status  Show Metabase status
-./manage.sh analytics logs    Follow Metabase logs
 ```
 
 Run commands as the deployment user from any directory; the script changes to
 the checkout automatically. Errors are reported before services are changed
 whenever possible.
-
-## Optional Metabase analytics
-
-Metabase is an official companion for watch/user/link analytics. It is **not**
-started or updated by `./manage.sh start` or `./manage.sh update`. It runs in a
-separate Compose project (`tunnelquestbot-analytics`) and reads a periodic
-SQLite snapshot of the production database, never the live bot volume.
-
-```sh
-./manage.sh analytics start
-```
-
-Then open `http://127.0.0.1:3000` (default bind is localhost only; use an SSH
-tunnel from your laptop). On first visit, create the Metabase admin user, add a
-database of type SQLite, and set the filename to `/snapshots/tunnelquestbot.db`
-(container path, not a host/WSL path). `analytics start` force-recreates the
-companion so compose mount changes take effect; re-run it after pulling
-analytics fixes.
-
-Useful starter questions: active watches by server, top `itemName` counts,
-WTS vs WTB mix, new watches per day, pending `PlayerLink` rows.
-
-```sh
-./manage.sh analytics status
-./manage.sh analytics logs
-./manage.sh analytics stop
-```
-
-Override image, bind address, port, and snapshot interval with the optional
-`METABASE_*` keys in `.env`. Stopping analytics does not delete
-`tunnelquestbot-analytics_metabase-data` or the snapshot volume.
 
 ## Updating production
 
