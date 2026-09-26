@@ -1,0 +1,47 @@
+name: Validate deployment bundle
+
+on:
+  pull_request:
+  push:
+    branches: [run]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check shell scripts
+        run: |
+          shellcheck manage.sh p99-logger/retention-entrypoint.sh tests/manage.Tests.sh
+          bash tests/manage.Tests.sh
+
+      - name: Validate Compose topology
+        run: |
+          docker compose --env-file .env.example --profile p99-loggers config --quiet
+          docker compose --env-file .env.example --profile p99-loggers config --format json > /tmp/compose.json
+          jq -e '.name == "tunnelquestbot"' /tmp/compose.json
+          jq -e '.services.tunnelquestbot.ports == null' /tmp/compose.json
+          jq -e '.services["p99-red-logger"] != null' /tmp/compose.json
+          jq -e '.services["p99-red-logger"].image | test("p99-logger-client")' /tmp/compose.json
+          jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket","sqlite-data"]' /tmp/compose.json
+
+      - name: Preserve legacy logfile settings
+        run: |
+          cat > /tmp/legacy.env <<'EOF'
+          SERVERS_BLUE_LOG_FILE=legacy-blue.log
+          EOF
+          docker compose --env-file /tmp/legacy.env config --format json > /tmp/legacy.json
+          jq -e '.services.tunnelquestbot.environment.SERVERS_BLUE_LOG_FILE_PATH == "/logfiles/legacy-blue.log"' /tmp/legacy.json
+
+      - name: Build retention image
+        run: |
+          echo '{"user":"must-not-enter-build-context"}' > p99-logger/private-sentinel.json
+          docker build --no-cache -f - . <<'EOF'
+          FROM busybox:1.37.0
+          COPY . /context
+          RUN test -f /context/p99-logger/retention.Dockerfile \
+           && test -f /context/p99-logger/retention-entrypoint.sh \
+           && test ! -e /context/p99-logger/private-sentinel.json
+          EOF
+          docker compose --env-file .env.example --profile p99-loggers build p99-log-retention
