@@ -66,7 +66,7 @@ export TQB_DOCKER_TRACE="$TEST_ROOT/docker.trace"
 )
 grep -q 'project-name tunnelquestbot-analytics' "$TQB_DOCKER_TRACE"
 grep -q 'docker-compose.metabase.yml' "$TQB_DOCKER_TRACE"
-grep -q ' up -d ' "$TQB_DOCKER_TRACE"
+grep -q 'up -d --force-recreate --pull never' "$TQB_DOCKER_TRACE"
 grep -q ' pull' "$TQB_DOCKER_TRACE"
 
 : > "$TQB_DOCKER_TRACE"

@@ -515,7 +515,8 @@ analytics_start() {
 	analytics_checks
 	note "Starting optional Metabase companion"
 	"${ANALYTICS_COMPOSE[@]}" pull
-	"${ANALYTICS_COMPOSE[@]}" up -d --pull never
+	# Recreate so compose mount/permission changes always apply.
+	"${ANALYTICS_COMPOSE[@]}" up -d --force-recreate --pull never
 	# First Metabase boot can take a minute while it initializes its app DB.
 	sleep 5
 	"${ANALYTICS_COMPOSE[@]}" ps
@@ -527,7 +528,7 @@ analytics_start() {
 	echo
 	echo "Metabase is optional and is not managed by start/update."
 	echo "Open http://${bind}:${port} (SSH tunnel if bind is localhost)."
-	echo "Add a SQLite database pointing at /snapshots/tunnelquestbot.db"
+	echo "Add a SQLite database with filename /snapshots/tunnelquestbot.db"
 }
 
 analytics_stop() {

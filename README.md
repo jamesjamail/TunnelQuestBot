@@ -85,7 +85,10 @@ SQLite snapshot of the production database, never the live bot volume.
 
 Then open `http://127.0.0.1:3000` (default bind is localhost only; use an SSH
 tunnel from your laptop). On first visit, create the Metabase admin user, add a
-database of type SQLite, and set the path to `/snapshots/tunnelquestbot.db`.
+database of type SQLite, and set the filename to `/snapshots/tunnelquestbot.db`
+(container path, not a host/WSL path). `analytics start` force-recreates the
+companion so compose mount changes take effect; re-run it after pulling
+analytics fixes.
 
 Useful starter questions: active watches by server, top `itemName` counts,
 WTS vs WTB mix, new watches per day, pending `PlayerLink` rows.
