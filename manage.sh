@@ -180,7 +180,7 @@ cleanup_disabled_collectors() {
 }
 
 build_retention() {
-	local mode="${1:-$BUILD_RETENTION_MODE}"
+	local mode="$BUILD_RETENTION_MODE"
 	((${#COLLECTORS[@]} > 0)) || return 0
 	if [[ "$mode" == "if-missing" ]] &&
 		docker image inspect "$RETENTION_IMAGE" >/dev/null 2>&1; then
