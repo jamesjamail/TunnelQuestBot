@@ -2,6 +2,7 @@ name: Validate deployment bundle
 
 on:
   pull_request:
+    branches: [run]
   push:
     branches: [run]
 
