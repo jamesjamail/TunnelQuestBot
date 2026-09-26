@@ -58,7 +58,7 @@ jobs:
           COPY . /context
           RUN test -f /context/p99-logger/retention.Dockerfile \
            && test -f /context/p99-logger/retention-entrypoint.sh \
-           && test -f /context/metabase/snapshot-entrypoint.sh \
+           && test ! -e /context/metabase/snapshot-entrypoint.sh \
            && test ! -e /context/p99-logger/private-sentinel.json
           EOF
           docker compose --env-file .env.example --profile p99-loggers build p99-log-retention
