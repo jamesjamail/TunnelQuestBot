@@ -237,11 +237,14 @@ start_dependencies() {
 	if ! "${COMPOSE[@]}" up -d --no-build --pull never --wait --wait-timeout 180 redis; then
 		return 1
 	fi
+	# Do not --force-recreate collectors: a bot-only image change must leave
+	# already-healthy log collectors running. Compose still recreates them when
+	# their image, mounts, or environment actually change.
 	local rest=(p99-logger-init "${COLLECTORS[@]}")
 	if ((${#COLLECTORS[@]} > 0)); then
 		rest+=("p99-log-retention")
 	fi
-	if ! "${COMPOSE[@]}" up -d --force-recreate --no-build --pull never --wait --wait-timeout 180 \
+	if ! "${COMPOSE[@]}" up -d --no-build --pull never --wait --wait-timeout 180 \
 		"${rest[@]}"; then
 		return 1
 	fi
@@ -357,9 +360,36 @@ NODE
 	echo "Backup: $LAST_BACKUP"
 }
 
+# Resolve an immutable registry digest for a pulled bot image ref.
+# Prefer a RepoDigest matching the repository; fall back to a digest-form pull ref.
+resolve_pulled_bot_ref() {
+	local pull_ref="$1" digests repo line
+	if [[ "$pull_ref" == *@sha256:* ]]; then
+		printf '%s' "$pull_ref"
+		return
+	fi
+	digests="$(
+		docker image inspect "$pull_ref" \
+			--format '{{range .RepoDigests}}{{println .}}{{end}}'
+	)"
+	repo="${pull_ref%%@*}"
+	repo="${repo%%:*}"
+	while IFS= read -r line; do
+		[[ -z "$line" ]] && continue
+		if [[ "$line" == "$repo@"* ]]; then
+			printf '%s' "$line"
+			return
+		fi
+	done <<<"$digests"
+	line="$(printf '%s\n' "$digests" | head -n 1)"
+	[[ -n "$line" ]] || die "Could not resolve an immutable digest for $pull_ref."
+	printf '%s' "$line"
+}
+
 update_stack() {
 	local before="" desired="" desired_ref="" deployed_revision="" current_revision=""
 	local previous_ref="" fingerprint="" deployed_fingerprint=""
+	local pull_ref="${UPDATE_IMAGE_OVERRIDE:-$BOT_IMAGE}"
 	before="$(running_bot_image)"
 	deployed_revision="$(runtime_revision)"
 	previous_ref="$(runtime_value TUNNELQUESTBOT_IMAGE)"
@@ -368,16 +398,15 @@ update_stack() {
 	fingerprint="$(config_fingerprint)"
 	deployed_fingerprint="$(runtime_value TQB_CONFIG_FINGERPRINT)"
 
-	note "Pulling the newest promoted production image"
-	docker pull "$BOT_IMAGE"
-	desired="$(docker image inspect "$BOT_IMAGE" --format '{{.Id}}')"
-	desired_ref="$(
-		docker image inspect "$BOT_IMAGE" \
-			--format '{{range .RepoDigests}}{{println .}}{{end}}' |
-			grep '^ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@' |
-			head -n 1
-	)"
-	[[ -n "$desired_ref" ]] || die "Could not resolve the promoted image digest."
+	if [[ -n "$UPDATE_IMAGE_OVERRIDE" ]]; then
+		note "Pulling candidate image $pull_ref"
+	else
+		note "Pulling the newest promoted production image"
+	fi
+	docker pull "$pull_ref"
+	desired="$(docker image inspect "$pull_ref" --format '{{.Id}}')"
+	desired_ref="$(resolve_pulled_bot_ref "$pull_ref")"
+	[[ -n "$desired_ref" ]] || die "Could not resolve an immutable digest for $pull_ref."
 	app_doctor "$desired_ref"
 	BUILD_RETENTION_MODE="always"
 	pull_dependency_images
@@ -451,6 +480,76 @@ clear_cache() {
 	echo "Parsed-auction cache cleared."
 }
 
+declare -a ANALYTICS_COMPOSE=()
+
+refresh_analytics_compose() {
+	ANALYTICS_COMPOSE=(
+		docker compose
+		--project-name tunnelquestbot-analytics
+		--env-file .env
+	)
+	if [[ -f "$RUNTIME_ENV" ]]; then
+		ANALYTICS_COMPOSE+=(--env-file "$RUNTIME_ENV")
+	fi
+	ANALYTICS_COMPOSE+=(-f docker-compose.metabase.yml)
+}
+
+analytics_checks() {
+	docker_checks
+	[[ -f .env ]] || die "Missing .env. Copy .env.example to .env and fill it in."
+	[[ -f docker-compose.metabase.yml ]] ||
+		die "Missing docker-compose.metabase.yml."
+	[[ -f metabase/snapshot-entrypoint.sh ]] ||
+		die "Missing metabase/snapshot-entrypoint.sh."
+	refresh_analytics_compose
+	local image
+	image="$(ensure_offline_bot_image)"
+	export TUNNELQUESTBOT_IMAGE="$image"
+	docker volume inspect tunnelquestbot_sqlite-data >/dev/null 2>&1 ||
+		die "Production volume tunnelquestbot_sqlite-data was not found. Start the bot stack before analytics."
+	"${ANALYTICS_COMPOSE[@]}" config --quiet ||
+		die "Analytics Compose configuration is invalid. Review the error above."
+}
+
+analytics_start() {
+	analytics_checks
+	note "Starting optional Metabase companion"
+	"${ANALYTICS_COMPOSE[@]}" pull
+	"${ANALYTICS_COMPOSE[@]}" up -d --pull never
+	# First Metabase boot can take a minute while it initializes its app DB.
+	sleep 5
+	"${ANALYTICS_COMPOSE[@]}" ps
+	local bind port
+	bind="$(env_value METABASE_BIND)"
+	[[ -n "$bind" ]] || bind="127.0.0.1"
+	port="$(env_value METABASE_PORT)"
+	[[ -n "$port" ]] || port="3000"
+	echo
+	echo "Metabase is optional and is not managed by start/update."
+	echo "Open http://${bind}:${port} (SSH tunnel if bind is localhost)."
+	echo "Add a SQLite database pointing at /snapshots/tunnelquestbot.db"
+}
+
+analytics_stop() {
+	docker_checks
+	refresh_analytics_compose
+	note "Stopping optional Metabase companion"
+	"${ANALYTICS_COMPOSE[@]}" stop
+	"${ANALYTICS_COMPOSE[@]}" ps -a
+}
+
+analytics_status() {
+	docker_checks
+	refresh_analytics_compose
+	"${ANALYTICS_COMPOSE[@]}" ps -a
+}
+
+analytics_logs() {
+	docker_checks
+	refresh_analytics_compose
+	"${ANALYTICS_COMPOSE[@]}" logs --tail 100 -f metabase metabase-snapshot
+}
+
 usage() {
 	cat <<'EOF'
 Usage: ./manage.sh <command>
@@ -458,20 +557,34 @@ Usage: ./manage.sh <command>
   start        Validate configuration and start configured services
   stop         Stop services without deleting data
   restart      Restart configured services
-  update       Pull the newest promoted image, back up, and apply it
+  update [--image <ref>]
+               Pull the newest promoted image (or a candidate ref), back up, and apply it
   status       Show container status
   logs         Follow bot and configured collector logs
   backup       Create and verify an online SQLite backup
   doctor       Validate configuration without starting the bot
   clear-cache  Clear cached parsed auctions
 
+  analytics start   Start optional Metabase (not part of start/update)
+  analytics stop    Stop Metabase without deleting its data volume
+  analytics status  Show Metabase companion status
+  analytics logs    Follow Metabase and snapshot logs
+
+  --image <ref>  With update only: pull and apply a candidate image (for example
+                 the development tag) before promoting it to production.
+
 Never run `docker compose down -v`; it deletes the database.
 EOF
 }
 
+UPDATE_IMAGE_OVERRIDE=""
 command_name="${1:-}"
+if [[ -n "$command_name" ]]; then
+	shift
+fi
 case "$command_name" in
 	start)
+		(($# == 0)) || die "start does not accept extra arguments."
 		basic_checks
 		image="$(ensure_offline_bot_image)"
 		app_doctor "$image"
@@ -479,15 +592,35 @@ case "$command_name" in
 		start_stack "$(docker image inspect "$image" --format '{{.Id}}')"
 		;;
 	stop)
+		(($# == 0)) || die "stop does not accept extra arguments."
 		docker_checks
 		"${COMPOSE[@]}" stop
 		show_status
 		;;
 	restart)
+		(($# == 0)) || die "restart does not accept extra arguments."
 		basic_checks
 		restart_stack
 		;;
 	update)
+		while (($# > 0)); do
+			case "$1" in
+				--image)
+					[[ -n "${2:-}" ]] || die "--image requires an image reference."
+					UPDATE_IMAGE_OVERRIDE="$2"
+					shift 2
+					;;
+				--image=*)
+					UPDATE_IMAGE_OVERRIDE="${1#--image=}"
+					[[ -n "$UPDATE_IMAGE_OVERRIDE" ]] ||
+						die "--image requires an image reference."
+					shift
+					;;
+				*)
+					die "Unknown update argument: $1"
+					;;
+			esac
+		done
 		basic_checks
 		update_stack
 		;;
@@ -512,6 +645,21 @@ case "$command_name" in
 	clear-cache)
 		basic_checks
 		clear_cache
+		;;
+	analytics)
+		case "${1:-}" in
+			start) analytics_start ;;
+			stop) analytics_stop ;;
+			status) analytics_status ;;
+			logs) analytics_logs ;;
+			''|help|-h|--help)
+				usage
+				;;
+			*)
+				usage >&2
+				die "Unknown analytics command: ${1:-}"
+				;;
+		esac
 		;;
 	help|-h|--help|'')
 		usage

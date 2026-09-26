@@ -55,16 +55,50 @@ image only if it is missing. After enabling a server or editing `.env`, run
 ./manage.sh stop         Stop services without deleting data
 ./manage.sh restart      Restart configured services
 ./manage.sh update       Pull and apply the newest promoted production image
+./manage.sh update --image <ref>
+                         Pull and apply a candidate image (for example development)
 ./manage.sh status       Show service and health status
 ./manage.sh logs         Follow bot and collector logs
 ./manage.sh backup       Create and verify an online SQLite backup
 ./manage.sh doctor       Validate configuration
 ./manage.sh clear-cache  Clear parsed-auction cache
+./manage.sh analytics start   Start optional Metabase companion
+./manage.sh analytics stop    Stop Metabase (keeps its data)
+./manage.sh analytics status  Show Metabase status
+./manage.sh analytics logs    Follow Metabase logs
 ```
 
 Run commands as the deployment user from any directory; the script changes to
 the checkout automatically. Errors are reported before services are changed
 whenever possible.
+
+## Optional Metabase analytics
+
+Metabase is an official companion for watch/user/link analytics. It is **not**
+started or updated by `./manage.sh start` or `./manage.sh update`. It runs in a
+separate Compose project (`tunnelquestbot-analytics`) and reads a periodic
+SQLite snapshot of the production database, never the live bot volume.
+
+```sh
+./manage.sh analytics start
+```
+
+Then open `http://127.0.0.1:3000` (default bind is localhost only; use an SSH
+tunnel from your laptop). On first visit, create the Metabase admin user, add a
+database of type SQLite, and set the path to `/snapshots/tunnelquestbot.db`.
+
+Useful starter questions: active watches by server, top `itemName` counts,
+WTS vs WTB mix, new watches per day, pending `PlayerLink` rows.
+
+```sh
+./manage.sh analytics status
+./manage.sh analytics logs
+./manage.sh analytics stop
+```
+
+Override image, bind address, port, and snapshot interval with the optional
+`METABASE_*` keys in `.env`. Stopping analytics does not delete
+`tunnelquestbot-analytics_metabase-data` or the snapshot volume.
 
 ## Updating production
 
@@ -78,7 +112,14 @@ git pull --ff-only origin run
 
 `update` pulls `prod/tunnelquestbot:latest` and the current Redis, busybox init,
 and collector images, then validates the bot image against the current `.env`.
-It records the immutable promoted digest, deployment revision, and `.env`
+To try a candidate before promoting it, pass `--image` with any pullable ref
+(tag or digest), for example:
+
+```sh
+./manage.sh update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+```
+
+It records the immutable digest, deployment revision, and `.env`
 fingerprint in private `.runtime.env`, so ordinary starts can never drift when
 the registry tag moves. If the image, `run` revision, and `.env` are already
 current, it exits without backing up, rebuilding, or reconciling services. A

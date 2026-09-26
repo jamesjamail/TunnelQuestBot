@@ -54,16 +54,25 @@ if [[ "$1" == "logs" && "$*" != *"--tail"* ]]; then
 	echo "Starting log monitoring for server GREEN: /data/green/chat.jsonl"
 	exit 0
 fi
-if [[ "$*" == "image inspect "* ]]; then
+if [[ "$1" == "image" && "$2" == "inspect" ]]; then
+	target="$3"
 	if [[ "$*" == *"RepoDigests"* ]]; then
-		case "${TQB_DESIRED_IMAGE:-sha256:current}" in
-			sha256:new) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newdigest" ;;
-			sha256:newer) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newerdigest" ;;
-			sha256:newest) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newestdigest" ;;
-			*) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted" ;;
-		esac
-	elif [[ "$*" == *"@sha256:running"* ]]; then
+		if [[ "$target" == *"/dev/tunnelquestbot"* ]] ||
+			[[ "$target" == *"@sha256:candidatedigest"* ]]; then
+			echo "ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot@sha256:candidatedigest"
+		else
+			case "${TQB_DESIRED_IMAGE:-sha256:current}" in
+				sha256:new) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newdigest" ;;
+				sha256:newer) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newerdigest" ;;
+				sha256:newest) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newestdigest" ;;
+				*) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted" ;;
+			esac
+		fi
+	elif [[ "$target" == *"@sha256:running"* ]]; then
 		echo "sha256:current"
+	elif [[ "$target" == *"/dev/tunnelquestbot"* ]] ||
+		[[ "$target" == *"@sha256:candidatedigest"* ]]; then
+		echo "sha256:candidate"
 	else
 		echo "${TQB_DESIRED_IMAGE:-sha256:current}"
 	fi
@@ -92,6 +101,7 @@ if [[ "$*" == *"up -d --force-recreate --no-build --pull never --wait --wait-tim
 		runtime_image="$(sed -n 's/^TUNNELQUESTBOT_IMAGE=//p' .runtime.env | tail -n 1)"
 	fi
 	case "$runtime_image" in
+		*candidatedigest*) echo "sha256:candidate" > "$TQB_RUNNING_IMAGE_FILE" ;;
 		*newestdigest*) echo "sha256:newest" > "$TQB_RUNNING_IMAGE_FILE" ;;
 		*newerdigest*) echo "sha256:newer" > "$TQB_RUNNING_IMAGE_FILE" ;;
 		*newdigest*) echo "sha256:new" > "$TQB_RUNNING_IMAGE_FILE" ;;
@@ -330,5 +340,34 @@ if (
 	exit 1
 fi
 grep -q 'must be mode 600' "$TEST_ROOT/mode-error.log"
+
+unset TQB_STAT_MODE
+echo "sha256:current" > "$TQB_RUNNING_IMAGE_FILE"
+fingerprint="$(sha256sum "$TEST_ROOT/deploy/.env" | awk '{print $1}')"
+printf 'TUNNELQUESTBOT_IMAGE=ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted\nTQB_DEPLOYMENT_REVISION=test-deployment-revision\nTQB_CONFIG_FINGERPRINT=%s\n' \
+	"$fingerprint" > "$TEST_ROOT/deploy/.runtime.env"
+rm -f "$TQB_BACKUP_DIR"/*.db
+: > "$TQB_DOCKER_TRACE"
+(
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update --image \
+		ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest >/dev/null
+)
+grep -q 'pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest' \
+	"$TQB_DOCKER_TRACE"
+grep -q 'up -d ' "$TQB_DOCKER_TRACE"
+compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
+grep -q '^TUNNELQUESTBOT_IMAGE=ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot@sha256:candidatedigest$' \
+	"$TEST_ROOT/deploy/.runtime.env"
+[[ "$(cat "$TQB_RUNNING_IMAGE_FILE")" == "sha256:candidate" ]]
+
+if (
+	cd "$TEST_ROOT/deploy"
+	./manage.sh update --image >"$TEST_ROOT/image-arg-error.log" 2>&1
+); then
+	echo "update --image without a value unexpectedly succeeded" >&2
+	exit 1
+fi
+grep -qF -- '--image requires an image reference' "$TEST_ROOT/image-arg-error.log"
 
 echo "manage.sh tests passed"
