@@ -55,7 +55,9 @@ services:
       JAVA_TIMEZONE: "${METABASE_TIMEZONE:-UTC}"
     volumes:
       - metabase-data:/metabase-data
-      - metabase-snapshots:/snapshots:ro
+      # Writable: SQLite needs journal/WAL siblings even for analytics queries.
+      # This is the snapshot volume, not the live bot database.
+      - metabase-snapshots:/snapshots
 
 volumes:
   # Shared with the main tunnelquestbot project; never created by this file.
