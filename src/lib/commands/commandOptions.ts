@@ -54,15 +54,11 @@ export const snoozeHoursOptions = (option: SlashCommandNumberOption) =>
 		.setMinValue(1)
 		.setMaxValue(168);
 
-export const requiredsServerOptions = (option: SlashCommandStringOption) =>
+export const autoCompleteServerOptions = (option: SlashCommandStringOption) =>
 	option
 		.setName('server')
-		.setDescription('select a server')
-		.addChoices(
-			{ name: 'blue server', value: 'BLUE' },
-			{ name: 'green server', value: 'GREEN' },
-			{ name: 'red server', value: 'RED' },
-		)
+		.setDescription('select a monitored server')
+		.setAutocomplete(true)
 		.setRequired(true);
 
 export const priceCriteriaOptions = (option: SlashCommandNumberOption) =>

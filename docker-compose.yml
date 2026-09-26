@@ -38,16 +38,16 @@ services:
         - -ec
         - |
           mkdir -p /data/green /data/blue /data/red
-          touch /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.log
+          touch /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.jsonl /data/red/chat.log
           chown -R "$$P99_UID:$$P99_GID" /data/green /data/blue /data/red
           chmod 750 /data/green /data/blue /data/red
-          chmod 640 /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.log
+          chmod 640 /data/green/chat.jsonl /data/blue/chat.jsonl /data/red/chat.jsonl /data/red/chat.log
       volumes:
         - p99-logger-data:/data
       restart: "no"
 
     p99-green-logger:
-      image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}"
+      image: "${P99_GREEN_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}}"
       profiles: ["p99-loggers"]
       logging: *default-logging
       user: "${P99_UID:-65534}:${P99_GID:-65534}"
@@ -77,7 +77,7 @@ services:
         start_period: 60s
 
     p99-blue-logger:
-      image: "${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}"
+      image: "${P99_BLUE_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}}"
       profiles: ["p99-loggers"]
       logging: *default-logging
       user: "${P99_UID:-65534}:${P99_GID:-65534}"
@@ -101,6 +101,36 @@ services:
       restart: unless-stopped
       healthcheck:
         test: ["CMD", "/p99-logger-client", "health", "/data/blue/health.json"]
+        interval: 30s
+        timeout: 5s
+        retries: 3
+        start_period: 60s
+
+    p99-red-logger:
+      image: "${P99_RED_LOGGER_IMAGE:-${P99_LOGGER_IMAGE:-ghcr.io/rm-you/p99-logger-client:sha-fbb036a}}"
+      profiles: ["p99-loggers"]
+      logging: *default-logging
+      user: "${P99_UID:-65534}:${P99_GID:-65534}"
+      command: ["/config/config.json"]
+      depends_on:
+        p99-logger-init:
+          condition: service_completed_successfully
+        p99-log-retention:
+          condition: service_started
+      volumes:
+        - type: bind
+          source: "${P99_RED_CONFIG_FILE:-./p99-logger/red.json}"
+          target: /config/config.json
+          read_only: true
+          bind:
+            create_host_path: false
+        - p99-logger-data:/data
+      read_only: true
+      cap_drop: ["ALL"]
+      security_opt: ["no-new-privileges:true"]
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD", "/p99-logger-client", "health", "/data/red/health.json"]
         interval: 30s
         timeout: 5s
         retries: 3
