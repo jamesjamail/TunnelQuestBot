@@ -56,6 +56,17 @@ fi
 EOF
 chmod +x "$TEST_ROOT/bin/docker"
 
+cat > "$TEST_ROOT/bin/git" <<'EOF'
+#!/usr/bin/env bash
+set -eu
+if [[ "$*" == "rev-parse HEAD" ]]; then
+	echo "test-analytics-revision"
+	exit 0
+fi
+exec /usr/bin/git "$@"
+EOF
+chmod +x "$TEST_ROOT/bin/git"
+
 export PATH="$TEST_ROOT/bin:$PATH"
 export TQB_DOCKER_TRACE="$TEST_ROOT/docker.trace"
 
@@ -72,9 +83,9 @@ grep -q ' pull' "$TQB_DOCKER_TRACE"
 : > "$TQB_DOCKER_TRACE"
 (
 	cd "$TEST_ROOT/deploy"
-	./manage.sh update >/dev/null || true
+	TQB_BOT_READY_TIMEOUT=2 ./manage.sh update >/dev/null || true
 )
-# update may fail early in this minimal mock; it must never touch analytics.
+# update may fail later in this minimal mock; it must never touch analytics.
 if grep -q 'tunnelquestbot-analytics' "$TQB_DOCKER_TRACE"; then
 	echo "update touched the analytics project" >&2
 	exit 1
@@ -87,7 +98,7 @@ fi
 : > "$TQB_DOCKER_TRACE"
 (
 	cd "$TEST_ROOT/deploy"
-	./manage.sh start >/dev/null || true
+	TQB_BOT_READY_TIMEOUT=2 ./manage.sh start >/dev/null || true
 )
 if grep -q 'tunnelquestbot-analytics' "$TQB_DOCKER_TRACE"; then
 	echo "start touched the analytics project" >&2

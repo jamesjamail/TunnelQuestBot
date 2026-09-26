@@ -2,7 +2,8 @@ name: Validate deployment bundle
 
 on:
   pull_request:
-    branches: [run]
+    # run: final deploy-bundle base. operator-bundle: this stacked Metabase PR.
+    branches: [run, codex/run-operator-bundle]
   push:
     branches: [run]
 
@@ -38,8 +39,7 @@ jobs:
           jq -e '.services.metabase != null' /tmp/metabase.json
           jq -e '.services["metabase-snapshot"] != null' /tmp/metabase.json
           jq -e '.volumes["sqlite-data"] != null' /tmp/metabase.json
-          docker compose --env-file .env.example -f docker-compose.metabase.yml config |
-            grep -q '127.0.0.1:'
+          jq -e '.services.metabase.ports[0].host_ip == "127.0.0.1"' /tmp/metabase.json
           test -x metabase/snapshot-entrypoint.sh
 
       - name: Preserve legacy logfile settings
