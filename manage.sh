@@ -90,6 +90,37 @@ runtime_revision() {
 	runtime_value TQB_DEPLOYMENT_REVISION
 }
 
+# Doctor/start/backup never pull. Prefer the pinned digest, then the already
+# running container's image ref, then a local :latest tag. The hand-built
+# production host often has only a digest and no :latest tag.
+resolve_offline_bot_image() {
+	local pinned running
+	pinned="$(runtime_value TUNNELQUESTBOT_IMAGE)"
+	if [[ -n "$pinned" ]]; then
+		printf '%s' "$pinned"
+		return
+	fi
+	running="$(
+		docker inspect tunnelquestbot --format '{{.Config.Image}}' 2>/dev/null || true
+	)"
+	if [[ -n "$running" ]]; then
+		printf '%s' "$running"
+		return
+	fi
+	if docker image inspect "$BOT_IMAGE" >/dev/null 2>&1; then
+		printf '%s' "$BOT_IMAGE"
+		return
+	fi
+	die "No local bot image is available. Run ./manage.sh update once to pull and pin the promoted image."
+}
+
+ensure_offline_bot_image() {
+	local image
+	image="$(resolve_offline_bot_image)"
+	export TUNNELQUESTBOT_IMAGE="$image"
+	printf '%s' "$image"
+}
+
 declare -a COLLECTORS=()
 declare -a START_SERVICES=()
 LAST_BACKUP=""
@@ -442,9 +473,10 @@ command_name="${1:-}"
 case "$command_name" in
 	start)
 		basic_checks
-		app_doctor
+		image="$(ensure_offline_bot_image)"
+		app_doctor "$image"
 		BUILD_RETENTION_MODE="if-missing"
-		start_stack
+		start_stack "$(docker image inspect "$image" --format '{{.Id}}')"
 		;;
 	stop)
 		docker_checks
@@ -469,11 +501,12 @@ case "$command_name" in
 		;;
 	backup)
 		basic_checks
+		ensure_offline_bot_image >/dev/null
 		backup_database true
 		;;
 	doctor)
 		basic_checks
-		app_doctor
+		app_doctor "$(ensure_offline_bot_image)"
 		echo "Configuration OK."
 		;;
 	clear-cache)

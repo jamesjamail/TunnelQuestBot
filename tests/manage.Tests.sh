@@ -26,12 +26,19 @@ cat > "$TEST_ROOT/bin/docker" <<'EOF'
 #!/usr/bin/env bash
 set -eu
 printf '%s\n' "$*" >> "$TQB_DOCKER_TRACE"
+if [[ -n "${TUNNELQUESTBOT_IMAGE:-}" ]]; then
+	printf 'ENV TUNNELQUESTBOT_IMAGE=%s\n' "$TUNNELQUESTBOT_IMAGE" >> "$TQB_DOCKER_TRACE"
+fi
 if [[ "$*" == "inspect tunnelquestbot --format {{.Image}}" ]]; then
 	if [[ -f "$TQB_RUNNING_IMAGE_FILE" ]]; then
 		cat "$TQB_RUNNING_IMAGE_FILE"
 	else
 		echo "sha256:current"
 	fi
+	exit 0
+fi
+if [[ "$*" == "inspect tunnelquestbot --format {{.Config.Image}}" ]]; then
+	echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:running"
 	exit 0
 fi
 if [[ "$*" == "inspect tunnelquestbot --format {{.State.Status}}" ]]; then
@@ -47,10 +54,6 @@ if [[ "$1" == "logs" && "$*" != *"--tail"* ]]; then
 	echo "Starting log monitoring for server GREEN: /data/green/chat.jsonl"
 	exit 0
 fi
-if [[ "$*" == "image inspect tunnelquestbot-p99-log-retention" ]]; then
-	echo "retention-present"
-	exit 0
-fi
 if [[ "$*" == "image inspect "* ]]; then
 	if [[ "$*" == *"RepoDigests"* ]]; then
 		case "${TQB_DESIRED_IMAGE:-sha256:current}" in
@@ -59,6 +62,8 @@ if [[ "$*" == "image inspect "* ]]; then
 			sha256:newest) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:newestdigest" ;;
 			*) echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted" ;;
 		esac
+	elif [[ "$*" == *"@sha256:running"* ]]; then
+		echo "sha256:current"
 	else
 		echo "${TQB_DESIRED_IMAGE:-sha256:current}"
 	fi
@@ -279,6 +284,19 @@ if grep -q ' pull ' "$TQB_DOCKER_TRACE"; then
 	exit 1
 fi
 grep -q 'run --pull never' "$TQB_DOCKER_TRACE"
+
+rm -f "$TEST_ROOT/deploy/.runtime.env"
+: > "$TQB_DOCKER_TRACE"
+(
+	cd "$TEST_ROOT/deploy"
+	./manage.sh doctor >/dev/null
+)
+grep -q 'ENV TUNNELQUESTBOT_IMAGE=ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:running' \
+	"$TQB_DOCKER_TRACE"
+if [[ -f "$TEST_ROOT/deploy/.runtime.env" ]]; then
+	echo "doctor wrote .runtime.env" >&2
+	exit 1
+fi
 
 rm "$TEST_ROOT/deploy/p99-logger/green.json"
 if (

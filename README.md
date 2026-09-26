@@ -41,9 +41,12 @@ Pull the promoted image, validate, back up when applicable, and start:
 ```
 
 After the first update, `doctor` checks the locally pinned image and configuration
-without downloading or starting anything. `start` never pulls images, recreates
-the bot so `.env` changes apply, and builds the retention image only if it is
-missing. After enabling a server or editing `.env`, run `update` or `start`.
+without downloading or starting anything. Before that pin exists, `doctor` and
+`start` reuse the already-running bot image when `:latest` is not present locally
+(common on the hand-built host that only has a digest). `start` never pulls
+images, recreates the bot so `.env` changes apply, and builds the retention
+image only if it is missing. After enabling a server or editing `.env`, run
+`update` or `start`.
 
 ## Routine commands
 
