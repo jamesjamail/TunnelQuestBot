@@ -13,8 +13,10 @@ jobs:
 
       - name: Check shell scripts
         run: |
-          shellcheck manage.sh p99-logger/retention-entrypoint.sh tests/manage.Tests.sh
+          shellcheck manage.sh p99-logger/retention-entrypoint.sh metabase/snapshot-entrypoint.sh \
+            tests/manage.Tests.sh tests/manage.analytics.Tests.sh
           bash tests/manage.Tests.sh
+          bash tests/manage.analytics.Tests.sh
 
       - name: Validate Compose topology
         run: |
@@ -25,6 +27,19 @@ jobs:
           jq -e '.services["p99-red-logger"] != null' /tmp/compose.json
           jq -e '.services["p99-red-logger"].image | test("p99-logger-client")' /tmp/compose.json
           jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket","sqlite-data"]' /tmp/compose.json
+
+      - name: Validate optional Metabase companion
+        run: |
+          docker volume create tunnelquestbot_sqlite-data >/dev/null
+          docker compose --env-file .env.example -f docker-compose.metabase.yml config --quiet
+          docker compose --env-file .env.example -f docker-compose.metabase.yml config --format json > /tmp/metabase.json
+          jq -e '.name == "tunnelquestbot-analytics"' /tmp/metabase.json
+          jq -e '.services.metabase != null' /tmp/metabase.json
+          jq -e '.services["metabase-snapshot"] != null' /tmp/metabase.json
+          jq -e '.volumes["sqlite-data"] != null' /tmp/metabase.json
+          docker compose --env-file .env.example -f docker-compose.metabase.yml config |
+            grep -q '127.0.0.1:'
+          test -x metabase/snapshot-entrypoint.sh
 
       - name: Preserve legacy logfile settings
         run: |
@@ -42,6 +57,7 @@ jobs:
           COPY . /context
           RUN test -f /context/p99-logger/retention.Dockerfile \
            && test -f /context/p99-logger/retention-entrypoint.sh \
+           && test -f /context/metabase/snapshot-entrypoint.sh \
            && test ! -e /context/p99-logger/private-sentinel.json
           EOF
           docker compose --env-file .env.example --profile p99-loggers build p99-log-retention
