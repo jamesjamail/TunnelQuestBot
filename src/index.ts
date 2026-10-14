@@ -1,14 +1,11 @@
 import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
-const { Guilds, MessageContent, GuildMessages, GuildMembers, DirectMessages } =
-	GatewayIntentBits;
+const { Guilds, GuildMessages, DirectMessages } = GatewayIntentBits;
+//	No privileged intents. The bot runs on slash commands, buttons, and DMs it
+//	sends itself; nothing reads message content or listens for member events.
+//	MessageContent was left over from prefixed commands and GuildMembers from
+//	the old join greeting. Re-adding either triggers Discord's intent review.
 export const client = new Client({
-	intents: [
-		Guilds,
-		MessageContent,
-		GuildMessages,
-		GuildMembers,
-		DirectMessages,
-	],
+	intents: [Guilds, GuildMessages, DirectMessages],
 	partials: [Partials.Message, Partials.Channel, Partials.Reaction], //	needed for handling interactions from DM's
 });
 import type { SlashCommand } from './types';
