@@ -9,12 +9,17 @@ import {
 	unsnoozeWatch,
 	unwatch,
 } from '../../../../prisma/dbExecutors/watch';
-import { getMarketplaceViewForWatch } from '../../../../prisma/dbExecutors/marketplace';
+import {
+	getMarketplaceViewForWatch,
+	matchNewWatchToMarketplace,
+} from '../../../../prisma/dbExecutors/marketplace';
 import { buildMarketplaceDigestMessage } from '../../../marketplace/marketplaceDigestMessage';
 import { debug } from '../../../helpers/logger';
 
 // 	Every button on a digest changes the watch and then re-renders from what is
 // 	now stored, so the message can only ever show the watch's real state.
+// 	Buttons that can make a watch eligible for matching (list, restore,
+// 	refresh) match it first, as /watch does, rather than waiting for the sweep.
 async function applyAndRerender(
 	interaction: ButtonInteraction,
 	watch: Watch,
@@ -91,7 +96,8 @@ export function handleMarketplaceUnwatchActive<T>(
 	return applyAndRerender(
 		interaction,
 		watch,
-		() => setWatchActiveByWatchId(watch.id),
+		async () =>
+			matchNewWatchToMarketplace(await setWatchActiveByWatchId(watch.id)),
 		messageCopy.yourWatchHasBeenRestored(watch.itemName, watch.server),
 	);
 }
@@ -104,7 +110,7 @@ export function handleMarketplaceRefresh<T>(
 	return applyAndRerender(
 		interaction,
 		watch,
-		() => extendWatch(watch),
+		async () => matchNewWatchToMarketplace(await extendWatch(watch)),
 		messageCopy.yourWatchHasBeenExtended,
 	);
 }
@@ -119,7 +125,8 @@ export function handleMarketplaceListedInactive<T>(
 	return applyAndRerender(
 		interaction,
 		watch,
-		() => setWatchListed(watch.id, true),
+		async () =>
+			matchNewWatchToMarketplace(await setWatchListed(watch.id, true)),
 		messageCopy.yourWatchIsNowListed,
 	);
 }

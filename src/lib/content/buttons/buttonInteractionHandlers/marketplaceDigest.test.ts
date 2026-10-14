@@ -18,6 +18,7 @@ vi.mock('../../../../prisma/dbExecutors/watch', () => ({
 }));
 vi.mock('../../../../prisma/dbExecutors/marketplace', () => ({
 	getMarketplaceViewForWatch: vi.fn(),
+	matchNewWatchToMarketplace: vi.fn(async () => []),
 }));
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -38,7 +39,10 @@ import {
 	unsnoozeWatch,
 	unwatch,
 } from '../../../../prisma/dbExecutors/watch';
-import { getMarketplaceViewForWatch } from '../../../../prisma/dbExecutors/marketplace';
+import {
+	getMarketplaceViewForWatch,
+	matchNewWatchToMarketplace,
+} from '../../../../prisma/dbExecutors/marketplace';
 import { messageCopy } from '../../copy/messageCopy';
 import {
 	makeButtonInteraction,
@@ -82,6 +86,7 @@ describe('marketplace digest button handlers', () => {
 			setWatchActiveByWatchId,
 			extendWatch,
 			setWatchListed,
+			matchNewWatchToMarketplace,
 		]) {
 			vi.mocked(fn).mockClear();
 		}
@@ -176,6 +181,59 @@ describe('marketplace digest button handlers', () => {
 		).toContain(
 			'Listed: traders with a matching watch can see and contact you',
 		);
+	});
+
+	it('matches a newly listed watch before re-rendering, as /watch does', async () => {
+		const listed = makeWatch({ id: 1, isPublicallyTradeable: true });
+		vi.mocked(setWatchListed).mockResolvedValueOnce(listed);
+		const interaction = makeButtonInteraction();
+
+		await handleMarketplaceListedInactive(interaction, watch);
+
+		expect(matchNewWatchToMarketplace).toHaveBeenCalledWith(listed);
+		expect(
+			vi.mocked(matchNewWatchToMarketplace).mock.invocationCallOrder[0],
+		).toBeLessThan(
+			vi.mocked(getMarketplaceViewForWatch).mock.invocationCallOrder[0],
+		);
+	});
+
+	it('matches a restored watch before re-rendering', async () => {
+		const restored = makeWatch({ id: 1, active: true });
+		vi.mocked(setWatchActiveByWatchId).mockResolvedValueOnce(restored);
+		const interaction = makeButtonInteraction();
+
+		await handleMarketplaceUnwatchActive(interaction, watch);
+
+		expect(matchNewWatchToMarketplace).toHaveBeenCalledWith(restored);
+		expect(
+			vi.mocked(matchNewWatchToMarketplace).mock.invocationCallOrder[0],
+		).toBeLessThan(
+			vi.mocked(getMarketplaceViewForWatch).mock.invocationCallOrder[0],
+		);
+	});
+
+	it('matches a refreshed watch before re-rendering', async () => {
+		const refreshed = makeWatch({ id: 1, active: true });
+		vi.mocked(extendWatch).mockResolvedValueOnce(refreshed);
+		const interaction = makeButtonInteraction();
+
+		await handleMarketplaceRefresh(interaction, watch);
+
+		expect(matchNewWatchToMarketplace).toHaveBeenCalledWith(refreshed);
+		expect(
+			vi.mocked(matchNewWatchToMarketplace).mock.invocationCallOrder[0],
+		).toBeLessThan(
+			vi.mocked(getMarketplaceViewForWatch).mock.invocationCallOrder[0],
+		);
+	});
+
+	it('does not run matching when unlisting', async () => {
+		const interaction = makeButtonInteraction();
+
+		await handleMarketplaceListedActive(interaction, watch);
+
+		expect(matchNewWatchToMarketplace).not.toHaveBeenCalled();
 	});
 
 	it('unlists a listed watch, and the re-rendered digest stops showing traders', async () => {
