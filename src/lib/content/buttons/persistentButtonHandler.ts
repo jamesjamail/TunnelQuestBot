@@ -112,6 +112,22 @@ const handlerMapping: Record<string, HandlerFn> = {
 		handlers.handleWatchNotificationRefreshInactive,
 	[ButtonInteractionTypes.WatchNotificationWatchRefreshActive]:
 		handlers.handleWatchNotificationRefreshInactive,
+	[ButtonInteractionTypes.MarketplaceSnoozeInactive]:
+		handlers.handleMarketplaceSnoozeInactive,
+	[ButtonInteractionTypes.MarketplaceSnoozeActive]:
+		handlers.handleMarketplaceSnoozeActive,
+	[ButtonInteractionTypes.MarketplaceUnwatchInactive]:
+		handlers.handleMarketplaceUnwatchInactive,
+	[ButtonInteractionTypes.MarketplaceUnwatchActive]:
+		handlers.handleMarketplaceUnwatchActive,
+	[ButtonInteractionTypes.MarketplaceRefreshInactive]:
+		handlers.handleMarketplaceRefresh,
+	[ButtonInteractionTypes.MarketplaceRefreshActive]:
+		handlers.handleMarketplaceRefresh,
+	[ButtonInteractionTypes.MarketplaceListedInactive]:
+		handlers.handleMarketplaceListedInactive,
+	[ButtonInteractionTypes.MarketplaceListedActive]:
+		handlers.handleMarketplaceListedActive,
 };
 
 async function fetchMetadata(
@@ -125,7 +141,8 @@ async function fetchMetadata(
 	if (
 		actionType.startsWith('WatchSnooze') ||
 		actionType.startsWith('Unwatch') ||
-		actionType.startsWith('WatchRefresh')
+		actionType.startsWith('WatchRefresh') ||
+		actionType.startsWith('Marketplace')
 	) {
 		if (!id) return undefined;
 		return getWatchByWatchId(id);

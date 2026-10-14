@@ -19,6 +19,7 @@ import {
 import { resolveCanonicalItemName } from '../../lib/gameData/consolidatedItems';
 import { attemptAndCreateUserIfNeeded } from '../higherOrderFunctions';
 import { prisma } from '../init';
+import { deleteMarketplaceMatchesForWatchIds } from './marketplace';
 
 type CreateWatchInputArgs = {
 	itemName: string;
@@ -26,13 +27,22 @@ type CreateWatchInputArgs = {
 	watchType: WatchType;
 	priceRequirement?: number;
 	notes?: string;
+	// marketplace matching visibility; omitted on create the column default
+	// (off) applies, omitted on an update leaves the existing setting untouched
+	isPublicallyTradeable?: boolean;
 };
 
 export async function upsertWatch(
 	discordUserId: string,
 	watchData: CreateWatchInputArgs,
 ) {
-	const { server, watchType, priceRequirement, notes } = watchData;
+	const {
+		server,
+		watchType,
+		priceRequirement,
+		notes,
+		isPublicallyTradeable,
+	} = watchData;
 	const itemName = normalizeStoredWatchItemName(watchData.itemName);
 
 	// allow users to erase previously set price requirements by inputting 0 or less
@@ -58,6 +68,7 @@ export async function upsertWatch(
 			created: new Date(),
 			snoozedUntil: null,
 			notes,
+			isPublicallyTradeable,
 		},
 		create: {
 			discordUserId,
@@ -67,6 +78,7 @@ export async function upsertWatch(
 			snoozedUntil: null,
 			priceRequirement: updatedPriceRequirement,
 			notes,
+			isPublicallyTradeable,
 		},
 	});
 }
@@ -196,7 +208,7 @@ export async function unsnoozeWatchByItemName(
 
 export async function unwatch(metadata: MetadataType) {
 	// Update the watch entry where the id matches metadata.id
-	return prisma.watch.update({
+	const watch = await prisma.watch.update({
 		where: {
 			id: metadata.id,
 		},
@@ -205,6 +217,8 @@ export async function unwatch(metadata: MetadataType) {
 			snoozedUntil: null, //	unwatching should remove any snooze
 		},
 	});
+	await deleteMarketplaceMatchesForWatchIds([watch.id]);
+	return watch;
 }
 
 export async function unwatchByWatchName(
@@ -220,7 +234,7 @@ export async function unwatchByWatchName(
 	});
 
 	// Update the watch entry found above to set active to false
-	return prisma.watch.update({
+	const updatedWatch = await prisma.watch.update({
 		where: {
 			id: watch.id,
 		},
@@ -228,13 +242,31 @@ export async function unwatchByWatchName(
 			active: false,
 		},
 	});
+	await deleteMarketplaceMatchesForWatchIds([updatedWatch.id]);
+	return updatedWatch;
 }
 
 export async function unwatchAllWatches(interaction: Interaction) {
 	const discordUserId = interaction.user.id;
-	return await prisma.watch.updateMany({
+	const watches = await prisma.watch.findMany({
+		where: { discordUserId },
+		select: { id: true },
+	});
+	const result = await prisma.watch.updateMany({
 		where: { discordUserId },
 		data: { active: false },
+	});
+	await deleteMarketplaceMatchesForWatchIds(watches.map((watch) => watch.id));
+	return result;
+}
+
+export async function setWatchListed(
+	id: number,
+	isPublicallyTradeable: boolean,
+) {
+	return prisma.watch.update({
+		where: { id },
+		data: { isPublicallyTradeable },
 	});
 }
 

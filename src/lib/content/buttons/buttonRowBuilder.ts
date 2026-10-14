@@ -15,6 +15,7 @@ export const MessageTypes = {
 	link: 'link',
 	unlink: 'unlink',
 	watchNotification: 'watchNotification',
+	marketplace: 'marketplace',
 } as const;
 
 export type MessageTypes = (typeof MessageTypes)[keyof typeof MessageTypes];
@@ -71,6 +72,24 @@ const commandTypeButtonMappings: {
 		{
 			active: ButtonInteractionTypes.UnlinkCharacterActive,
 			inactive: ButtonInteractionTypes.UnlinkCharacterInactive,
+		},
+	],
+	[MessageTypes.marketplace]: [
+		{
+			active: ButtonInteractionTypes.MarketplaceSnoozeActive,
+			inactive: ButtonInteractionTypes.MarketplaceSnoozeInactive,
+		},
+		{
+			active: ButtonInteractionTypes.MarketplaceUnwatchActive,
+			inactive: ButtonInteractionTypes.MarketplaceUnwatchInactive,
+		},
+		{
+			active: ButtonInteractionTypes.MarketplaceRefreshActive,
+			inactive: ButtonInteractionTypes.MarketplaceRefreshInactive,
+		},
+		{
+			active: ButtonInteractionTypes.MarketplaceListedActive,
+			inactive: ButtonInteractionTypes.MarketplaceListedInactive,
 		},
 	],
 	[MessageTypes.watchNotification]: [
