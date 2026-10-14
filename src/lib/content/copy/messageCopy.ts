@@ -30,7 +30,7 @@ export const messageCopy = {
 			'**/help**\n' +
 			'> Displays available commands.\n\n' +
 			'**/watch `type` `item` `server` `price criteria` `notes` `marketplace`**\n' +
-			'> Receive a notification when an in-game item is auctioned meeting your criteria.  New watches are also listed in the marketplace, so matching traders can contact you; set `marketplace` to false to opt out.\n\n' +
+			'> Receive a notification when an in-game item is auctioned meeting your criteria.  Set `marketplace` to true to also list the watch in the marketplace, so matching traders can contact you. Watches are not listed by default.\n\n' +
 			'**/get watch `watch`**\n' +
 			'> Get information about an existing watch\n\n' +
 			'**/unwatch `watch` **\n' +

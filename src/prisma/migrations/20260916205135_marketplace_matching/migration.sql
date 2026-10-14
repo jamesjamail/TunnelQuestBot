@@ -1,20 +1,21 @@
 -- Marketplace matching: pairs an active WTB watch with an active WTS watch for
 -- the same item/server when both sides are marketplace-visible
--- (isPublicallyTradeable, opt-in and off by default).
+-- (isPublicallyTradeable, off by default for now while matching is in
+-- internal testing; the default is expected to flip to on afterwards).
 --
 -- Every watch that exists before this migration was created without the user
 -- knowing it would put their handle in strangers' DMs. Holding them back here
--- is deliberate, and paired with the default flip below so nothing - old or
--- new - ends up enrolled without asking. Owners can opt in explicitly with
--- /watch marketplace:true.
+-- is deliberate, and paired with the default flip below so that, for now,
+-- nothing - old or new - ends up enrolled without asking. Owners can opt in
+-- explicitly with /watch marketplace:true.
 UPDATE "Watch" SET "isPublicallyTradeable" = false;
 
 -- RedefineTables: isPublicallyTradeable's column default was true from the
--- initial migration; this feature makes it opt-in, so the default flips to
--- false. SQLite has no ALTER COLUMN for changing a default in place, so the
--- table is rebuilt; existing rows (already set to false above) are copied
--- across unchanged, and every constraint, index and foreign key is carried
--- over exactly.
+-- initial migration; it is set to false so the feature starts as opt-in
+-- during internal testing. SQLite has no ALTER COLUMN for changing a default
+-- in place, so the table is rebuilt; existing rows (already set to false
+-- above) are copied across unchanged, and every constraint, index and foreign
+-- key is carried over exactly.
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
 CREATE TABLE "new_Watch" (

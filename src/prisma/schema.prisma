@@ -46,10 +46,11 @@ model Watch {
   active                Boolean   @default(true)
   snoozedUntil          DateTime?
   notes                 String?
-  // allow other discord users to contact regarding item; opt-in, off by
-  // default for new watches - opt in with marketplace:true. Watches that
-  // predate marketplace matching were pinned to false by the migration and
-  // stay out until opted in, same as any other watch
+  // allow other discord users to contact regarding item. Off by default for
+  // now while marketplace matching is in internal testing - opt in with
+  // marketplace:true. The plan is to flip this default to true once testing
+  // is done. Watches that predate marketplace matching were pinned to false
+  // by the migration and stay out until opted in, same as any other watch
   isPublicallyTradeable Boolean   @default(false)
 
   user             User                   @relation(fields: [discordUserId], references: [discordUserId])
