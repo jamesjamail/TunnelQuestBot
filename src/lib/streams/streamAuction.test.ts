@@ -209,10 +209,15 @@ describe('streamAuctionToAllStreamChannels', () => {
 		});
 	});
 
-	it('throws from getEnvironmentVariable when server stream env is missing', async () => {
-		const original = process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+	it('reports a disabled server as a stream failure without throwing', async () => {
+		const originalClassic =
+			process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID;
+		const originalEmbedded =
+			process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+		delete process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID;
 		delete process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
 		resetConfigCache();
+		vi.mocked(gracefullyHandleError).mockClear();
 
 		try {
 			await expect(
@@ -222,11 +227,14 @@ describe('streamAuctionToAllStreamChannels', () => {
 					'WTS FBSS',
 					{ buying: [], selling: [] },
 				),
-			).rejects.toThrow(
-				/SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID is not set/,
-			);
+			).resolves.toBeUndefined();
+			expect(gracefullyHandleError).toHaveBeenCalled();
+			expect(getChannelSend('RED-classic')).not.toHaveBeenCalled();
+			expect(getChannelSend('RED-embedded')).not.toHaveBeenCalled();
 		} finally {
-			process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID = original;
+			process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID = originalClassic;
+			process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID =
+				originalEmbedded;
 			resetConfigCache();
 		}
 	});

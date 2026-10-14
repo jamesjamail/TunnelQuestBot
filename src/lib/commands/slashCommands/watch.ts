@@ -2,7 +2,7 @@ import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { SlashCommand } from '../../../types';
 import type { Server, WatchType } from '../../../prisma/client';
 import {
-	requiredsServerOptions,
+	autoCompleteServerOptions,
 	watchTypeOptions,
 	priceCriteriaOptions,
 	autoCompleteItemNameOptions,
@@ -15,6 +15,7 @@ import {
 	buttonRowBuilder,
 } from '../../content/buttons/buttonRowBuilder';
 import { autocompleteItems } from '../autocomplete/autocompleteItems';
+import { autocompleteServers } from '../autocomplete/autocompleteServers';
 import { upsertWatchSafely } from '../../../prisma/dbExecutors/watch';
 import {
 	buildMarketplacePreview,
@@ -24,6 +25,7 @@ import {
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
 import { isSnoozed } from '../../helpers/watches';
+import { enabledServers } from '../../../config';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -31,12 +33,17 @@ const command: SlashCommand = {
 		.setDescription('add or modify a watch.')
 		.addStringOption(watchTypeOptions)
 		.addStringOption(autoCompleteItemNameOptions)
-		.addStringOption(requiredsServerOptions)
+		.addStringOption(autoCompleteServerOptions)
 		.addNumberOption(priceCriteriaOptions)
 		.addStringOption(watchNotesOptions)
 		.addBooleanOption(marketplaceOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	async autocomplete(interaction) {
-		await autocompleteItems(interaction);
+		const focused = interaction.options.getFocused(true);
+		if (focused.name === 'server') {
+			await autocompleteServers(interaction);
+		} else {
+			await autocompleteItems(interaction);
+		}
 	},
 	execute: async (interaction) => {
 		try {
@@ -52,12 +59,21 @@ const command: SlashCommand = {
 				);
 			}
 
+			const server = args.server.value as Server;
+			if (!enabledServers().includes(server)) {
+				return await interaction.reply({
+					content:
+						'That server is not currently monitored. Select one of the suggested servers.',
+					flags: MessageFlags.Ephemeral,
+				});
+			}
+
 			// 	matching does a DB write per new pair, which can outlast Discord's
 			// 	3s ack window on a popular item
 			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 			const data = await upsertWatchSafely(interaction, {
-				server: args.server.value as Server,
+				server,
 				itemName: args.item.value as string,
 				watchType: args.type.value as WatchType,
 				priceRequirement: args?.price?.value as number,

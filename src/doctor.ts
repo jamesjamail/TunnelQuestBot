@@ -4,6 +4,7 @@ import {
 	CHANNEL_ID_KEYS,
 	ConfigError,
 	SNOWFLAKE_PATTERN,
+	enabledServers,
 	parseConfig,
 	serverEnvKeys,
 } from './config';
@@ -12,7 +13,6 @@ import {
 //	copies into the runtime image through a hand-maintained list of paths. If
 //	that list falls behind, the image still builds and this is what notices.
 import { consolidatedItemsAndAliases } from './lib/gameData/consolidatedItems';
-import { Server } from './prisma/client';
 //	Imported for the same reason as the game data: the runtime image copies a
 //	hand-maintained list of paths, and this is the module that notices when the
 //	list falls behind.
@@ -52,7 +52,7 @@ function main(): number {
 		throw error;
 	}
 
-	const servers = Object.keys(Server) as (keyof typeof Server)[];
+	const servers = enabledServers(parsed);
 
 	//	The schema only checks these are present. A value that is not a snowflake
 	//	is almost always a channel *name* pasted where an id belongs, which

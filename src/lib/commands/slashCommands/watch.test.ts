@@ -13,7 +13,7 @@ vi.mock('../../helpers/errors', () => ({
 	gracefullyHandleError: vi.fn(async () => undefined),
 }));
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
 import { EmbedBuilder, MessageFlags } from 'discord.js';
 import { Server, WatchType } from '../../../prisma/client';
 import command from './watch';
@@ -23,7 +23,21 @@ import {
 	commitMarketplacePreview,
 } from '../../marketplace/marketplaceMatching';
 import { gracefullyHandleError } from '../../helpers/errors';
-import { makeChatInteraction, makeWatch } from '../../../test/factories';
+import {
+	makeAutocompleteInteraction,
+	makeChatInteraction,
+	makeWatch,
+} from '../../../test/factories';
+import { resetConfigCache } from '../../../config';
+
+const redClassic = process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID;
+const redEmbedded = process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+
+afterEach(() => {
+	process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID = redClassic;
+	process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID = redEmbedded;
+	resetConfigCache();
+});
 
 function mockWatchOptions(
 	interaction: ReturnType<typeof makeChatInteraction>,
@@ -41,6 +55,35 @@ function mockWatchOptions(
 }
 
 describe('watch command', () => {
+	it('uses autocomplete rather than static choices for the server option', () => {
+		const serverOption = command.command
+			.toJSON()
+			.options?.find((option) => option.name === 'server');
+
+		expect(serverOption).toMatchObject({ autocomplete: true });
+		expect(serverOption?.choices).toBeUndefined();
+	});
+
+	it('autocompletes only enabled servers', async () => {
+		delete process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID;
+		delete process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+		resetConfigCache();
+		const interaction = makeAutocompleteInteraction({
+			options: {
+				getFocused: vi.fn((withName?: boolean) =>
+					withName ? { name: 'server', value: '' } : '',
+				),
+			},
+		});
+
+		await command.autocomplete?.(interaction);
+
+		expect(interaction.respond).toHaveBeenCalledWith([
+			{ name: 'blue server', value: 'BLUE' },
+			{ name: 'green server', value: 'GREEN' },
+		]);
+	});
+
 	it('upserts and replies with an embed and three inactive buttons', async () => {
 		const watch = makeWatch({ id: 12 });
 		vi.mocked(upsertWatchSafely).mockResolvedValue(watch);
@@ -214,5 +257,22 @@ describe('watch command', () => {
 				notes: undefined,
 			}),
 		);
+	});
+
+	it('rejects a stale selection for a disabled server', async () => {
+		delete process.env.SERVERS_RED_STREAM_CHANNEL_CLASSIC_ID;
+		delete process.env.SERVERS_RED_STREAM_CHANNEL_EMBEDDED_ID;
+		resetConfigCache();
+		vi.mocked(upsertWatchSafely).mockClear();
+		const interaction = makeChatInteraction();
+		mockWatchOptions(interaction, { server: { value: Server.RED } });
+
+		await command.execute(interaction);
+
+		expect(upsertWatchSafely).not.toHaveBeenCalled();
+		expect(interaction.reply).toHaveBeenCalledWith({
+			content: expect.stringContaining('not currently monitored'),
+			flags: MessageFlags.Ephemeral,
+		});
 	});
 });

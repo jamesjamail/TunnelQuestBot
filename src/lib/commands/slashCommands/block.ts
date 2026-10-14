@@ -7,9 +7,14 @@ import {
 	MessageTypes,
 } from '../../content/buttons/buttonRowBuilder';
 import { blockCommandResponseBuilder } from '../../content/messages/messageBuilder';
-import { playerNameOptions, requiredsServerOptions } from '../commandOptions';
+import {
+	playerNameOptions,
+	autoCompleteServerOptions,
+} from '../commandOptions';
+import { autocompleteServers } from '../autocomplete/autocompleteServers';
 import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
+import { enabledServers } from '../../../config';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
@@ -17,16 +22,27 @@ const command: SlashCommand = {
 		.setDescription('block a player')
 		.addStringOption(playerNameOptions)
 		.addStringOption(
-			requiredsServerOptions,
+			autoCompleteServerOptions,
 		) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
+	async autocomplete(interaction) {
+		await autocompleteServers(interaction);
+	},
 	execute: async (interaction) => {
 		try {
 			const args = getInteractionArgs(interaction, ['player', 'server']);
+			const server = args.server.value as Server;
+			if (!enabledServers().includes(server)) {
+				return await interaction.reply({
+					content:
+						'That server is not currently monitored. Select one of the suggested servers.',
+					flags: MessageFlags.Ephemeral,
+				});
+			}
 
 			const block = await addPlayerBlock(
 				interaction.user.id,
 				args.player.value as string, // TODO: why is this a number?
-				args.server.value as Server,
+				server,
 			);
 
 			const embeds = [blockCommandResponseBuilder(block)];

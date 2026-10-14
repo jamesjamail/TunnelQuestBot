@@ -27,9 +27,15 @@ export async function streamAuctionToAllStreamChannels(
 	auctionData: AuctionData,
 ): Promise<void> {
 	const keys = serverEnvKeys(server);
-
-	const classicChannelId = getEnvironmentVariable(keys.classicChannel);
-	const embeddedChannelId = getEnvironmentVariable(keys.embeddedChannel);
+	let classicChannelId: string;
+	let embeddedChannelId: string;
+	try {
+		classicChannelId = getEnvironmentVariable(keys.classicChannel);
+		embeddedChannelId = getEnvironmentVariable(keys.embeddedChannel);
+	} catch (err) {
+		await gracefullyHandleError(err);
+		return;
+	}
 
 	const rawAuction = `\`\`\`\n${player} auctions, '${auctionText}'\`\`\``;
 
