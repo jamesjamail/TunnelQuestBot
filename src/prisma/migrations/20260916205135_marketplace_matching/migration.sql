@@ -32,6 +32,12 @@ CREATE TABLE "new_Watch" (
     "isPublicallyTradeable" BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT "Watch_discordUserId_fkey" FOREIGN KEY ("discordUserId") REFERENCES "User" ("discordUserId") ON DELETE RESTRICT ON UPDATE CASCADE
 );
+-- Carry the AUTOINCREMENT high-water mark across. DROP TABLE removes Watch's
+-- sqlite_sequence row, and copying rows alone would only restore the highest
+-- surviving ID, so IDs of deleted watches (still encoded in persistent DM
+-- buttons) could be handed out again. RENAME moves this row to "Watch".
+INSERT INTO "sqlite_sequence" ("name", "seq")
+SELECT 'new_Watch', "seq" FROM "sqlite_sequence" WHERE "name" = 'Watch';
 INSERT INTO "new_Watch" ("id", "discordUserId", "server", "watchType", "itemName", "priceRequirement", "created", "active", "snoozedUntil", "notes", "isPublicallyTradeable")
 SELECT "id", "discordUserId", "server", "watchType", "itemName", "priceRequirement", "created", "active", "snoozedUntil", "notes", "isPublicallyTradeable" FROM "Watch";
 DROP TABLE "Watch";

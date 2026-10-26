@@ -145,7 +145,11 @@ async function fetchMetadata(
 		actionType.startsWith('Marketplace')
 	) {
 		if (!id) return undefined;
-		return getWatchByWatchId(id);
+		const watch = await getWatchByWatchId(id);
+		// Buttons outlive their watch, so a stale button can name an ID that
+		// now belongs to someone else - treat that the same as a missing watch.
+		if (watch?.discordUserId !== interaction.user.id) return undefined;
+		return watch;
 	}
 
 	if (
@@ -178,7 +182,7 @@ async function fetchMetadata(
 	) {
 		if (!id) return undefined;
 		const watch = await getWatchByWatchIdForWatchNotification(id);
-		if (!watch) return undefined;
+		if (watch?.discordUserId !== interaction.user.id) return undefined;
 		const player = extra ?? extractNotificationContext(interaction).player;
 		const { price, auctionMessage } =
 			extractNotificationContext(interaction);
