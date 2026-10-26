@@ -474,6 +474,56 @@ describe('runMarketplaceMatchingSweep', () => {
 
 		expect(recordMarketplaceNotifications).not.toHaveBeenCalled();
 	});
+
+	it('releases a partial claim when a later claim fails, so both counterparts stay deliverable', async () => {
+		// 	a stateful stand-in for the match rows' notified flags, so the
+		// 	second sweep sees whatever the first one left behind
+		const notified = new Set<number>();
+		const claim = async (matchId: number) => {
+			if (notified.has(matchId)) return false;
+			notified.add(matchId);
+			return true;
+		};
+		// 	first sweep: match 1 is claimed, then claiming match 2 throws
+		claimMarketplaceMatchNotification
+			.mockImplementation(claim)
+			.mockImplementationOnce(claim)
+			.mockRejectedValueOnce(new Error('db down'));
+		releaseMarketplaceMatchNotificationClaim.mockImplementation(
+			async (matchId: number) => {
+				notified.delete(matchId);
+			},
+		);
+		getMarketplaceViewForWatch.mockImplementation(async () =>
+			makeView(
+				[1, 2].map((matchId) =>
+					makeCounterpart(matchId, {
+						notified: notified.has(matchId),
+					}),
+				),
+			),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(client.users.send).not.toHaveBeenCalled();
+		expect(notified.size).toBe(0);
+		expect(gracefullyHandleError).toHaveBeenCalledWith(
+			expect.objectContaining({ message: 'db down' }),
+		);
+
+		await runMarketplaceMatchingSweep();
+
+		expect(client.users.send).toHaveBeenCalledTimes(1);
+		expect(buildMarketplaceDigestMessage).toHaveBeenCalledWith(
+			expect.anything(),
+			[
+				expect.objectContaining({ matchId: 1 }),
+				expect.objectContaining({ matchId: 2 }),
+			],
+			expect.any(String),
+		);
+	});
 });
 
 describe('buildMarketplacePreview', () => {

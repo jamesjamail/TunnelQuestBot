@@ -33,19 +33,34 @@ function canBeMessaged(watch: WatchWithUser): boolean {
 // 	Each match keeps its own claim so a concurrent caller (the event-triggered
 // 	check and the periodic sweep can race on the same row) can't tell the same
 // 	side twice, and so we know exactly which counterparts this caller owns.
+// 	If claiming one throws, whatever this call already claimed is released
+// 	before rethrowing - otherwise those rows would stay marked notified with
+// 	nothing sent, and never be picked up again automatically.
 async function claimCounterparts(
 	counterparts: MarketplaceCounterpart[],
 ): Promise<MarketplaceCounterpart[]> {
 	const claimed: MarketplaceCounterpart[] = [];
-	for (const counterpart of counterparts) {
-		if (
-			await claimMarketplaceMatchNotification(
-				counterpart.matchId,
-				counterpart.side,
-			)
-		) {
-			claimed.push(counterpart);
+	try {
+		for (const counterpart of counterparts) {
+			if (
+				await claimMarketplaceMatchNotification(
+					counterpart.matchId,
+					counterpart.side,
+				)
+			) {
+				claimed.push(counterpart);
+			}
 		}
+	} catch (error) {
+		await Promise.allSettled(
+			claimed.map((counterpart) =>
+				releaseMarketplaceMatchNotificationClaim(
+					counterpart.matchId,
+					counterpart.side,
+				),
+			),
+		);
+		throw error;
 	}
 	return claimed;
 }
@@ -179,29 +194,7 @@ export async function buildMarketplacePreview(
 export async function commitMarketplacePreview(
 	preview: MarketplacePreview,
 ): Promise<void> {
-	const claimed: MarketplaceCounterpart[] = [];
-	try {
-		for (const counterpart of preview.claimable) {
-			if (
-				await claimMarketplaceMatchNotification(
-					counterpart.matchId,
-					counterpart.side,
-				)
-			) {
-				claimed.push(counterpart);
-			}
-		}
-	} catch (error) {
-		await Promise.allSettled(
-			claimed.map((counterpart) =>
-				releaseMarketplaceMatchNotificationClaim(
-					counterpart.matchId,
-					counterpart.side,
-				),
-			),
-		);
-		throw error;
-	}
+	await claimCounterparts(preview.claimable);
 }
 
 export async function runMarketplaceMatchingSweep(): Promise<void> {
