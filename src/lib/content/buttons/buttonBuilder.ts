@@ -28,6 +28,14 @@ export const ButtonInteractionTypes = {
 		'WatchNotificationWatchRefreshInactive',
 	UnlinkCharacterActive: 'UnlinkCharacterActive',
 	UnlinkCharacterInactive: 'UnlinkCharacterInactive',
+	MarketplaceSnoozeActive: 'MarketplaceSnoozeActive',
+	MarketplaceSnoozeInactive: 'MarketplaceSnoozeInactive',
+	MarketplaceUnwatchActive: 'MarketplaceUnwatchActive',
+	MarketplaceUnwatchInactive: 'MarketplaceUnwatchInactive',
+	MarketplaceRefreshActive: 'MarketplaceRefreshActive',
+	MarketplaceRefreshInactive: 'MarketplaceRefreshInactive',
+	MarketplaceListedActive: 'MarketplaceListedActive',
+	MarketplaceListedInactive: 'MarketplaceListedInactive',
 } as const;
 
 export type ButtonInteractionTypes =
@@ -69,11 +77,13 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			case typeName.startsWith('WatchSnooze'):
 			case typeName.startsWith('UserSnooze'):
 			case typeName.startsWith('WatchNotificationSnooze'):
+			case typeName.startsWith('MarketplaceSnooze'):
 				builder.setCustomId(customId).setLabel('💤');
 				break;
 			case typeName.startsWith('Unwatch'):
 			case typeName.startsWith('GlobalUnblock'):
 			case typeName.startsWith('WatchNotificationUnwatch'):
+			case typeName.startsWith('MarketplaceUnwatch'):
 				builder.setCustomId(customId).setLabel('❌');
 				if (isActive) {
 					builder.setStyle(ButtonStyle.Danger);
@@ -82,12 +92,21 @@ export function buttonBuilder(buttonsToBuild: ButtonConfig[]) {
 			case typeName.startsWith('WatchRefresh'):
 			case typeName.startsWith('GlobalRefresh'):
 			case typeName.startsWith('WatchNotificationWatchRefresh'):
+			case typeName.startsWith('MarketplaceRefresh'):
 				builder.setCustomId(customId).setLabel('♻️');
 				break;
 			case typeName.startsWith('UnlinkCharacter'):
 				builder
 					.setCustomId(customId)
 					.setLabel(isActive ? 'Relink' : 'Unlink')
+					.setStyle(
+						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
+					);
+				break;
+			case typeName.startsWith('MarketplaceListed'):
+				builder
+					.setCustomId(customId)
+					.setLabel('🤝')
 					.setStyle(
 						isActive ? ButtonStyle.Success : ButtonStyle.Secondary,
 					);

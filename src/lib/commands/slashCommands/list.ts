@@ -9,14 +9,33 @@ import { isSnoozed } from '../../helpers/watches';
 import { messageCopy } from '../../content/copy/messageCopy';
 import { findOrCreateUser } from '../../../prisma/dbExecutors/user';
 import { getWatchesByUser } from '../../../prisma/dbExecutors/watch';
+import { getTraderBlocks } from '../../../prisma/dbExecutors/block';
+import { listWhatOptions } from '../commandOptions';
+import { getInteractionArgs } from '../getInteractionsArgs';
 import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
 	command: new SlashCommandBuilder()
 		.setName('list')
-		.setDescription('list watches in a concise format'),
+		.setDescription('list watches in a concise format')
+		.addStringOption(listWhatOptions) as unknown as SlashCommandBuilder, // chaining commands confuses typescript =(
 	execute: async (interaction) => {
 		try {
+			const args = getInteractionArgs(interaction, [], ['what']);
+
+			if (args?.what?.value === 'blockedTraders') {
+				const blocks = await getTraderBlocks(interaction.user.id);
+
+				return await interaction.reply({
+					content: blocks.length
+						? messageCopy.heresYourBlockedTraders(
+								blocks.map((b) => b.blockedDiscordUserId),
+							)
+						: messageCopy.youDontHaveAnyBlockedTraders,
+					flags: MessageFlags.Ephemeral,
+				});
+			}
+
 			const user = await findOrCreateUser(interaction.user);
 			const watches = await getWatchesByUser(interaction.user.id);
 

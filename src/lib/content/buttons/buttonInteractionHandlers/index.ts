@@ -17,6 +17,15 @@ import handleUnwatchActive from './unwatchActive';
 import handleGlobalUnblockActive from './globalUnblockActive';
 import handleWatchBlockActive from './watchBlockActive';
 import handleWatchNotificationUnwatchActive from './watchNotificationUnwatchActive';
+import {
+	handleMarketplaceSnoozeInactive,
+	handleMarketplaceSnoozeActive,
+	handleMarketplaceUnwatchInactive,
+	handleMarketplaceUnwatchActive,
+	handleMarketplaceRefresh,
+	handleMarketplaceListedInactive,
+	handleMarketplaceListedActive,
+} from './marketplaceDigest';
 
 export {
 	// buttons from command responses below...
@@ -40,4 +49,12 @@ export {
 	handleWatchBlockInactive,
 	handleWatchBlockActive,
 	handleWatchNotificationRefreshInactive,
+	// buttons from marketplace digests below...
+	handleMarketplaceSnoozeInactive,
+	handleMarketplaceSnoozeActive,
+	handleMarketplaceUnwatchInactive,
+	handleMarketplaceUnwatchActive,
+	handleMarketplaceRefresh,
+	handleMarketplaceListedInactive,
+	handleMarketplaceListedActive,
 };
