@@ -73,8 +73,12 @@ Closer to production, and the way to run against real EverQuest logs. Slower to
 iterate on, because every change needs a rebuild.
 
 ```sh
-docker compose up --build
+npm run compose -- up --build
 ```
+
+That bakes the latest release tag into the image as `<tag>-dev` (for example
+`1.4.0-dev`). A checkout with no release tags gets `dev`. Plain
+`docker compose build` cannot see git tags, so it leaves the version as `dev`.
 
 Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
 `FAKE_LOGS=true` to run the container stack without a game client.
@@ -126,7 +130,7 @@ Start the bot and collectors with:
 
 ```sh
 docker compose --profile p99-loggers pull p99-green-logger p99-blue-logger p99-red-logger
-docker compose --profile p99-loggers up -d --build
+npm run compose -- --profile p99-loggers up -d --build
 docker compose --profile p99-loggers ps
 docker compose logs -f p99-green-logger p99-blue-logger p99-red-logger tunnelquestbot
 ```
@@ -181,7 +185,7 @@ Two commands, from the repo directory:
 
 ```sh
 git pull
-docker compose up -d --build
+npm run compose -- up -d --build
 ```
 
 After the one-time PostgreSQL import (if needed), that is the whole update. Database migrations are applied automatically when the
@@ -208,7 +212,9 @@ Lines prefixed with `[entrypoint]` come from the startup sequence:
   explains what it found.
 
 To confirm the running version, use the bot's `/version` command. A release
-image reports its tag. An image built from this checkout reports `dev`.
+image reports its tag. `npm run dev` and `npm run compose` report the latest
+release tag with `-dev` appended, or `dev` when this checkout has no release
+tags. `package.json` is not that version.
 
 ## Testing
 

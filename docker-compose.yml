@@ -163,6 +163,10 @@ services:
       build:
         context: .
         dockerfile: Dockerfile
+        args:
+          # Set by `npm run compose`. Plain compose builds stay `dev` because
+          # .git is excluded from the build context.
+          TUNNELQUESTBOT_VERSION: ${TUNNELQUESTBOT_VERSION:-dev}
       container_name: tunnelquestbot
       logging: *default-logging
       depends_on:

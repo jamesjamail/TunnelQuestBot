@@ -21,6 +21,7 @@ import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse } from 'dotenv';
 import { expand } from 'dotenv-expand';
+import { devVersion } from './dev-version.mjs';
 
 //	Resolve against the repo, not the cwd, so `node scripts/dev.mjs` behaves the
 //	same from a subdirectory as `npm run dev` does from the root.
@@ -177,6 +178,9 @@ function main() {
 		readEnvFile(join(repoRoot, '.env')),
 	);
 	Object.assign(process.env, applied);
+	if (!process.env.TUNNELQUESTBOT_VERSION) {
+		process.env.TUNNELQUESTBOT_VERSION = devVersion();
+	}
 
 	for (const signal of ['SIGINT', 'SIGTERM']) {
 		process.on(signal, () => {

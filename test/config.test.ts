@@ -87,6 +87,23 @@ describe('deployment and config invariants', () => {
 });
 
 describe('open-source scaffolding', () => {
+	it('does not store the release version in package.json', () => {
+		const pkg = JSON.parse(readRepoFile('package.json')) as {
+			version?: string;
+			description?: string;
+		};
+		const lock = JSON.parse(readRepoFile('package-lock.json')) as {
+			version?: string;
+			packages?: { '': { version?: string } };
+		};
+
+		// A normal-looking semver here is what people used to bump in the PR.
+		expect(pkg.version).toBe('0.0.0-unused');
+		expect(pkg.description).toMatch(/git tags/);
+		expect(lock.version).toBe(pkg.version);
+		expect(lock.packages?.[''].version).toBe(pkg.version);
+	});
+
 	it('ships the license it claims', () => {
 		//	package.json declared ISC for years with no LICENSE file, which makes
 		//	the claim unenforceable and blocks some downstream users outright
@@ -313,6 +330,9 @@ describe('startup migration invariants', () => {
 		expect(promote).toMatch(/release-version\.sh/);
 		expect(promote).toMatch(/:latest/);
 		expect(promote).not.toMatch(/dev\/tunnelquestbot:latest/);
+		expect(readRepoFile('docker-compose.yml')).toMatch(
+			/TUNNELQUESTBOT_VERSION: \$\{TUNNELQUESTBOT_VERSION:-dev\}/,
+		);
 	});
 
 	it('accepts a semver release tag and rejects everything else', () => {
