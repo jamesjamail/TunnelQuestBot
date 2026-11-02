@@ -8,8 +8,10 @@ const command: SlashCommand = {
 		.setDescription('display version information'),
 	execute: async (interaction) => {
 		try {
+			// Baked into the image from the release tag. Unset for a local build.
+			const version = process.env.TUNNELQUESTBOT_VERSION || 'dev';
 			return await interaction.reply({
-				content: `TunnelQuestBot version: ${process.env.npm_package_version}`,
+				content: `TunnelQuestBot version: ${version}`,
 				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {

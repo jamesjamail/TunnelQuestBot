@@ -6,6 +6,10 @@ on:
       publish:
         type: boolean
         default: false
+      version:
+        description: Semver baked into a published image, with no leading v
+        type: string
+        default: ''
 
 # Inherit the caller's permissions: PR smoke runs have contents:read only.
 jobs:
@@ -15,6 +19,20 @@ jobs:
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot
     steps:
       - uses: actions/checkout@v7
+
+      # Fail before the digest is pushed. publish receives the version already
+      # normalized by release-version.sh (1.4.0, not v1.4.0).
+      - name: Require a semver version to publish
+        if: inputs.publish
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          version="$(sh scripts/release-version.sh "$VERSION")"
+          if [ "$version" != "$VERSION" ]; then
+            echo "publish version must be semver with no leading v (got: $VERSION)" >&2
+            exit 1
+          fi
+
       - uses: docker/setup-buildx-action@v4
 
       - uses: docker/login-action@v4
@@ -24,7 +42,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Main pushes an untagged digest; PRs load the build into the local daemon.
+      # Release pushes an untagged digest; other callers load the build locally.
       # Neither path builds again after smoke testing.
       - uses: docker/build-push-action@v7
         id: build
@@ -33,6 +51,7 @@ jobs:
           platforms: linux/amd64
           load: ${{ !inputs.publish }}
           tags: ${{ !inputs.publish && 'tunnelquestbot:smoke' || '' }}
+          build-args: TUNNELQUESTBOT_VERSION=${{ inputs.publish && inputs.version || 'dev' }}
           outputs: ${{ inputs.publish && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE_NAME) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -54,12 +73,14 @@ jobs:
         run: sh scripts/ci-postgres-import.sh "$TEST_IMAGE"
 
       # This step runs only after smoke succeeds, and tags the same manifest.
-      - name: Promote the tested digest
+      # prod:latest is not moved here. Promote Image Dev->Prod does that.
+      - name: Tag the tested digest
         if: inputs.publish
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
+          VERSION: ${{ inputs.version }}
         run: |
           docker buildx imagetools create --prefer-index=false \
+            --tag "$IMAGE_NAME:$VERSION" \
             --tag "$IMAGE_NAME:$GITHUB_SHA" \
-            --tag "$IMAGE_NAME:latest" \
             "$IMAGE_NAME@$DIGEST"

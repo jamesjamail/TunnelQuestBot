@@ -1,20 +1,49 @@
 name: Promote Image Dev->Prod
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release to promote, such as 1.4.0 or v1.4.0
+        required: true
+        type: string
+
+# This is the only workflow that moves prod:latest.
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   promote-image:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the release version
+        id: version
+        env:
+          RAW: ${{ inputs.version }}
+        run: |
+          version="$(sh scripts/release-version.sh "$RAW")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Pull latest dev image
-        run: docker pull ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:latest
-      - name: Re-tag image for prod
-        run: docker tag ghcr.io/${{ github.repository_owner }}/tunnelquestbot/dev/tunnelquestbot:latest ghcr.io/${{ github.repository_owner }}/tunnelquestbot/prod/tunnelquestbot:latest
-      - name: Push image to prod
-        run: docker push ghcr.io/${{ github.repository_owner }}/tunnelquestbot/prod/tunnelquestbot:latest
+
+      - name: Point prod at that dev image
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          owner="${{ github.repository_owner }}"
+          dev="ghcr.io/${owner}/tunnelquestbot/dev/tunnelquestbot:${VERSION}"
+          prod="ghcr.io/${owner}/tunnelquestbot/prod/tunnelquestbot"
+          docker buildx imagetools create --prefer-index=false \
+            --tag "${prod}:${VERSION}" \
+            --tag "${prod}:latest" \
+            "$dev"
