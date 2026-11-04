@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import {
 	type BlockedPlayer,
 	type BlockedPlayerByWatch,
+	type MarketplaceMatch,
 	type PlayerLink,
 	Server,
 	type User,
@@ -50,6 +51,43 @@ export function makeWatchWithUser(
 		...makeWatch(overrides),
 		user: makeUser(userOverrides),
 		blockedWatches: [] as BlockedPlayerByWatch[],
+	};
+}
+
+export function makeMarketplaceMatch(
+	overrides: Partial<MarketplaceMatch> = {},
+): MarketplaceMatch {
+	return {
+		id: 1,
+		wtbWatchId: 1,
+		wtsWatchId: 2,
+		server: Server.BLUE,
+		itemName: 'FLOWING BLACK SILK SASH',
+		createdAt: new Date(),
+		wtbNotifiedAt: null,
+		wtsNotifiedAt: null,
+		...overrides,
+	};
+}
+
+export function makeMarketplaceMatchWithWatches(
+	overrides: Partial<MarketplaceMatch> = {},
+) {
+	return {
+		...makeMarketplaceMatch(overrides),
+		wtbWatch: makeWatchWithUser({
+			id: overrides.wtbWatchId ?? 1,
+			discordUserId: '100',
+			watchType: WatchType.WTB,
+		}),
+		wtsWatch: makeWatchWithUser(
+			{
+				id: overrides.wtsWatchId ?? 2,
+				discordUserId: '200',
+				watchType: WatchType.WTS,
+			},
+			{ discordUserId: '200' },
+		),
 	};
 }
 

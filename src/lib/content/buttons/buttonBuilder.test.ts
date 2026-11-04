@@ -127,6 +127,39 @@ describe('buttonBuilder', () => {
 		).toBe('🔕');
 	});
 
+	it('labels the marketplace buttons like their watch counterparts, plus a handshake for listing', () => {
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceSnoozeInactive)
+				.label,
+		).toBe('💤');
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceUnwatchInactive)
+				.label,
+		).toBe('❌');
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceRefreshInactive)
+				.label,
+		).toBe('♻️');
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceListedInactive)
+				.label,
+		).toBe('🤝');
+	});
+
+	it('highlights a listed watch, and marks an ended one as dangerous to click', () => {
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceListedActive).style,
+		).toBe(ButtonStyle.Success);
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceListedInactive)
+				.style,
+		).toBe(ButtonStyle.Secondary);
+		expect(
+			buttonFromRow(ButtonInteractionTypes.MarketplaceUnwatchActive)
+				.style,
+		).toBe(ButtonStyle.Danger);
+	});
+
 	it('uses Relink when active and Unlink when inactive for UnlinkCharacter', () => {
 		expect(
 			buttonFromRow(ButtonInteractionTypes.UnlinkCharacterActive).label,

@@ -101,6 +101,17 @@ export async function importPostgres(
 					for (const row of batch.rows) {
 						insert.run(
 							...columns.map(({ name }) => {
+								// 	Every watch imported from a legacy PostgreSQL database
+								// 	predates marketplace matching, same as the SQLite-upgrade
+								// 	UPDATE in the marketplace_matching migration - the source
+								// 	column's value (true by legacy default) is not consent to
+								// 	be listed, so it must not be copied.
+								if (
+									table === 'Watch' &&
+									name === 'isPublicallyTradeable'
+								) {
+									return 0;
+								}
 								const value = row[name];
 								if (value instanceof Date) {
 									if (!Number.isFinite(value.getTime()))

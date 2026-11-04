@@ -24,6 +24,9 @@ import {
 	type HistoricalData,
 	getEmbedCharacterCount,
 	listCommandResponseBuilder,
+	MARKETPLACE_DIGEST_ROW_LIMIT,
+	marketplaceCommandResponseBuilder,
+	marketplaceDigestBuilder,
 	packEmbedsForDiscord,
 	playerlinkCommandResponseBuilder,
 	watchCommandResponseBuilder,
@@ -34,6 +37,10 @@ import {
 	fetchHistoricalPricingForItems,
 } from '../../helpers/fetchHistoricalPricing';
 import { getPlayerLink } from '../../../prisma/dbExecutors/playerLink';
+import type {
+	MarketplaceCounterpart,
+	MarketplaceWatchView,
+} from '../../../prisma/dbExecutors/marketplace';
 import { gracefullyHandleError } from '../../helpers/errors';
 import {
 	makeBlockedPlayer,
@@ -259,6 +266,421 @@ describe('watchCommandResponseBuilder', () => {
 			}),
 		);
 		assertEmbedWithinDiscordLimits(embed);
+	});
+});
+
+function makeCounterpart(
+	id: number,
+	watchOverrides: Parameters<typeof makeWatchWithUser>[0] = {},
+	userOverrides: Parameters<typeof makeWatchWithUser>[1] = {},
+): MarketplaceCounterpart {
+	return {
+		matchId: id,
+		side: 'wtb',
+		notified: false,
+		watch: makeWatchWithUser(
+			{
+				id: 1000 + id,
+				discordUserId: `${200 + id}`,
+				watchType: WatchType.WTB,
+				...watchOverrides,
+			},
+			{
+				discordUserId: `${200 + id}`,
+				discordUsername: `Trader${id}`,
+				...userOverrides,
+			},
+		),
+	};
+}
+
+describe('marketplaceDigestBuilder', () => {
+	const mine = makeWatchWithUser({
+		itemName: KNOWN_ITEM,
+		server: Server.GREEN,
+		watchType: WatchType.WTS,
+	});
+
+	it('titles the digest with the item and server, and lists who to contact', () => {
+		const embed = marketplaceDigestBuilder(
+			mine,
+			[makeCounterpart(1)],
+			'New traders',
+		).toJSON();
+
+		expect(embed.title).toBe(
+			'Marketplace: Flowing Black Silk Sash (Green)',
+		);
+		expect(embed.description).toContain('<@201>');
+		expect(embed.description).toContain('Trader1');
+		assertEmbedWithinDiscordLimits(
+			marketplaceDigestBuilder(mine, [makeCounterpart(1)], 'x'),
+		);
+	});
+
+	it('truncates a maximum-length item name so the title stays within Discord limits', () => {
+		const longName = 'x'.repeat(255);
+		const embed = marketplaceDigestBuilder(
+			makeWatchWithUser({
+				itemName: longName,
+				server: Server.GREEN,
+				watchType: WatchType.WTS,
+			}),
+			[makeCounterpart(1)],
+			'x',
+		).toJSON();
+
+		expect(embed.title?.length).toBeLessThanOrEqual(256);
+		expect(embed.title).toMatch(/^Marketplace: Xx+… \(Green\)$/);
+		assertEmbedWithinDiscordLimits(
+			marketplaceDigestBuilder(
+				makeWatchWithUser({
+					itemName: longName,
+					server: Server.GREEN,
+					watchType: WatchType.WTS,
+				}),
+				[makeCounterpart(1)],
+				'x',
+			),
+		);
+	});
+
+	it("says what the viewer is doing, under the caller's heading", () => {
+		const embed = marketplaceDigestBuilder(
+			mine,
+			[makeCounterpart(1)],
+			'New traders matching your watch',
+		).toJSON();
+
+		expect(embed.description).toContain(
+			"New traders matching your watch (you're buying):",
+		);
+	});
+
+	it('calls the owner of a WTB watch the seller and never prints a raw watch type', () => {
+		const embed = marketplaceDigestBuilder(
+			mine,
+			[
+				makeCounterpart(1, {
+					watchType: WatchType.WTB,
+					priceRequirement: 500,
+				}),
+			],
+			'x',
+		).toJSON();
+
+		expect(embed.description).toContain('selling, asking 500');
+		expect(embed.description).not.toMatch(/WTB|WTS/);
+	});
+
+	it('calls the owner of a WTS watch the buyer and never prints a raw watch type', () => {
+		const embed = marketplaceDigestBuilder(
+			makeWatchWithUser({ watchType: WatchType.WTB }),
+			[
+				makeCounterpart(1, {
+					watchType: WatchType.WTS,
+					priceRequirement: 500,
+				}),
+			],
+			'x',
+		).toJSON();
+
+		expect(embed.description).toContain('buying, offering up to 500');
+		expect(embed.description).toContain("(you're selling)");
+		expect(embed.description).not.toMatch(/WTB|WTS/);
+	});
+
+	it('says so when the counterpart set no price', () => {
+		const embed = marketplaceDigestBuilder(
+			mine,
+			[makeCounterpart(1, { priceRequirement: null })],
+			'x',
+		).toJSON();
+
+		expect(embed.description).toContain('no price set');
+	});
+
+	it('caps the rows and points at /marketplace for the rest', () => {
+		const counterparts = Array.from({ length: 50 }, (_, i) =>
+			makeCounterpart(i + 1),
+		);
+
+		const embed = marketplaceDigestBuilder(mine, counterparts, 'x');
+		const description = embed.toJSON().description ?? '';
+
+		expect(description.match(/<@\d+>/g)).toHaveLength(
+			MARKETPLACE_DIGEST_ROW_LIMIT,
+		);
+		expect(description).toContain(
+			`…and ${50 - MARKETPLACE_DIGEST_ROW_LIMIT} more. Use /marketplace`,
+		);
+		assertEmbedWithinDiscordLimits(embed);
+	});
+
+	it('shows the newest counterparts, in the order given', () => {
+		const embed = marketplaceDigestBuilder(
+			mine,
+			[makeCounterpart(9), makeCounterpart(3)],
+			'x',
+		).toJSON();
+
+		const description = embed.description ?? '';
+		expect(description.indexOf('Trader9')).toBeLessThan(
+			description.indexOf('Trader3'),
+		);
+	});
+
+	it('spells out that a listed watch can be contacted, in the footer', () => {
+		const footer = marketplaceDigestBuilder(
+			mine,
+			[makeCounterpart(1)],
+			'x',
+		).toJSON().footer?.text;
+
+		expect(footer).toContain(
+			'Listed: traders with a matching watch can see and contact you',
+		);
+		expect(footer).toContain('/marketplace hide');
+	});
+
+	it('spells out that an unlisted watch is hidden, and says nothing was matched', () => {
+		const embed = marketplaceDigestBuilder(
+			{ ...mine, isPublicallyTradeable: false },
+			[makeCounterpart(1)],
+			'x',
+		).toJSON();
+
+		expect(embed.footer?.text).toContain(
+			'Not listed: other traders cannot see this watch',
+		);
+		expect(embed.description).toContain('not listed');
+		expect(embed.description).not.toContain('<@201>');
+	});
+
+	it('spells out that a snoozed watch stays listed but is not messaged', () => {
+		const footer = marketplaceDigestBuilder(
+			{ ...mine, snoozedUntil: new Date(Date.now() + 60 * 60 * 1000) },
+			[makeCounterpart(1)],
+			'x',
+		).toJSON().footer?.text;
+
+		expect(footer).toContain(
+			'Snoozed: you stay listed, but will not be messaged',
+		);
+	});
+
+	it('says an ended watch has ended and offers to restore it', () => {
+		const embed = marketplaceDigestBuilder(
+			{ ...mine, active: false },
+			[],
+			'x',
+		).toJSON();
+
+		expect(embed.description).toContain('has ended');
+		expect(embed.footer?.text).toContain('restore');
+	});
+
+	it('says so when nothing matches', () => {
+		const embed = marketplaceDigestBuilder(mine, [], 'x').toJSON();
+
+		expect(embed.description).toContain('No traders match');
+	});
+});
+
+describe('marketplaceCommandResponseBuilder', () => {
+	const user = makeUser();
+
+	function makeView(
+		id: number,
+		counterparts: MarketplaceCounterpart[] = [],
+		overrides: Parameters<typeof makeWatchWithUser>[0] = {},
+	): MarketplaceWatchView {
+		return {
+			watch: makeWatchWithUser({
+				id,
+				itemName: `ITEM ${id}`,
+				watchType: WatchType.WTS,
+				server: Server.GREEN,
+				...overrides,
+			}),
+			counterparts,
+		};
+	}
+
+	it('has a field per watch, grouped under its server', () => {
+		const embeds = marketplaceCommandResponseBuilder(
+			[
+				makeView(1, [makeCounterpart(1)]),
+				makeView(2, [], { server: Server.BLUE }),
+			],
+			user,
+			[],
+		).map((e) => e.toJSON());
+
+		expect(embeds.map((e) => e.author?.name)).toEqual([
+			'Project 1999 Green Server',
+			'Project 1999 Blue Server',
+		]);
+		expect(embeds[0].fields?.[0]?.name).toContain('Item 1');
+		expect(embeds[0].fields?.[0]?.name).toContain('buying');
+		expect(embeds[0].fields?.[0]?.value).toContain('<@201>');
+	});
+
+	it('marks listed, snoozed and unlisted watches differently, and says why for unlisted', () => {
+		const fields = marketplaceCommandResponseBuilder(
+			[
+				makeView(1),
+				makeView(2, [], {
+					snoozedUntil: new Date(Date.now() + 60 * 60 * 1000),
+				}),
+				makeView(3, [], { isPublicallyTradeable: false }),
+			],
+			user,
+			[],
+		)[0].toJSON().fields;
+
+		expect(fields?.[0].name).toContain('🤝');
+		expect(fields?.[0].value).toBe('No matching traders yet.');
+		expect(fields?.[1].name).toContain('💤');
+		expect(fields?.[2].name).toContain('🚫');
+		expect(fields?.[2].value).toContain('Not listed');
+	});
+
+	it('splits a watch with more counterparts than fit in one field into continuation fields', () => {
+		const counterparts = Array.from({ length: 12 }, (_, i) =>
+			makeCounterpart(i + 1),
+		);
+
+		const fields = marketplaceCommandResponseBuilder(
+			[makeView(1, counterparts)],
+			user,
+			[],
+		)[0].toJSON().fields;
+
+		expect(fields).toHaveLength(2);
+		expect(fields?.[0].value.match(/<@\d+>/g)).toHaveLength(8);
+		expect(fields?.[1].name).toContain('cont.');
+		expect(fields?.[1].value.match(/<@\d+>/g)).toHaveLength(4);
+		// 	every counterpart is reachable somewhere, not merely counted
+		for (const counterpart of counterparts) {
+			expect(
+				fields?.some((field) =>
+					field.value.includes(
+						`<@${counterpart.watch.discordUserId}>`,
+					),
+				),
+			).toBe(true);
+		}
+	});
+
+	it('reaches every counterpart across multiple watches with large backlogs', () => {
+		const counterpartsA = Array.from({ length: 20 }, (_, i) =>
+			makeCounterpart(i + 1),
+		);
+		const counterpartsB = Array.from({ length: 20 }, (_, i) =>
+			makeCounterpart(i + 21),
+		);
+
+		const embeds = marketplaceCommandResponseBuilder(
+			[
+				makeView(1, counterpartsA),
+				makeView(2, counterpartsB, { server: Server.BLUE }),
+			],
+			user,
+			[],
+		);
+
+		for (const embed of embeds) {
+			assertEmbedWithinDiscordLimits(embed);
+		}
+		const allValues = embeds
+			.flatMap((embed) => embed.toJSON().fields ?? [])
+			.map((field) => field.value)
+			.join('\n');
+		for (const counterpart of [...counterpartsA, ...counterpartsB]) {
+			expect(allValues).toContain(
+				`<@${counterpart.watch.discordUserId}>`,
+			);
+		}
+	});
+
+	it('notes a global snooze without hiding the listings', () => {
+		const embeds = marketplaceCommandResponseBuilder(
+			[makeView(1)],
+			makeUser({ snoozedUntil: new Date(Date.now() + 60 * 60 * 1000) }),
+			[],
+		).map((e) => e.toJSON());
+
+		expect(embeds[0].fields?.[0].value).toContain(
+			'Global snooze is active',
+		);
+		expect(embeds[0].fields?.[0].value).toContain('you stay listed');
+		expect(embeds).toHaveLength(2);
+	});
+
+	it('lists hidden traders, and how to undo it, so the state is readable', () => {
+		const embeds = marketplaceCommandResponseBuilder([makeView(1)], user, [
+			'300',
+			'400',
+		]).map((e) => e.toJSON());
+
+		const hidden = embeds[embeds.length - 1]?.fields?.[0];
+		expect(hidden?.name).toBe('Hidden traders');
+		expect(hidden?.value).toContain('<@300>');
+		expect(hidden?.value).toContain('<@400>');
+		expect(hidden?.value).toContain('/marketplace unhide');
+	});
+
+	it('shows no hidden section when nothing is hidden', () => {
+		const embeds = marketplaceCommandResponseBuilder(
+			[makeView(1)],
+			user,
+			[],
+		);
+
+		expect(
+			embeds.some(
+				(e) => e.toJSON().fields?.[0]?.name === 'Hidden traders',
+			),
+		).toBe(false);
+	});
+
+	it('ends with the hint for hiding a trader', () => {
+		const embeds = marketplaceCommandResponseBuilder(
+			[makeView(1)],
+			user,
+			[],
+		);
+
+		expect(embeds[embeds.length - 1]?.toJSON().footer?.text).toContain(
+			'/marketplace hide',
+		);
+	});
+
+	it('always fits Discord, however many watches and counterparts there are', () => {
+		const counterparts = Array.from({ length: 8 }, (_, i) =>
+			makeCounterpart(
+				i + 1,
+				{ priceRequirement: 1_500_000 },
+				{
+					discordUsername: 'A'.repeat(32),
+				},
+			),
+		);
+		const views = Array.from({ length: 60 }, (_, i) =>
+			makeView(i + 1, counterparts, { itemName: 'X'.repeat(200) }),
+		);
+
+		const embeds = marketplaceCommandResponseBuilder(views, user, []);
+
+		for (const embed of embeds) {
+			assertEmbedWithinDiscordLimits(embed);
+		}
+		expect(() => packEmbedsForDiscord(embeds)).not.toThrow();
+	});
+
+	it('returns nothing for a user with no watches', () => {
+		expect(marketplaceCommandResponseBuilder([], user, [])).toEqual([]);
 	});
 });
 
@@ -490,7 +912,7 @@ describe('listCommandResponseBuilder', () => {
 		);
 		const embeds = listCommandResponseBuilder(watches, makeUser());
 		assertMessageWithinDiscordLimits(embeds);
-		const lastField = (embeds.at(-1)?.toJSON().fields ?? [])[0];
+		const lastField = (embeds[embeds.length - 1]?.toJSON().fields ?? [])[0];
 		expect(lastField?.value).toContain('Some have been omitted');
 	});
 
@@ -584,7 +1006,9 @@ describe('embeddedAuctionStreamMessageBuilder', () => {
 		expect(embeds[1].toJSON().author).toBeUndefined();
 		expect(embeds[1].toJSON().description).toBeUndefined();
 		expect(embeds[0].toJSON().footer).toBeUndefined();
-		expect(embeds.at(-1)?.toJSON().footer?.text).toContain('Blue');
+		expect(embeds[embeds.length - 1]?.toJSON().footer?.text).toContain(
+			'Blue',
+		);
 	});
 
 	it('returns one embed and infers WTS from raw text when no items parsed', async () => {

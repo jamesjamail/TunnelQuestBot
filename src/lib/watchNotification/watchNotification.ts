@@ -13,7 +13,7 @@ import {
 import { isSnoozed } from '../helpers/watches';
 import crypto from 'crypto';
 import { redis } from '../../redis/init';
-import { gracefullyHandleError } from '../helpers/errors';
+import { gracefullyHandleError, isClosedDmError } from '../helpers/errors';
 
 export function generateDebounceKey(
 	watchId: number,
@@ -93,15 +93,6 @@ export type WatchNotificationMetadata = Watch & {
 	price: number | undefined;
 	auctionMessage: string;
 };
-
-function isClosedDmError(error: unknown): boolean {
-	return (
-		typeof error === 'object' &&
-		error !== null &&
-		'code' in error &&
-		(error as { code?: number }).code === 50007
-	);
-}
 
 async function releaseDebounceClaim(
 	debounceKey: string,

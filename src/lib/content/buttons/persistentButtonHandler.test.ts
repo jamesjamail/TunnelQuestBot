@@ -20,6 +20,13 @@ const mockHandlers = vi.hoisted(() => ({
 	handleWatchNotificationUnwatchInactive: vi.fn(async () => undefined),
 	handleWatchNotificationUnwatchActive: vi.fn(async () => undefined),
 	handleWatchNotificationRefreshInactive: vi.fn(async () => undefined),
+	handleMarketplaceSnoozeInactive: vi.fn(async () => undefined),
+	handleMarketplaceSnoozeActive: vi.fn(async () => undefined),
+	handleMarketplaceUnwatchInactive: vi.fn(async () => undefined),
+	handleMarketplaceUnwatchActive: vi.fn(async () => undefined),
+	handleMarketplaceRefresh: vi.fn(async () => undefined),
+	handleMarketplaceListedInactive: vi.fn(async () => undefined),
+	handleMarketplaceListedActive: vi.fn(async () => undefined),
 }));
 
 vi.mock('../../../index', () => import('../../../test/mocks/discordClient'));
@@ -181,6 +188,86 @@ describe('handleButtonInteraction', () => {
 		expect(interaction.reply).not.toHaveBeenCalled();
 		expect(interaction.update).not.toHaveBeenCalled();
 	});
+
+	it.each([
+		['MarketplaceSnoozeInactive', 'handleMarketplaceSnoozeInactive'],
+		['MarketplaceSnoozeActive', 'handleMarketplaceSnoozeActive'],
+		['MarketplaceUnwatchInactive', 'handleMarketplaceUnwatchInactive'],
+		['MarketplaceUnwatchActive', 'handleMarketplaceUnwatchActive'],
+		['MarketplaceRefreshInactive', 'handleMarketplaceRefresh'],
+		['MarketplaceRefreshActive', 'handleMarketplaceRefresh'],
+		['MarketplaceListedInactive', 'handleMarketplaceListedInactive'],
+		['MarketplaceListedActive', 'handleMarketplaceListedActive'],
+	] as const)(
+		'routes %s to %s with the fetched watch',
+		async (actionType, handlerKey) => {
+			const watch = makeWatchWithUser({ id: 4 });
+			vi.mocked(getWatchByWatchId).mockResolvedValue(watch);
+			const interaction = makeButtonInteraction({
+				customId: `${actionType}:4`,
+			});
+
+			await handleButtonInteraction(interaction);
+
+			expect(getWatchByWatchId).toHaveBeenCalledWith(4);
+			expect(mockHandlers[handlerKey]).toHaveBeenCalledWith(
+				interaction,
+				watch,
+			);
+		},
+	);
+
+	// 	A stale button can carry a watch ID that now belongs to another user.
+	it.each([
+		['WatchSnoozeInactive', 'handleWatchSnoozeInactive'],
+		['UnwatchInactive', 'handleUnwatchInactive'],
+		['WatchRefreshInactive', 'handleWatchRefreshInactive'],
+		['MarketplaceSnoozeInactive', 'handleMarketplaceSnoozeInactive'],
+	] as const)(
+		'refuses %s for a watch owned by another user',
+		async (actionType, handlerKey) => {
+			vi.mocked(getWatchByWatchId).mockResolvedValue(
+				makeWatchWithUser({ id: 2, discordUserId: '200' }),
+			);
+			const interaction = makeButtonInteraction({
+				customId: `${actionType}:2`,
+			});
+
+			await handleButtonInteraction(interaction);
+
+			expect(mockHandlers[handlerKey]).not.toHaveBeenCalled();
+			expect(interaction.reply).toHaveBeenCalledWith({
+				content:
+					'This item no longer exists. It may have been deleted or expired.',
+				flags: MessageFlags.Ephemeral,
+			});
+		},
+	);
+
+	it.each([
+		[
+			'WatchNotificationSnoozeInactive:2',
+			'handleWatchNotificationSnoozeInactive',
+		],
+		['WatchBlockInactive:2:Soandso', 'handleWatchBlockInactive'],
+	] as const)(
+		'refuses %s for a watch owned by another user',
+		async (customId, handlerKey) => {
+			vi.mocked(getWatchByWatchIdForWatchNotification).mockResolvedValue(
+				makeWatchWithUser({ id: 2, discordUserId: '200' }),
+			);
+			const interaction = makeButtonInteraction({ customId });
+
+			await handleButtonInteraction(interaction);
+
+			expect(mockHandlers[handlerKey]).not.toHaveBeenCalled();
+			expect(interaction.reply).toHaveBeenCalledWith({
+				content:
+					'This item no longer exists. It may have been deleted or expired.',
+				flags: MessageFlags.Ephemeral,
+			});
+		},
+	);
 
 	it('returns silently for unknown action types', async () => {
 		const interaction = makeButtonInteraction({

@@ -79,6 +79,13 @@ describe('PostgreSQL to SQLite import', () => {
 			'2035-04-05T06:07:08.456Z',
 		);
 		expect(watch.blockedWatches[0].id).toBe(11);
+		// 	watch 10 carries no explicit isPublicallyTradeable in the fixture,
+		// 	so it comes from the legacy PostgreSQL column default of true -
+		// 	the import must still normalize it to false
+		const legacyDefaultWatch = await prisma.watch.findUniqueOrThrow({
+			where: { id: 10 },
+		});
+		expect(legacyDefaultWatch.isPublicallyTradeable).toBe(false);
 		const link = await prisma.playerLink.findUniqueOrThrow({
 			where: { id: 13 },
 		});

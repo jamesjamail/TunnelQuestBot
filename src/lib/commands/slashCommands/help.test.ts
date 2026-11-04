@@ -19,10 +19,31 @@ describe('help command', () => {
 
 		await command.execute(interaction);
 
-		expect(interaction.reply).toHaveBeenCalledWith({
-			content: messageCopy.helpMsg,
-			flags: MessageFlags.Ephemeral,
-		});
+		const sent = [
+			...vi.mocked(interaction.reply).mock.calls,
+			...vi.mocked(interaction.followUp).mock.calls,
+		].map(([options]) => options as { content: string; flags: number });
+		expect(sent.every((m) => m.flags === MessageFlags.Ephemeral)).toBe(
+			true,
+		);
+		expect(sent.map((m) => m.content).join('\n\n')).toBe(
+			messageCopy.helpMsg.trimStart(),
+		);
+	});
+
+	it("keeps every message within Discord's 2000 character limit", async () => {
+		const interaction = makeChatInteraction();
+
+		await command.execute(interaction);
+
+		const sent = [
+			...vi.mocked(interaction.reply).mock.calls,
+			...vi.mocked(interaction.followUp).mock.calls,
+		].map(([options]) => (options as { content: string }).content);
+		expect(sent.length).toBeGreaterThan(1);
+		for (const content of sent) {
+			expect(content.length).toBeLessThanOrEqual(2000);
+		}
 	});
 
 	it('routes reply failures to gracefullyHandleError', async () => {
