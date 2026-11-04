@@ -61,4 +61,12 @@ COPY --from=build_image /app/src/prisma/migrations /app/src/prisma/migrations
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
+
+# Declared in this stage because ARG does not cross FROM. Release builds pass
+# the semver with no leading v. npm start overwrites npm_package_* from
+# package.json, so /version reads TUNNELQUESTBOT_VERSION instead.
+ARG TUNNELQUESTBOT_VERSION=dev
+ENV TUNNELQUESTBOT_VERSION=${TUNNELQUESTBOT_VERSION}
+LABEL org.opencontainers.image.version=${TUNNELQUESTBOT_VERSION}
+
 CMD ["/app/docker-entrypoint.sh"]

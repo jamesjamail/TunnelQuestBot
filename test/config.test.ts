@@ -8,6 +8,20 @@ import { join } from 'path';
 const readRepoFile = (relativePath: string) =>
 	readFileSync(join(process.cwd(), relativePath), 'utf8');
 
+function releaseVersion(input: string): { status: number; version: string } {
+	try {
+		const version = execFileSync(
+			'sh',
+			['scripts/release-version.sh', input],
+			{ encoding: 'utf8' },
+		).trim();
+		return { status: 0, version };
+	} catch (error) {
+		const failed = error as { status?: number };
+		return { status: failed.status ?? 1, version: '' };
+	}
+}
+
 describe('deployment and config invariants', () => {
 	it('uses a POSIX-compatible Dockerfile CMD', () => {
 		const dockerfile = readRepoFile('Dockerfile');
@@ -73,6 +87,23 @@ describe('deployment and config invariants', () => {
 });
 
 describe('open-source scaffolding', () => {
+	it('does not store the release version in package.json', () => {
+		const pkg = JSON.parse(readRepoFile('package.json')) as {
+			version?: string;
+			description?: string;
+		};
+		const lock = JSON.parse(readRepoFile('package-lock.json')) as {
+			version?: string;
+			packages?: { '': { version?: string } };
+		};
+
+		// A normal-looking semver here is what people used to bump in the PR.
+		expect(pkg.version).toBe('0.0.0-unused');
+		expect(pkg.description).toMatch(/git tags/);
+		expect(lock.version).toBe(pkg.version);
+		expect(lock.packages?.[''].version).toBe(pkg.version);
+	});
+
 	it('ships the license it claims', () => {
 		//	package.json declared ISC for years with no LICENSE file, which makes
 		//	the claim unenforceable and blocks some downstream users outright
@@ -257,7 +288,9 @@ describe('startup migration invariants', () => {
 		const smoke = readRepoFile('scripts/ci-smoke.sh');
 		expect(smoke).toMatch(/SMOKE_TEST=true/);
 		expect(smoke).toMatch(/compose run --rm/);
-		expect(workflow).toMatch(/needs: \[test, integration\]/);
+		expect(workflow).toMatch(
+			/needs: \[test, integration, release-version\]/,
+		);
 	});
 
 	it('does not duplicate game data that tsc already emits into build/', () => {
@@ -278,6 +311,48 @@ describe('startup migration invariants', () => {
 		const source = entrypoint();
 		expect(source).toMatch(/^#!\/bin\/sh/);
 		expect(source).not.toMatch(/\[\[/);
+	});
+
+	it('publishes a semver release and leaves latest to promote', () => {
+		const build = readRepoFile('.github/workflows/docker-build.yml');
+		const container = readRepoFile('.github/workflows/container.yml');
+		const promote = readRepoFile('.github/workflows/promote-image.yml');
+		const dockerfile = readRepoFile('Dockerfile');
+
+		expect(build).toMatch(/types: \[published\]/);
+		expect(build).toMatch(/github\.event_name == 'release'/);
+		expect(build).not.toMatch(/github\.event_name == 'push'/);
+		expect(container).toMatch(/TUNNELQUESTBOT_VERSION/);
+		expect(container).not.toMatch(/IMAGE_NAME:latest/);
+		expect(dockerfile).toMatch(/ARG TUNNELQUESTBOT_VERSION=dev/);
+		expect(dockerfile).toMatch(/ENV TUNNELQUESTBOT_VERSION=/);
+		expect(promote).toMatch(/workflow_dispatch/);
+		expect(promote).toMatch(/release-version\.sh/);
+		expect(promote).toMatch(/:latest/);
+		expect(promote).not.toMatch(/dev\/tunnelquestbot:latest/);
+		expect(readRepoFile('docker-compose.yml')).toMatch(
+			/TUNNELQUESTBOT_VERSION: \$\{TUNNELQUESTBOT_VERSION:-dev\}/,
+		);
+	});
+
+	it('accepts a semver release tag and rejects everything else', () => {
+		expect(releaseVersion('v1.4.0')).toEqual({
+			status: 0,
+			version: '1.4.0',
+		});
+		expect(releaseVersion('1.4.0')).toEqual({
+			status: 0,
+			version: '1.4.0',
+		});
+		expect(releaseVersion('v1.4.0-rc.1')).toEqual({
+			status: 0,
+			version: '1.4.0-rc.1',
+		});
+		expect(releaseVersion('latest').status).not.toBe(0);
+		expect(releaseVersion('v1.4').status).not.toBe(0);
+		expect(releaseVersion('v1.4.0+sha').status).not.toBe(0);
+		expect(releaseVersion('01.2.3').status).not.toBe(0);
+		expect(releaseVersion('').status).not.toBe(0);
 	});
 
 	it('keeps the entrypoint as the only place that applies migrations', () => {

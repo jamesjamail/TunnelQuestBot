@@ -4,16 +4,18 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
 
-# Registry writes are granted only to the main-branch image job.
+# Registry writes are granted only to the release image job.
 permissions:
   contents: read
 
-#	A new push supersedes whatever was already running for the same branch or PR.
-#	Only main is left to finish, because its run is what publishes the image.
+#	A newer push or pull request supersedes an older run of the same ref.
+#	A release publish is left to finish.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   test:
@@ -44,19 +46,40 @@ jobs:
       - run: npx prisma generate
       - run: npm run test:integration
 
-  # Both paths use the same build and smoke steps. PRs have no registry writes.
+  #	Normalize v1.4.0 to 1.4.0 and reject anything that is not semver.
+  #	Image tags cannot carry build metadata, so +sha is rejected too.
+  release-version:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: semver
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(sh scripts/release-version.sh "$TAG")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  #	Pull requests and main pushes prove the image starts. They do not push.
   smoke:
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'release'
     uses: ./.github/workflows/container.yml
     permissions:
       contents: read
 
   build-image-and-push:
-    needs: [test, integration]
-    if: github.event_name == 'push'
+    needs: [test, integration, release-version]
+    if: >-
+      github.event_name == 'release' &&
+      needs.test.result == 'success' &&
+      needs.integration.result == 'success' &&
+      needs.release-version.result == 'success'
     uses: ./.github/workflows/container.yml
     with:
       publish: true
+      version: ${{ needs.release-version.outputs.version }}
     permissions:
       contents: read
       packages: write

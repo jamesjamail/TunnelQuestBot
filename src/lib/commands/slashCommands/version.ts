@@ -1,5 +1,6 @@
 import { MessageFlags, SlashCommandBuilder } from 'discord.js';
 import type { SlashCommand } from '../../../types';
+import { tunnelQuestVersion } from '../../devVersion';
 import { gracefullyHandleError } from '../../helpers/errors';
 
 const command: SlashCommand = {
@@ -8,8 +9,11 @@ const command: SlashCommand = {
 		.setDescription('display version information'),
 	execute: async (interaction) => {
 		try {
+			const version = tunnelQuestVersion(
+				process.env.TUNNELQUESTBOT_VERSION,
+			);
 			return await interaction.reply({
-				content: `TunnelQuestBot version: ${process.env.npm_package_version}`,
+				content: `TunnelQuestBot version: ${version}`,
 				flags: MessageFlags.Ephemeral,
 			});
 		} catch (error) {

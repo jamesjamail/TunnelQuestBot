@@ -73,8 +73,12 @@ Closer to production, and the way to run against real EverQuest logs. Slower to
 iterate on, because every change needs a rebuild.
 
 ```sh
-docker compose up --build
+npm run compose -- up --build
 ```
+
+That bakes the latest release tag into the image as `<tag>-dev` (for example
+`1.4.0-dev`). A checkout with no release tags gets `dev`. Plain
+`docker compose build` cannot see git tags, so it leaves the version as `dev`.
 
 Set `LOG_SOURCE_PATH` and the `SERVERS_*_LOG_FILE` names in `.env` first, or set
 `FAKE_LOGS=true` to run the container stack without a game client.
@@ -126,7 +130,7 @@ Start the bot and collectors with:
 
 ```sh
 docker compose --profile p99-loggers pull p99-green-logger p99-blue-logger p99-red-logger
-docker compose --profile p99-loggers up -d --build
+npm run compose -- --profile p99-loggers up -d --build
 docker compose --profile p99-loggers ps
 docker compose logs -f p99-green-logger p99-blue-logger p99-red-logger tunnelquestbot
 ```
@@ -181,7 +185,7 @@ Two commands, from the repo directory:
 
 ```sh
 git pull
-docker compose up -d --build
+npm run compose -- up -d --build
 ```
 
 After the one-time PostgreSQL import (if needed), that is the whole update. Database migrations are applied automatically when the
@@ -207,7 +211,10 @@ Lines prefixed with `[entrypoint]` come from the startup sequence:
   corrupt data. This needs a developer; the Prisma output just above the error
   explains what it found.
 
-To confirm the running version, use the bot's `/version` command.
+To confirm the running version, use the bot's `/version` command. A release
+image reports its tag. `npm run dev` and `npm run compose` report the latest
+release tag with `-dev` appended, or `dev` when this checkout has no release
+tags. `package.json` is not that version.
 
 ## Testing
 
@@ -330,10 +337,19 @@ stack with fake credentials. Smoke testing applies migrations, runs the real
 fake-log writer once, checks all three log files, and validates runtime assets
 without logging in to Discord or P99.
 
-On `main`, the same workflow pushes a candidate by digest after unit and
-integration checks pass, pulls that exact digest for smoke testing, then assigns
-its commit SHA and `latest` tags only after smoke succeeds. A failed candidate
-never replaces either release tag. The image is not rebuilt for publishing.
+Publishing a GitHub Release whose tag is semver (`v1.4.0` or `v1.4.0-rc.1`)
+runs the same checks, builds the image with that version, smoke-tests the
+digest, then tags `dev/tunnelquestbot:<version>` and
+`dev/tunnelquestbot:<commit>`. It does not move `:latest`. A failed candidate
+is left untagged. The image is not rebuilt for publishing.
+
+Promote Image Dev->Prod takes that version and points
+`prod/tunnelquestbot:<version>` and `prod/tunnelquestbot:latest` at the same
+digest. Production pulls `prod:latest`, so a release is not deployed until
+that workflow is run. Promoting an older version moves `latest` back to it.
+
+Pushes to `main` and pull requests still build and smoke-test the image. They
+do not push it.
 
 To smoke-test an image already present locally, run
 `sh scripts/ci-smoke.sh IMAGE`. This uses temporary configuration and volumes;
