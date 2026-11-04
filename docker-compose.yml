@@ -188,12 +188,13 @@ services:
         source: ".env"
         target: /app/.env
         read_only: true
-      - sqlite-data:/data
+      - type: bind
+        source: "${SQLITE_DATA_PATH:-./data}"
+        target: /data
       - "redis-socket:${REDIS_SOCKET_DIR:-/redis_socket}"
     restart: always
 
 volumes:
-  sqlite-data:
   redis-socket:
   redis-data:
   p99-logger-data:

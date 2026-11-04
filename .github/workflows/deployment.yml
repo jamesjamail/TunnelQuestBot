@@ -22,23 +22,34 @@ jobs:
 
       - name: Validate Compose topology
         run: |
+          mkdir -p data
           docker compose --env-file .env.example --profile p99-loggers config --quiet
           docker compose --env-file .env.example --profile p99-loggers config --format json > /tmp/compose.json
           jq -e '.name == "tunnelquestbot"' /tmp/compose.json
           jq -e '.services.tunnelquestbot.ports == null' /tmp/compose.json
           jq -e '.services["p99-red-logger"] != null' /tmp/compose.json
           jq -e '.services["p99-red-logger"].image | test("p99-logger-client")' /tmp/compose.json
-          jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket","sqlite-data"]' /tmp/compose.json
+          jq -e '.volumes | keys | sort == ["p99-logger-data","redis-data","redis-socket"]' /tmp/compose.json
+          jq -e '
+            .services.tunnelquestbot.volumes
+            | map(select(.type == "bind" and .target == "/data"))
+            | length == 1
+          ' /tmp/compose.json
 
       - name: Validate optional Metabase companion
         run: |
-          docker volume create tunnelquestbot_sqlite-data >/dev/null
+          mkdir -p data
           docker compose --env-file .env.example -f docker-compose.metabase.yml config --quiet
           docker compose --env-file .env.example -f docker-compose.metabase.yml config --format json > /tmp/metabase.json
           jq -e '.name == "tunnelquestbot-analytics"' /tmp/metabase.json
           jq -e '.services.metabase != null' /tmp/metabase.json
           jq -e '.services["metabase-snapshot"] != null' /tmp/metabase.json
-          jq -e '.volumes["sqlite-data"] != null' /tmp/metabase.json
+          jq -e '.volumes | keys | sort == ["metabase-data","metabase-snapshots"]' /tmp/metabase.json
+          jq -e '
+            .services["metabase-snapshot"].volumes
+            | map(select(.type == "bind" and .target == "/data"))
+            | length == 1
+          ' /tmp/metabase.json
           jq -e '.services.metabase.ports[0].host_ip == "127.0.0.1"' /tmp/metabase.json
           test -x metabase/snapshot-entrypoint.sh
 

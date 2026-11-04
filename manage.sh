@@ -10,6 +10,7 @@ BACKUP_DIR="${TQB_BACKUP_DIR:-$HOME/TunnelQuestBot-backups}"
 RUNTIME_ENV=".runtime.env"
 RETENTION_IMAGE="tunnelquestbot-p99-log-retention"
 BUILD_RETENTION_MODE="if-missing"
+CLI_NAME="manage"
 declare -a COMPOSE=()
 
 refresh_compose_command() {
@@ -179,9 +180,46 @@ basic_checks() {
 	docker_checks
 	[[ -f .env ]] || die "Missing .env. Copy .env.example to .env and fill it in."
 	mkdir -p logs
+	ensure_sqlite_data_dir
 	discover_services
 	"${COMPOSE[@]}" config --quiet ||
 		die "Compose configuration is invalid. Review the error above."
+}
+
+sqlite_data_path() {
+	local path
+	path="$(env_value SQLITE_DATA_PATH)"
+	[[ -n "$path" ]] || path="./data"
+	printf '%s' "$path"
+}
+
+ensure_sqlite_data_dir() {
+	local path
+	path="$(sqlite_data_path)"
+	mkdir -p "$path"
+	chmod 700 "$path" 2>/dev/null || true
+}
+
+install_cli() {
+	local bin_dir target profile_line
+	bin_dir="${TQB_BIN_DIR:-$HOME/bin}"
+	target="$bin_dir/$CLI_NAME"
+	mkdir -p "$bin_dir"
+	cat > "$target" <<EOF
+#!/usr/bin/env bash
+exec "$ROOT/manage.sh" "\$@"
+EOF
+	chmod 755 "$target"
+	profile_line="export PATH=\"$bin_dir:\$PATH\""
+	for profile in "$HOME/.profile" "$HOME/.bashrc"; do
+		[[ -f "$profile" ]] || touch "$profile"
+		if ! grep -Fqx "$profile_line" "$profile" 2>/dev/null; then
+			printf '\n# TunnelQuestBot manage CLI\n%s\n' "$profile_line" >> "$profile"
+		fi
+	done
+	echo "Installed $target"
+	echo "Open a new shell, or run: export PATH=\"$bin_dir:\$PATH\""
+	echo "Then use: $CLI_NAME doctor"
 }
 
 app_doctor() {
@@ -505,8 +543,10 @@ analytics_checks() {
 	local image
 	image="$(ensure_offline_bot_image)"
 	export TUNNELQUESTBOT_IMAGE="$image"
-	docker volume inspect tunnelquestbot_sqlite-data >/dev/null 2>&1 ||
-		die "Production volume tunnelquestbot_sqlite-data was not found. Start the bot stack before analytics."
+	ensure_sqlite_data_dir
+	local path
+	path="$(sqlite_data_path)"
+	[[ -d "$path" ]] || die "SQLite data directory $path was not found."
 	"${ANALYTICS_COMPOSE[@]}" config --quiet ||
 		die "Analytics Compose configuration is invalid. Review the error above."
 }
@@ -553,7 +593,7 @@ analytics_logs() {
 
 usage() {
 	cat <<'EOF'
-Usage: ./manage.sh <command>
+Usage: manage <command>   (or ./manage.sh <command>)
 
   start        Validate configuration and start configured services
   stop         Stop services without deleting data
@@ -565,16 +605,16 @@ Usage: ./manage.sh <command>
   backup       Create and verify an online SQLite backup
   doctor       Validate configuration without starting the bot
   clear-cache  Clear cached parsed auctions
+  install-cli  Install `manage` on PATH for this user (~/bin)
 
   analytics start   Start optional Metabase (not part of start/update)
   analytics stop    Stop Metabase without deleting its data volume
   analytics status  Show Metabase companion status
   analytics logs    Follow Metabase and snapshot logs
 
-  --image <ref>  With update only: pull and apply a candidate image (for example
-                 the development tag) before promoting it to production.
-
-Never run `docker compose down -v`; it deletes the database.
+SQLite lives on the host under SQLITE_DATA_PATH (default ./data), so
+`docker compose down -v` cannot delete the database. It can still wipe Redis
+and collector JSONL named volumes — prefer manage stop/start instead.
 EOF
 }
 
@@ -626,26 +666,35 @@ case "$command_name" in
 		update_stack
 		;;
 	status)
+		(($# == 0)) || die "status does not accept extra arguments."
 		docker_checks
 		show_status
 		;;
 	logs)
+		(($# == 0)) || die "logs does not accept extra arguments."
 		docker_checks
 		show_logs
 		;;
 	backup)
+		(($# == 0)) || die "backup does not accept extra arguments."
 		basic_checks
 		ensure_offline_bot_image >/dev/null
 		backup_database true
 		;;
 	doctor)
+		(($# == 0)) || die "doctor does not accept extra arguments."
 		basic_checks
 		app_doctor "$(ensure_offline_bot_image)"
 		echo "Configuration OK."
 		;;
 	clear-cache)
+		(($# == 0)) || die "clear-cache does not accept extra arguments."
 		basic_checks
 		clear_cache
+		;;
+	install-cli)
+		(($# == 0)) || die "install-cli does not accept extra arguments."
+		install_cli
 		;;
 	analytics)
 		case "${1:-}" in
