@@ -25,23 +25,27 @@ SQLite lives on the host under `./data` (override with `SQLITE_DATA_PATH`). `doc
 
 ## Upgrade production bot
 
-1. Promote image in GitHub (workflow: **Promote Image Dev→Prod**)
-2. On host:
+Images publish only from a GitHub Release (`vX.Y.Z` → `dev/tunnelquestbot:X.Y.Z`).  
+`dev:latest` is not updated.
+
+1. Publish/confirm Release `vX.Y.Z` (Image Build tags `dev:X.Y.Z`)
+2. After a good candidate soak, run **Promote Image Dev→Prod** with version `X.Y.Z`
+3. On host:
 
 ```bash
 git pull --ff-only origin run
 manage update
 ```
 
-`update` pulls the promoted `prod` image, backs up the DB, applies it, and auto-rolls back the image on failure.
+`update` pulls promoted `prod:latest`, backs up the DB, applies it, and auto-rolls back the image on failure.
 
 ## Try a candidate before promote
 
 ```bash
-manage update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+manage update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:1.4.0
 ```
 
-Promote + `manage update` only after it looks good.
+Use the release version tag (not `:latest`). Promote + `manage update` only after it looks good.
 
 ## Metabase (optional)
 
