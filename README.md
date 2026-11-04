@@ -116,10 +116,12 @@ git pull --ff-only origin run
 `update` pulls `prod/tunnelquestbot:latest` and the current Redis, busybox init,
 and collector images, then validates the bot image against the current `.env`.
 To try a candidate before promoting it, pass `--image` with any pullable ref
-(tag or digest), for example:
+(tag or digest). Publishing a GitHub Release tagged `vX.Y.Z` builds
+`dev/tunnelquestbot:X.Y.Z`; `dev/tunnelquestbot:latest` is no longer updated.
+For example:
 
 ```sh
-./manage.sh update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest
+./manage.sh update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:1.4.0
 ```
 
 It records the immutable digest, deployment revision, and `.env`

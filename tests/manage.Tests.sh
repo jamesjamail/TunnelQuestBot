@@ -351,9 +351,9 @@ rm -f "$TQB_BACKUP_DIR"/*.db
 (
 	cd "$TEST_ROOT/deploy"
 	./manage.sh update --image \
-		ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest >/dev/null
+		ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:1.4.0 >/dev/null
 )
-grep -q 'pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:latest' \
+grep -q 'pull ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:1.4.0' \
 	"$TQB_DOCKER_TRACE"
 grep -q 'up -d ' "$TQB_DOCKER_TRACE"
 compgen -G "$TQB_BACKUP_DIR/tunnelquestbot-*.db" >/dev/null
