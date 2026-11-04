@@ -37,10 +37,6 @@ cat > "$TEST_ROOT/bin/docker" <<'EOF'
 #!/usr/bin/env bash
 set -eu
 printf '%s\n' "$*" >> "$TQB_DOCKER_TRACE"
-if [[ "$*" == "volume inspect tunnelquestbot_sqlite-data" ]]; then
-	echo "[{}]"
-	exit 0
-fi
 if [[ "$*" == "inspect tunnelquestbot --format {{.Config.Image}}" ]]; then
 	echo "ghcr.io/jamesjamail/tunnelquestbot/prod/tunnelquestbot@sha256:promoted"
 	exit 0

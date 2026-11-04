@@ -1,0 +1,73 @@
+# TunnelQuestBot — operator cheat sheet
+
+SSH as `tunnelquestbot`, then (after one-time `manage install-cli`):
+
+```bash
+cd ~/TunnelQuestBot
+```
+
+Prefer `manage …` (or `./manage.sh …`). Prefer `manage stop` / `manage start` over raw Compose.
+
+SQLite lives on the host under `./data` (override with `SQLITE_DATA_PATH`). `docker compose down -v` cannot delete it; it can still wipe Redis / collector JSONL volumes.
+
+## Day-to-day
+
+| Goal | Command |
+|---|---|
+| Health check | `manage doctor` |
+| What’s running | `manage status` |
+| Live logs | `manage logs` |
+| Restart bot + collectors | `manage restart` |
+| Stop (keep data) | `manage stop` |
+| Start again | `manage start` |
+| Clear auction parse cache | `manage clear-cache` |
+| Backup SQLite | `manage backup` |
+
+## Upgrade production bot
+
+Images publish only from a GitHub Release (`vX.Y.Z` → `dev/tunnelquestbot:X.Y.Z`).  
+`dev:latest` is not updated.
+
+1. Publish/confirm Release `vX.Y.Z` (Image Build tags `dev:X.Y.Z`)
+2. After a good candidate soak, run **Promote Image Dev→Prod** with version `X.Y.Z`
+3. On host:
+
+```bash
+git pull --ff-only origin run
+manage update
+```
+
+`update` pulls promoted `prod:latest`, backs up the DB, applies it, and auto-rolls back the image on failure.
+
+## Try a candidate before promote
+
+```bash
+manage update --image ghcr.io/jamesjamail/tunnelquestbot/dev/tunnelquestbot:1.4.0
+```
+
+Use the release version tag (not `:latest`). Promote + `manage update` only after it looks good.
+
+## Metabase (optional)
+
+```bash
+manage analytics start|status|logs|stop
+```
+
+UI: SSH tunnel → `http://127.0.0.1:3000`  
+SQLite path in Metabase: `/snapshots/tunnelquestbot.db`
+
+## Something’s broken
+
+1. `manage status` — any restarting/unhealthy?
+2. `manage doctor`
+3. `manage logs` (bot + collectors)
+4. `manage restart` if needed
+5. If a bad bot image landed after update, check logs; `update` should have rolled back — restore from `~/TunnelQuestBot-backups` only as a last resort
+
+## One-time PATH setup
+
+```bash
+./manage.sh install-cli          # puts `manage` on PATH (~/bin)
+```
+
+Full detail: `README.md` on the `run` branch.

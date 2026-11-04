@@ -9,6 +9,8 @@
 !*.sh
 !*.yml
 !README.md
+!OPERATOR.md
+!AGENTS.md
 !/tests/
 !/tests/*.sh
 !/p99-logger/
@@ -20,3 +22,13 @@
 !/.github/
 !/.github/workflows/
 !/.github/workflows/deployment.yml
+!/.cursor/
+!/.cursor/skills/
+!/.cursor/skills/*/
+!/.cursor/skills/*/SKILL.md
+!/.cursor/skills/*/reference.md
+!/.claude/
+!/.claude/skills/
+!/.claude/skills/*/
+!/.claude/skills/*/SKILL.md
+!/.claude/skills/*/reference.md

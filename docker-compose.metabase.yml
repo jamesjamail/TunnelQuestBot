@@ -2,7 +2,7 @@
 # Use: ./manage.sh analytics start
 #
 # Reads a periodic SQLite snapshot of the production database so Metabase never
-# opens the live bot volume. Bind is localhost-only by default.
+# opens the live bot database for writing. Bind is localhost-only by default.
 
 name: tunnelquestbot-analytics
 
@@ -19,9 +19,10 @@ services:
       METABASE_SNAPSHOT_INTERVAL_SECONDS: "${METABASE_SNAPSHOT_INTERVAL_SECONDS:-300}"
     entrypoint: ["/bin/sh", "/snapshot/snapshot-entrypoint.sh"]
     volumes:
-      - type: volume
-        source: sqlite-data
+      - type: bind
+        source: "${SQLITE_DATA_PATH:-./data}"
         target: /data
+        read_only: true
       - type: volume
         source: metabase-snapshots
         target: /snapshots
@@ -60,9 +61,5 @@ services:
       - metabase-snapshots:/snapshots
 
 volumes:
-  # Shared with the main tunnelquestbot project; never created by this file.
-  sqlite-data:
-    external: true
-    name: tunnelquestbot_sqlite-data
   metabase-data:
   metabase-snapshots:
