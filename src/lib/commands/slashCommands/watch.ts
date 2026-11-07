@@ -1,4 +1,8 @@
-import { MessageFlags, SlashCommandBuilder } from 'discord.js';
+import {
+	type EmbedBuilder,
+	MessageFlags,
+	SlashCommandBuilder,
+} from 'discord.js';
 import type { SlashCommand } from '../../../types';
 import type { Server, WatchType } from '../../../prisma/client';
 import {
@@ -92,13 +96,13 @@ const command: SlashCommand = {
 				});
 			}
 
-			const embeds = [watchCommandResponseBuilder(data)];
-			// 	the marketplace embed's own footer is what states the watch's
-			// 	listing status, so it is shown even with no matches yet - and its
-			// 	button row is what carries the advertised 🤝 listing toggle
+			// 	the preview is the watch card with its marketplace section, and its
+			// 	footer states the listing status, so it replaces the plain card -
+			// 	its button row is what carries the advertised 🤝 listing toggle
+			let embeds: EmbedBuilder[];
 			let components: ReturnType<typeof buttonRowBuilder>;
 			if (preview) {
-				embeds.push(preview.embed);
+				embeds = [preview.embed];
 				components = buttonRowBuilder(
 					MessageTypes.marketplace,
 					[
@@ -110,6 +114,7 @@ const command: SlashCommand = {
 					String(data.id),
 				);
 			} else {
+				embeds = [watchCommandResponseBuilder(data)];
 				components = buttonRowBuilder(
 					MessageTypes.watch,
 					[false, false, false],

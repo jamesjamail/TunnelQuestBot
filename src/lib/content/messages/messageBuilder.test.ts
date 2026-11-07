@@ -294,6 +294,17 @@ function makeCounterpart(
 	};
 }
 
+// 	everything the marketplace section put on the card, across however many
+// 	fields it was split into
+function marketplaceText(embed: EmbedBuilder): string {
+	return (embed.toJSON().fields ?? [])
+		.filter(
+			(field) => field.name.startsWith('🤝') || field.name === '\u200b',
+		)
+		.map((field) => `${field.name}\n${field.value}`)
+		.join('\n');
+}
+
 describe('marketplaceDigestBuilder', () => {
 	const mine = makeWatchWithUser({
 		itemName: KNOWN_ITEM,
@@ -301,47 +312,32 @@ describe('marketplaceDigestBuilder', () => {
 		watchType: WatchType.WTS,
 	});
 
-	it('titles the digest with the item and server, and lists who to contact', () => {
+	it('is the watch card with who to contact added to it', () => {
 		const embed = marketplaceDigestBuilder(
 			mine,
 			[makeCounterpart(1)],
 			'New traders',
-		).toJSON();
+		);
+		const json = embed.toJSON();
 
-		expect(embed.title).toBe(
-			'Marketplace: Flowing Black Silk Sash (Green)',
-		);
-		expect(embed.description).toContain('<@201>');
-		expect(embed.description).toContain('Trader1');
-		assertEmbedWithinDiscordLimits(
-			marketplaceDigestBuilder(mine, [makeCounterpart(1)], 'x'),
-		);
+		expect(json.title).toBe('WTS Auction Watch');
+		expect(json.author?.name).toBe(KNOWN_ITEM);
+		expect(json.fields?.[0]?.name).toBe('No Price Criteria');
+		expect(json.fields?.[1]?.name).toBe('Project 1999 Green Server');
+		expect(marketplaceText(embed)).toContain('<@201>');
+		expect(marketplaceText(embed)).toContain('Trader1');
+		assertEmbedWithinDiscordLimits(embed);
 	});
 
-	it('truncates a maximum-length item name so the title stays within Discord limits', () => {
-		const longName = 'x'.repeat(255);
-		const embed = marketplaceDigestBuilder(
-			makeWatchWithUser({
-				itemName: longName,
-				server: Server.GREEN,
-				watchType: WatchType.WTS,
-			}),
+	it('keeps the watch notes on the card', () => {
+		const json = marketplaceDigestBuilder(
+			{ ...mine, notes: 'need it for my monk' },
 			[makeCounterpart(1)],
 			'x',
 		).toJSON();
 
-		expect(embed.title?.length).toBeLessThanOrEqual(256);
-		expect(embed.title).toMatch(/^Marketplace: Xx+… \(Green\)$/);
-		assertEmbedWithinDiscordLimits(
-			marketplaceDigestBuilder(
-				makeWatchWithUser({
-					itemName: longName,
-					server: Server.GREEN,
-					watchType: WatchType.WTS,
-				}),
-				[makeCounterpart(1)],
-				'x',
-			),
+		expect(json.fields?.some((field) => field.name === 'Notes:')).toBe(
+			true,
 		);
 	});
 
@@ -350,54 +346,60 @@ describe('marketplaceDigestBuilder', () => {
 			mine,
 			[makeCounterpart(1)],
 			'New traders matching your watch',
-		).toJSON();
+		);
 
-		expect(embed.description).toContain(
-			"New traders matching your watch (you're buying):",
+		expect(marketplaceText(embed)).toContain(
+			"🤝 New traders matching your watch (you're buying)",
 		);
 	});
 
 	it('calls the owner of a WTB watch the seller and never prints a raw watch type', () => {
-		const embed = marketplaceDigestBuilder(
-			mine,
-			[
-				makeCounterpart(1, {
-					watchType: WatchType.WTB,
-					priceRequirement: 500,
-				}),
-			],
-			'x',
-		).toJSON();
+		const text = marketplaceText(
+			marketplaceDigestBuilder(
+				mine,
+				[
+					makeCounterpart(1, {
+						watchType: WatchType.WTB,
+						priceRequirement: 500,
+					}),
+				],
+				'x',
+			),
+		);
 
-		expect(embed.description).toContain('selling, asking 500');
-		expect(embed.description).not.toMatch(/WTB|WTS/);
+		expect(text).toContain('selling, asking 500');
+		expect(text).not.toMatch(/WTB|WTS/);
 	});
 
 	it('calls the owner of a WTS watch the buyer and never prints a raw watch type', () => {
-		const embed = marketplaceDigestBuilder(
-			makeWatchWithUser({ watchType: WatchType.WTB }),
-			[
-				makeCounterpart(1, {
-					watchType: WatchType.WTS,
-					priceRequirement: 500,
-				}),
-			],
-			'x',
-		).toJSON();
+		const text = marketplaceText(
+			marketplaceDigestBuilder(
+				makeWatchWithUser({ watchType: WatchType.WTB }),
+				[
+					makeCounterpart(1, {
+						watchType: WatchType.WTS,
+						priceRequirement: 500,
+					}),
+				],
+				'x',
+			),
+		);
 
-		expect(embed.description).toContain('buying, offering up to 500');
-		expect(embed.description).toContain("(you're selling)");
-		expect(embed.description).not.toMatch(/WTB|WTS/);
+		expect(text).toContain('buying, offering up to 500');
+		expect(text).toContain("(you're selling)");
+		expect(text).not.toMatch(/WTB|WTS/);
 	});
 
 	it('says so when the counterpart set no price', () => {
-		const embed = marketplaceDigestBuilder(
-			mine,
-			[makeCounterpart(1, { priceRequirement: null })],
-			'x',
-		).toJSON();
+		const text = marketplaceText(
+			marketplaceDigestBuilder(
+				mine,
+				[makeCounterpart(1, { priceRequirement: null })],
+				'x',
+			),
+		);
 
-		expect(embed.description).toContain('no price set');
+		expect(text).toContain('no price set');
 	});
 
 	it('caps the rows and points at /marketplace for the rest', () => {
@@ -406,28 +408,54 @@ describe('marketplaceDigestBuilder', () => {
 		);
 
 		const embed = marketplaceDigestBuilder(mine, counterparts, 'x');
-		const description = embed.toJSON().description ?? '';
+		const text = marketplaceText(embed);
 
-		expect(description.match(/<@\d+>/g)).toHaveLength(
+		expect(text.match(/<@\d+>/g)).toHaveLength(
 			MARKETPLACE_DIGEST_ROW_LIMIT,
 		);
-		expect(description).toContain(
+		expect(text).toContain(
 			`…and ${50 - MARKETPLACE_DIGEST_ROW_LIMIT} more. Use /marketplace`,
 		);
 		assertEmbedWithinDiscordLimits(embed);
 	});
 
-	it('shows the newest counterparts, in the order given', () => {
-		const embed = marketplaceDigestBuilder(
-			mine,
-			[makeCounterpart(9), makeCounterpart(3)],
-			'x',
-		).toJSON();
-
-		const description = embed.description ?? '';
-		expect(description.indexOf('Trader9')).toBeLessThan(
-			description.indexOf('Trader3'),
+	it('splits rows across fields rather than overflowing one, with long notes and usernames', () => {
+		const counterparts = Array.from({ length: 50 }, (_, i) =>
+			makeCounterpart(
+				i + 1,
+				{ priceRequirement: 123456 },
+				{ discordUsername: 'u'.repeat(32) },
+			),
 		);
+
+		const embed = marketplaceDigestBuilder(
+			{ ...mine, notes: 'n'.repeat(5000) },
+			counterparts,
+			'New traders matching your watch',
+		);
+		const sectionFields = (embed.toJSON().fields ?? []).filter(
+			(field) => field.name.startsWith('🤝') || field.name === '\u200b',
+		);
+
+		expect(sectionFields.length).toBeGreaterThan(1);
+		expect(sectionFields[0].name).toMatch(/^🤝 /);
+		expect(marketplaceText(embed).match(/<@\d+>/g)).toHaveLength(
+			MARKETPLACE_DIGEST_ROW_LIMIT,
+		);
+		assertEmbedWithinDiscordLimits(embed);
+		assertMessageWithinDiscordLimits([embed]);
+	});
+
+	it('shows the newest counterparts, in the order given', () => {
+		const text = marketplaceText(
+			marketplaceDigestBuilder(
+				mine,
+				[makeCounterpart(9), makeCounterpart(3)],
+				'x',
+			),
+		);
+
+		expect(text.indexOf('Trader9')).toBeLessThan(text.indexOf('Trader3'));
 	});
 
 	it('spells out that a listed watch can be contacted, in the footer', () => {
@@ -443,18 +471,18 @@ describe('marketplaceDigestBuilder', () => {
 		expect(footer).toContain('/marketplace hide');
 	});
 
-	it('spells out that an unlisted watch is hidden, and says nothing was matched', () => {
+	it('leaves the marketplace section off an unlisted watch, and says it is hidden in the footer', () => {
 		const embed = marketplaceDigestBuilder(
 			{ ...mine, isPublicallyTradeable: false },
 			[makeCounterpart(1)],
 			'x',
-		).toJSON();
+		);
 
-		expect(embed.footer?.text).toContain(
+		expect(embed.toJSON().footer?.text).toContain(
 			'Not listed: other traders cannot see this watch',
 		);
-		expect(embed.description).toContain('not listed');
-		expect(embed.description).not.toContain('<@201>');
+		expect(marketplaceText(embed)).toBe('');
+		expect(JSON.stringify(embed.toJSON())).not.toContain('<@201>');
 	});
 
 	it('spells out that a snoozed watch stays listed but is not messaged', () => {
@@ -469,21 +497,22 @@ describe('marketplaceDigestBuilder', () => {
 		);
 	});
 
-	it('says an ended watch has ended and offers to restore it', () => {
+	it('leaves the marketplace section off an ended watch and offers to restore it', () => {
 		const embed = marketplaceDigestBuilder(
 			{ ...mine, active: false },
-			[],
+			[makeCounterpart(1)],
 			'x',
-		).toJSON();
+		);
 
-		expect(embed.description).toContain('has ended');
-		expect(embed.footer?.text).toContain('restore');
+		expect(marketplaceText(embed)).toBe('');
+		expect(embed.toJSON().footer?.text).toContain('has ended');
+		expect(embed.toJSON().footer?.text).toContain('restore');
 	});
 
 	it('says so when nothing matches', () => {
-		const embed = marketplaceDigestBuilder(mine, [], 'x').toJSON();
+		const text = marketplaceText(marketplaceDigestBuilder(mine, [], 'x'));
 
-		expect(embed.description).toContain('No traders match');
+		expect(text).toContain('No traders match');
 	});
 });
 
