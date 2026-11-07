@@ -139,7 +139,7 @@ describe('marketplace digest button handlers', () => {
 		expect(unwatch).toHaveBeenCalledWith(watch);
 		expect(actionTypes(interaction)[1]).toBe('MarketplaceUnwatchActive');
 		expect(
-			updatePayload(interaction).embeds[0].toJSON().description,
+			updatePayload(interaction).embeds[0].toJSON().footer?.text,
 		).toContain('has ended');
 	});
 

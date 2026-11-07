@@ -136,7 +136,7 @@ describe('watch command', () => {
 		expect(buildMarketplacePreview).toHaveBeenCalledWith(watch);
 	});
 
-	it('adds the marketplace preview to the reply as a second embed, with the listing toggle, and commits its claims after a successful reply', async () => {
+	it('replies with the marketplace preview in place of the plain watch card, with the listing toggle, and commits its claims after a successful reply', async () => {
 		const marketplaceEmbed = new EmbedBuilder().setTitle('Marketplace');
 		const preview = { embed: marketplaceEmbed, claimable: [] };
 		vi.mocked(upsertWatchSafely).mockResolvedValue(
@@ -154,8 +154,7 @@ describe('watch command', () => {
 			embeds: EmbedBuilder[];
 			components: { components: unknown[] }[];
 		};
-		expect(reply.embeds).toHaveLength(2);
-		expect(reply.embeds[1]).toBe(marketplaceEmbed);
+		expect(reply.embeds).toEqual([marketplaceEmbed]);
 		// 	four buttons: snooze, unwatch, refresh, and the 🤝 listing toggle
 		expect(reply.components[0].components).toHaveLength(4);
 		expect(commitMarketplacePreview).toHaveBeenCalledWith(preview);

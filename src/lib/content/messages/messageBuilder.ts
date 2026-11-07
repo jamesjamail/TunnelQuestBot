@@ -51,8 +51,6 @@ function truncateForDescription(text: string, reservedChars = 0): string {
 	return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-const MAX_TITLE = 256;
-
 const MAX_EMBED_CHARACTERS_PER_MESSAGE = 6000;
 const MAX_EMBEDS_PER_MESSAGE = 10;
 
@@ -353,67 +351,53 @@ function marketplaceDigestFooter(watch: Watch): string {
 	return lines.join('\n');
 }
 
-// 	The counterparts passed in are already filtered for what `watch`'s owner may
-// 	see; this only decides how many fit and how the watch's own state reads.
+// 	Rows go into as many fields as it takes to stay under Discord's per-field
+// 	limit; only the first carries the heading.
+function marketplaceFields(rows: string[], heading: string): APIEmbedField[] {
+	const fields: APIEmbedField[] = [];
+	let value = '';
+	for (const row of rows) {
+		if (value && value.length + 1 + row.length > MAX_FIELD_VALUE) {
+			fields.push({ name: fields.length ? '\u200b' : heading, value });
+			value = '';
+		}
+		value = value ? `${value}\n${row}` : row;
+	}
+	fields.push({ name: fields.length ? '\u200b' : heading, value });
+	return fields;
+}
+
+// 	The watch card with its marketplace section added, so a watch is always one
+// 	card. An ended or unlisted watch has no section - the footer alone states
+// 	that. The counterparts passed in are already filtered for what `watch`'s
+// 	owner may see; this only decides how many fit.
 export function marketplaceDigestBuilder(
 	watch: WatchWithUser,
 	counterparts: MarketplaceCounterpart[],
 	heading: string,
 ) {
-	const imgUrl = getImageUrlForItem(watch.itemName);
-	const wikiUrl = getWikiUrlFromItem(watch.itemName);
-	const item = toTitleCase(watch.itemName);
-
-	let description: string;
-	if (!watch.active) {
-		description =
-			'This watch has ended, so it is no longer in the marketplace.';
-	} else if (!watch.isPublicallyTradeable) {
-		description =
-			'This watch is not listed: other traders cannot see it, and you will not be matched with anyone for it.';
-	} else if (counterparts.length === 0) {
-		description = 'No traders match this watch right now.';
-	} else {
-		const shown = counterparts.slice(0, MARKETPLACE_DIGEST_ROW_LIMIT);
-		const omitted = counterparts.length - shown.length;
-		const lines = [
-			`${heading} (you're ${tradeRoleOf(watch).role}):`,
-			...shown.map(formatCounterpartRow),
-		];
-		if (omitted > 0) {
-			lines.push(
-				`…and ${omitted} more. Use /marketplace to see them all.`,
-			);
-		}
-		description = lines.join('\n');
+	const embed = watchCommandResponseBuilder(watch).setFooter({
+		text: marketplaceDigestFooter(watch),
+	});
+	if (!watch.active || !watch.isPublicallyTradeable) {
+		return embed;
 	}
 
-	const authorProperties: EmbedAuthorOptions = {
-		name: watch.itemName, //	itemName is intentionally left uppercase as a heading
-	};
-
-	if (imgUrl) {
-		authorProperties.iconURL = imgUrl;
+	const fieldHeading = `🤝 ${heading} (you're ${tradeRoleOf(watch).role})`;
+	if (counterparts.length === 0) {
+		return embed.addFields({
+			name: fieldHeading,
+			value: 'No traders match this watch right now.',
+		});
 	}
 
-	if (wikiUrl) {
-		authorProperties.url = wikiUrl;
+	const shown = counterparts.slice(0, MARKETPLACE_DIGEST_ROW_LIMIT);
+	const omitted = counterparts.length - shown.length;
+	const rows = shown.map(formatCounterpartRow);
+	if (omitted > 0) {
+		rows.push(`…and ${omitted} more. Use /marketplace to see them all.`);
 	}
-
-	const prefix = 'Marketplace: ';
-	const suffix = ` (${formatserverEnumToReadableString(watch.server)})`;
-	const maxItemLength = MAX_TITLE - prefix.length - suffix.length;
-	const truncatedItem =
-		item.length > maxItemLength
-			? `${item.slice(0, maxItemLength - 1)}…`
-			: item;
-
-	return new EmbedBuilder()
-		.setColor(getServerColorFromString(watch.server))
-		.setAuthor(authorProperties)
-		.setTitle(`${prefix}${truncatedItem}${suffix}`)
-		.setDescription(truncateForDescription(description))
-		.setFooter({ text: marketplaceDigestFooter(watch) });
+	return embed.addFields(marketplaceFields(rows, fieldHeading));
 }
 
 export function playerlinkCommandResponseBuilder(linkData: PlayerLink) {
